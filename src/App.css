@@ -1,0 +1,286 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  background: #fafafa;
+  color: #333;
+  line-height: 1.5;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  padding: 1.5rem 2rem;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  text-align: center;
+}
+
+header h1 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 0.5rem;
+}
+
+header .subtitle {
+  color: #666;
+  font-size: 1rem;
+}
+
+main {
+  flex: 1;
+  display: flex;
+  padding: 1.5rem;
+  gap: 1.5rem;
+}
+
+.map-container {
+  flex: 1;
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.us-map {
+  width: 100%;
+  height: auto;
+  flex: 1;
+}
+
+.sidebar {
+  width: 320px;
+  flex-shrink: 0;
+}
+
+.match-panel {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.match-panel h2 {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  color: #1a1a1a;
+}
+
+.match-panel .hint {
+  color: #888;
+  font-style: italic;
+}
+
+.match-panel .explanation {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.match-panel .explanation h3 {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.match-panel .explanation p {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.match-panel .explanation ul {
+  margin-left: 1.25rem;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.selected-state {
+  padding: 1rem;
+  background: #f5f5f5;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.selected-state h3 {
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.state-stats {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.lean-r {
+  color: #b2182b;
+  font-weight: 500;
+}
+
+.lean-d {
+  color: #2166ac;
+  font-weight: 500;
+}
+
+.lean-n {
+  color: #666;
+}
+
+.matches-list h4 {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.match-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: #fffbe6;
+  border: 1px solid #ffd700;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.match-name {
+  font-weight: 500;
+}
+
+.match-stats {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.no-matches {
+  padding: 1rem;
+  background: #f9f9f9;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.no-matches p {
+  color: #666;
+}
+
+.no-matches .small {
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+/* Tooltip */
+.tooltip {
+  position: fixed;
+  pointer-events: none;
+  background: #fff;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  min-width: 180px;
+}
+
+.tooltip-header {
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
+.tooltip-label {
+  color: #666;
+}
+
+.tooltip-value {
+  font-weight: 500;
+}
+
+/* Legend */
+.legend {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.legend h3 {
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  color: #666;
+}
+
+.legend-scale {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.legend-gradient {
+  height: 12px;
+  border-radius: 4px;
+  background: linear-gradient(to right, #2166ac, #f0f0f0, #b2182b);
+}
+
+.legend-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.legend-explanation {
+  font-size: 0.8rem;
+  color: #888;
+  margin-top: 0.5rem;
+}
+
+/* Footer */
+footer {
+  padding: 1rem 2rem;
+  text-align: center;
+  background: #fff;
+  border-top: 1px solid #e0e0e0;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+footer a {
+  color: #2166ac;
+  text-decoration: none;
+}
+
+footer a:hover {
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  main {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+  }
+}
