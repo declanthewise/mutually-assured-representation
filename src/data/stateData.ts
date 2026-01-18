@@ -1,355 +1,538 @@
 import { StateData } from '../types';
 
+// 2030 projections based on Brennan Center and ESRI analysis
+// Sources:
+// - https://www.brennancenter.org/our-work/analysis-opinion/how-congressional-maps-could-change-2030
+// - https://thearp.org/blog/apportionment/2030-apportionment-forecast-2024/
+
 export const stateData: StateData[] = [
-  {
-    "id": "AK",
-    "name": "Alaska",
-    "districts": 1,
-    "efficiencyGap": 0.4755,
-    "lean": "R"
-  },
   {
     "id": "AL",
     "name": "Alabama",
     "districts": 7,
+    "districts2030": 7,
     "efficiencyGap": -0.0808,
-    "lean": "D"
+    "lean": "D",
+    "partisanLean": -15.3,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": false
   },
   {
     "id": "AR",
     "name": "Arkansas",
     "districts": 4,
+    "districts2030": 4,
     "efficiencyGap": 0.1388,
-    "lean": "R"
+    "lean": "R",
+    "partisanLean": -15.7,
+    "redistrictingAuthority": "politician_commission",
+    "governorCanVeto": true,
+    "hasBallotInitiative": true
   },
   {
     "id": "AZ",
     "name": "Arizona",
     "districts": 9,
+    "districts2030": 10,
     "efficiencyGap": 0.2134,
-    "lean": "R"
+    "lean": "R",
+    "partisanLean": -2.8,
+    "redistrictingAuthority": "independent_commission",
+    "governorCanVeto": false,
+    "hasBallotInitiative": true
   },
   {
     "id": "CA",
     "name": "California",
     "districts": 52,
+    "districts2030": 48,
     "efficiencyGap": -0.1018,
-    "lean": "D"
+    "lean": "D",
+    "partisanLean": 10.6,
+    "redistrictingAuthority": "independent_commission",
+    "governorCanVeto": false,
+    "hasBallotInitiative": true
   },
   {
     "id": "CO",
     "name": "Colorado",
     "districts": 8,
+    "districts2030": 8,
     "efficiencyGap": 0.1201,
-    "lean": "R"
+    "lean": "R",
+    "partisanLean": 5.7,
+    "redistrictingAuthority": "independent_commission",
+    "governorCanVeto": false,
+    "hasBallotInitiative": true
   },
   {
     "id": "CT",
     "name": "Connecticut",
     "districts": 5,
+    "districts2030": 5,
     "efficiencyGap": -0.3145,
-    "lean": "D"
-  },
-  {
-    "id": "DE",
-    "name": "Delaware",
-    "districts": 1,
-    "efficiencyGap": -0.3427,
-    "lean": "D"
+    "lean": "D",
+    "partisanLean": 7.3,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": false,
+    "hasBallotInitiative": false
   },
   {
     "id": "FL",
     "name": "Florida",
     "districts": 28,
+    "districts2030": 31,
     "efficiencyGap": 0.1112,
-    "lean": "R"
+    "lean": "R",
+    "partisanLean": -6.6,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": true
   },
   {
     "id": "GA",
     "name": "Georgia",
     "districts": 14,
+    "districts2030": 15,
     "efficiencyGap": 0.1194,
-    "lean": "R"
+    "lean": "R",
+    "partisanLean": -1.0,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": false
   },
   {
     "id": "HI",
     "name": "Hawaii",
     "districts": 2,
+    "districts2030": 2,
     "efficiencyGap": -0.0947,
-    "lean": "D"
+    "lean": "D",
+    "partisanLean": 11.8,
+    "redistrictingAuthority": "politician_commission",
+    "governorCanVeto": false,
+    "hasBallotInitiative": false
   },
   {
     "id": "IA",
     "name": "Iowa",
     "districts": 4,
+    "districts2030": 4,
     "efficiencyGap": 0.3697,
-    "lean": "R"
+    "lean": "R",
+    "partisanLean": -6.7,
+    "redistrictingAuthority": "advisory_commission",
+    "governorCanVeto": true,
+    "hasBallotInitiative": false
   },
   {
     "id": "ID",
     "name": "Idaho",
     "districts": 2,
+    "districts2030": 3,
     "efficiencyGap": 0.0929,
-    "lean": "R"
+    "lean": "R",
+    "partisanLean": -18.9,
+    "redistrictingAuthority": "independent_commission",
+    "governorCanVeto": false,
+    "hasBallotInitiative": true
   },
   {
     "id": "IL",
     "name": "Illinois",
     "districts": 17,
+    "districts2030": 15,
     "efficiencyGap": -0.1723,
-    "lean": "D"
+    "lean": "D",
+    "partisanLean": 5.3,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": true
   },
   {
     "id": "IN",
     "name": "Indiana",
     "districts": 9,
+    "districts2030": 9,
     "efficiencyGap": 0.0861,
-    "lean": "R"
+    "lean": "R",
+    "partisanLean": -9.5,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": false
   },
   {
     "id": "KS",
     "name": "Kansas",
     "districts": 4,
+    "districts2030": 4,
     "efficiencyGap": 0.0272,
-    "lean": "R"
+    "lean": "R",
+    "partisanLean": -8.3,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": false
   },
   {
     "id": "KY",
     "name": "Kentucky",
     "districts": 6,
+    "districts2030": 6,
     "efficiencyGap": 0.0005,
-    "lean": "N"
+    "lean": "N",
+    "partisanLean": -15.7,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": false
   },
   {
     "id": "LA",
     "name": "Louisiana",
     "districts": 6,
+    "districts2030": 6,
     "efficiencyGap": -0.0367,
-    "lean": "D"
+    "lean": "D",
+    "partisanLean": -13.0,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": false
   },
   {
     "id": "MA",
     "name": "Massachusetts",
     "districts": 9,
+    "districts2030": 9,
     "efficiencyGap": -0.1763,
-    "lean": "D"
+    "lean": "D",
+    "partisanLean": 13.2,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": true
   },
   {
     "id": "MD",
     "name": "Maryland",
     "districts": 8,
+    "districts2030": 8,
     "efficiencyGap": -0.0671,
-    "lean": "D"
+    "lean": "D",
+    "partisanLean": 14.8,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": true
   },
   {
     "id": "ME",
     "name": "Maine",
     "districts": 2,
+    "districts2030": 2,
     "efficiencyGap": -0.38,
-    "lean": "D"
+    "lean": "D",
+    "partisanLean": 3.3,
+    "redistrictingAuthority": "advisory_commission",
+    "governorCanVeto": true,
+    "hasBallotInitiative": true
   },
   {
     "id": "MI",
     "name": "Michigan",
     "districts": 13,
+    "districts2030": 13,
     "efficiencyGap": 0.0487,
-    "lean": "R"
+    "lean": "R",
+    "partisanLean": -0.7,
+    "redistrictingAuthority": "independent_commission",
+    "governorCanVeto": false,
+    "hasBallotInitiative": true
   },
   {
     "id": "MN",
     "name": "Minnesota",
     "districts": 8,
+    "districts2030": 8,
     "efficiencyGap": 0.0219,
-    "lean": "R"
+    "lean": "R",
+    "partisanLean": 2.1,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": false
   },
   {
     "id": "MO",
     "name": "Missouri",
     "districts": 8,
+    "districts2030": 8,
     "efficiencyGap": 0.0784,
-    "lean": "R"
+    "lean": "R",
+    "partisanLean": -9.4,
+    "redistrictingAuthority": "politician_commission",
+    "governorCanVeto": true,
+    "hasBallotInitiative": true
   },
   {
     "id": "MS",
     "name": "Mississippi",
     "districts": 4,
+    "districts2030": 4,
     "efficiencyGap": 0.0107,
-    "lean": "R"
+    "lean": "R",
+    "partisanLean": -11.5,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": true
   },
   {
     "id": "MT",
     "name": "Montana",
     "districts": 2,
+    "districts2030": 2,
     "efficiencyGap": 0.308,
-    "lean": "R"
+    "lean": "R",
+    "partisanLean": -10.3,
+    "redistrictingAuthority": "independent_commission",
+    "governorCanVeto": false,
+    "hasBallotInitiative": true
   },
   {
     "id": "NC",
     "name": "North Carolina",
     "districts": 14,
+    "districts2030": 15,
     "efficiencyGap": 0.1801,
-    "lean": "R"
-  },
-  {
-    "id": "ND",
-    "name": "North Dakota",
-    "districts": 1,
-    "efficiencyGap": 0.1097,
-    "lean": "R"
+    "lean": "R",
+    "partisanLean": -1.5,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": false,
+    "hasBallotInitiative": false
   },
   {
     "id": "NE",
     "name": "Nebraska",
     "districts": 3,
+    "districts2030": 3,
     "efficiencyGap": 0.2277,
-    "lean": "R"
+    "lean": "R",
+    "partisanLean": -10.3,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": true
   },
   {
     "id": "NH",
     "name": "New Hampshire",
     "districts": 2,
+    "districts2030": 2,
     "efficiencyGap": -0.4298,
-    "lean": "D"
+    "lean": "D",
+    "partisanLean": 1.4,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": false
   },
   {
     "id": "NJ",
     "name": "New Jersey",
     "districts": 12,
+    "districts2030": 12,
     "efficiencyGap": -0.1274,
-    "lean": "D"
+    "lean": "D",
+    "partisanLean": 2.9,
+    "redistrictingAuthority": "politician_commission",
+    "governorCanVeto": false,
+    "hasBallotInitiative": false
   },
   {
     "id": "NM",
     "name": "New Mexico",
     "districts": 3,
+    "districts2030": 3,
     "efficiencyGap": -0.3986,
-    "lean": "D"
+    "lean": "D",
+    "partisanLean": 3.0,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": true
   },
   {
     "id": "NV",
     "name": "Nevada",
     "districts": 4,
+    "districts2030": 4,
     "efficiencyGap": -0.2327,
-    "lean": "D"
+    "lean": "D",
+    "partisanLean": -1.5,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": true
   },
   {
     "id": "NY",
     "name": "New York",
     "districts": 26,
+    "districts2030": 23,
     "efficiencyGap": -0.0404,
-    "lean": "D"
+    "lean": "D",
+    "partisanLean": 6.2,
+    "redistrictingAuthority": "independent_commission",
+    "governorCanVeto": true,
+    "hasBallotInitiative": false
   },
   {
     "id": "OH",
     "name": "Ohio",
     "districts": 15,
+    "districts2030": 15,
     "efficiencyGap": 0.0444,
-    "lean": "R"
+    "lean": "R",
+    "partisanLean": -5.8,
+    "redistrictingAuthority": "politician_commission",
+    "governorCanVeto": true,
+    "hasBallotInitiative": true
   },
   {
     "id": "OK",
     "name": "Oklahoma",
     "districts": 5,
+    "districts2030": 5,
     "efficiencyGap": 0.1183,
-    "lean": "R"
+    "lean": "R",
+    "partisanLean": -17.5,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": true
   },
   {
     "id": "OR",
     "name": "Oregon",
     "districts": 6,
+    "districts2030": 6,
     "efficiencyGap": -0.2194,
-    "lean": "D"
+    "lean": "D",
+    "partisanLean": 7.4,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": true
   },
   {
     "id": "PA",
     "name": "Pennsylvania",
     "districts": 17,
+    "districts2030": 16,
     "efficiencyGap": 0.0605,
-    "lean": "R"
+    "lean": "R",
+    "partisanLean": -1.1,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": false
   },
   {
     "id": "RI",
     "name": "Rhode Island",
     "districts": 2,
+    "districts2030": 2,
     "efficiencyGap": -0.2618,
-    "lean": "D"
+    "lean": "D",
+    "partisanLean": 6.8,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": false
   },
   {
     "id": "SC",
     "name": "South Carolina",
     "districts": 7,
+    "districts2030": 8,
     "efficiencyGap": 0.1699,
-    "lean": "R"
-  },
-  {
-    "id": "SD",
-    "name": "South Dakota",
-    "districts": 1,
-    "efficiencyGap": 0.0591,
-    "lean": "R"
+    "lean": "R",
+    "partisanLean": -9.1,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": false
   },
   {
     "id": "TN",
     "name": "Tennessee",
     "districts": 9,
+    "districts2030": 10,
     "efficiencyGap": 0.1074,
-    "lean": "R"
+    "lean": "R",
+    "partisanLean": -15.0,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": false
   },
   {
     "id": "TX",
     "name": "Texas",
     "districts": 38,
+    "districts2030": 42,
     "efficiencyGap": 0.0753,
-    "lean": "R"
+    "lean": "R",
+    "partisanLean": -7.1,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": false
   },
   {
     "id": "UT",
     "name": "Utah",
     "districts": 4,
+    "districts2030": 5,
     "efficiencyGap": 0.1825,
-    "lean": "R"
+    "lean": "R",
+    "partisanLean": -11.1,
+    "redistrictingAuthority": "advisory_commission",
+    "governorCanVeto": true,
+    "hasBallotInitiative": true
   },
   {
     "id": "VA",
     "name": "Virginia",
     "districts": 11,
+    "districts2030": 11,
     "efficiencyGap": 0.0193,
-    "lean": "R"
-  },
-  {
-    "id": "VT",
-    "name": "Vermont",
-    "districts": 1,
-    "efficiencyGap": -0.1471,
-    "lean": "D"
+    "lean": "R",
+    "partisanLean": 3.0,
+    "redistrictingAuthority": "politician_commission",
+    "governorCanVeto": true,
+    "hasBallotInitiative": false
   },
   {
     "id": "WA",
     "name": "Washington",
     "districts": 10,
+    "districts2030": 10,
     "efficiencyGap": -0.1466,
-    "lean": "D"
+    "lean": "D",
+    "partisanLean": 9.4,
+    "redistrictingAuthority": "independent_commission",
+    "governorCanVeto": false,
+    "hasBallotInitiative": true
   },
   {
     "id": "WI",
     "name": "Wisconsin",
     "districts": 8,
+    "districts2030": 8,
     "efficiencyGap": 0.2337,
-    "lean": "R"
+    "lean": "R",
+    "partisanLean": -0.5,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": false
   },
   {
     "id": "WV",
     "name": "West Virginia",
     "districts": 2,
+    "districts2030": 2,
     "efficiencyGap": 0.0758,
-    "lean": "R"
-  },
-  {
-    "id": "WY",
-    "name": "Wyoming",
-    "districts": 1,
-    "efficiencyGap": -0.0048,
-    "lean": "N"
+    "lean": "R",
+    "partisanLean": -21.3,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": false
   }
 ];
 
