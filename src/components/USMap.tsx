@@ -3,7 +3,7 @@ import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
 import { HoveredState } from '../types';
 import { stateData, stateDataById } from '../data/stateData';
-import { findMatches } from '../utils/findMatches';
+import { findMatches, DistrictYear } from '../utils/findMatches';
 
 // FIPS code to state abbreviation mapping
 const fipsToState: Record<string, string> = {
@@ -20,24 +20,63 @@ const fipsToState: Record<string, string> = {
   '56': 'WY'
 };
 
-interface USMapProps {
-  onHoverState: (state: HoveredState | null) => void;
-  hoveredState: HoveredState | null;
+interface MatchFilters {
+  bothVeto: boolean;
+  bothBallot: boolean;
 }
 
-export function USMap({ onHoverState, hoveredState }: USMapProps) {
+interface USMapProps {
+  onHoverState: (state: HoveredState | null) => void;
+  onClickState: (state: HoveredState | null) => void;
+  activeState: HoveredState | null;
+  isLocked: boolean;
+  districtYear: DistrictYear;
+  lockedStateId?: string | null;
+  filters?: MatchFilters;
+}
+
+export function USMap({ onHoverState, onClickState, activeState, isLocked, districtYear, lockedStateId, filters }: USMapProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [matches, setMatches] = useState<string[]>([]);
 
-  // Calculate matches when hovered state changes
+  // Use refs for handlers to avoid re-rendering the map
+  const onHoverStateRef = useRef(onHoverState);
+  const onClickStateRef = useRef(onClickState);
+  const isLockedRef = useRef(isLocked);
+
   useEffect(() => {
-    if (hoveredState) {
-      const matchedStates = findMatches(hoveredState.state, stateData);
-      setMatches(matchedStates.map(s => s.id));
+    onHoverStateRef.current = onHoverState;
+    onClickStateRef.current = onClickState;
+    isLockedRef.current = isLocked;
+  }, [onHoverState, onClickState, isLocked]);
+
+  // Calculate matches when active state changes
+  useEffect(() => {
+    if (activeState) {
+      const districts = districtYear === '2030'
+        ? activeState.state.districts2030
+        : activeState.state.districts;
+      // Don't show matches for single-district states
+      if (districts === 1) {
+        setMatches([]);
+      } else {
+        const allMatches = findMatches(activeState.state, stateData, districtYear);
+        // Apply filters
+        const filteredMatches = allMatches.filter(match => {
+          if (filters?.bothVeto && !(activeState.state.governorCanVeto && match.governorCanVeto)) {
+            return false;
+          }
+          if (filters?.bothBallot && !(activeState.state.hasBallotInitiative && match.hasBallotInitiative)) {
+            return false;
+          }
+          return true;
+        });
+        setMatches(filteredMatches.map(s => s.id));
+      }
     } else {
       setMatches([]);
     }
-  }, [hoveredState]);
+  }, [activeState, districtYear, filters]);
 
   useEffect(() => {
     if (!svgRef.current) return;
@@ -50,7 +89,8 @@ export function USMap({ onHoverState, hoveredState }: USMapProps) {
 
     svg.attr('viewBox', `0 0 ${width} ${height}`);
 
-    // Color scale: blue (D) to gray (neutral) to red (R)
+    // Color scale: blue (D) to gray (neutral) to red (R) based on efficiency gap
+    // Efficiency gap: negative = D advantage, positive = R advantage
     const colorScale = d3.scaleLinear<string>()
       .domain([-0.2, 0, 0.2])
       .range(['#2166ac', '#f0f0f0', '#b2182b'])
@@ -77,34 +117,56 @@ export function USMap({ onHoverState, hoveredState }: USMapProps) {
           const fips = d.id.toString().padStart(2, '0');
           const stateId = fipsToState[fips];
           const data = stateDataById[stateId];
-          return data ? colorScale(data.efficiencyGap) : '#ccc';
+          if (!data) return '#ccc';
+          const districts = districtYear === '2030' ? data.districts2030 : data.districts;
+          // Gray out single-district states (can't be gerrymandered)
+          if (districts === 1) return '#d0d0d0';
+          return colorScale(data.efficiencyGap);
         })
         .attr('stroke', '#fff')
         .attr('stroke-width', 1)
         .style('cursor', 'pointer')
         .on('mouseenter', function(event: MouseEvent, d: any) {
+          if (isLockedRef.current) return;
           const fips = d.id.toString().padStart(2, '0');
           const stateId = fipsToState[fips];
           const data = stateDataById[stateId];
           if (data) {
-            onHoverState({
+            onHoverStateRef.current({
               state: data,
               x: event.clientX,
               y: event.clientY
             });
           }
         })
-        .on('mousemove', function(event: MouseEvent) {
-          if (hoveredState) {
-            onHoverState({
-              ...hoveredState,
+        .on('mousemove', function(event: MouseEvent, d: any) {
+          if (isLockedRef.current) return;
+          const fips = d.id.toString().padStart(2, '0');
+          const stateId = fipsToState[fips];
+          const data = stateDataById[stateId];
+          if (data) {
+            onHoverStateRef.current({
+              state: data,
               x: event.clientX,
               y: event.clientY
             });
           }
         })
         .on('mouseleave', function() {
-          onHoverState(null);
+          if (isLockedRef.current) return;
+          onHoverStateRef.current(null);
+        })
+        .on('click', function(event: MouseEvent, d: any) {
+          const fips = d.id.toString().padStart(2, '0');
+          const stateId = fipsToState[fips];
+          const data = stateDataById[stateId];
+          if (data) {
+            onClickStateRef.current({
+              state: data,
+              x: event.clientX,
+              y: event.clientY
+            });
+          }
         });
 
       // State borders
@@ -114,8 +176,49 @@ export function USMap({ onHoverState, hoveredState }: USMapProps) {
         .attr('stroke', '#fff')
         .attr('stroke-width', 1)
         .attr('d', path);
+
+      // District count labels
+      svg.append('g')
+        .attr('class', 'labels')
+        .selectAll('text')
+        .data((states as any).features)
+        .join('text')
+        .attr('class', 'district-label')
+        .attr('x', (d: any) => {
+          const centroid = path.centroid(d);
+          return centroid[0];
+        })
+        .attr('y', (d: any) => {
+          const centroid = path.centroid(d);
+          return centroid[1];
+        })
+        .attr('text-anchor', 'middle')
+        .attr('dominant-baseline', 'middle')
+        .attr('font-size', '10px')
+        .attr('font-weight', '600')
+        .attr('fill', (d: any) => {
+          const fips = d.id.toString().padStart(2, '0');
+          const stateId = fipsToState[fips];
+          const data = stateDataById[stateId];
+          if (!data) return '#666';
+          const districts = districtYear === '2030' ? data.districts2030 : data.districts;
+          // Muted text for single-district states
+          if (districts === 1) return '#888';
+          // Use dark text on light backgrounds (near 0 efficiency gap)
+          const eg = Math.abs(data.efficiencyGap);
+          return eg < 0.08 ? '#333' : '#fff';
+        })
+        .attr('pointer-events', 'none')
+        .text((d: any) => {
+          const fips = d.id.toString().padStart(2, '0');
+          const stateId = fipsToState[fips];
+          const data = stateDataById[stateId];
+          if (!data) return '';
+          const districts = districtYear === '2030' ? data.districts2030 : data.districts;
+          return districts.toString();
+        });
     });
-  }, [onHoverState]);
+  }, [districtYear]);
 
   // Update highlighting when matches change
   useEffect(() => {
@@ -125,7 +228,10 @@ export function USMap({ onHoverState, hoveredState }: USMapProps) {
     svg.selectAll('.state')
       .attr('stroke', function() {
         const stateId = d3.select(this).attr('data-state');
-        if (hoveredState && stateId === hoveredState.state.id) {
+        if (lockedStateId && stateId === lockedStateId) {
+          return '#000';
+        }
+        if (activeState && stateId === activeState.state.id) {
           return '#000';
         }
         if (matches.includes(stateId)) {
@@ -135,7 +241,10 @@ export function USMap({ onHoverState, hoveredState }: USMapProps) {
       })
       .attr('stroke-width', function() {
         const stateId = d3.select(this).attr('data-state');
-        if (hoveredState && stateId === hoveredState.state.id) {
+        if (lockedStateId && stateId === lockedStateId) {
+          return 5;
+        }
+        if (activeState && stateId === activeState.state.id) {
           return 3;
         }
         if (matches.includes(stateId)) {
@@ -143,7 +252,7 @@ export function USMap({ onHoverState, hoveredState }: USMapProps) {
         }
         return 1;
       });
-  }, [hoveredState, matches]);
+  }, [activeState, matches, lockedStateId]);
 
   return (
     <svg ref={svgRef} className="us-map" />

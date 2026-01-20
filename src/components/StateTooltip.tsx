@@ -1,17 +1,29 @@
 import { HoveredState } from '../types';
-import { DistrictYear } from '../utils/findMatches';
+import { DistrictYear, getSeats } from '../utils/findMatches';
 
 interface StateTooltipProps {
   hoveredState: HoveredState;
   districtYear: DistrictYear;
 }
 
+function formatSeats(seats: number): string {
+  const absSeats = Math.abs(seats).toFixed(1);
+  if (seats > 0) {
+    return `R+${absSeats} seats`;
+  } else if (seats < 0) {
+    return `D+${absSeats} seats`;
+  }
+  return '0 seats';
+}
+
 export function StateTooltip({ hoveredState, districtYear }: StateTooltipProps) {
   const { state, x, y } = hoveredState;
   const districts = districtYear === '2030' ? state.districts2030 : state.districts;
+  const seats = getSeats(state, districtYear);
+  const seatsColor = seats > 0 ? '#b2182b' : seats < 0 ? '#2166ac' : '#666';
   const egPercent = (state.efficiencyGap * 100).toFixed(1);
   const egSign = state.efficiencyGap > 0 ? '+' : '';
-  const leanColor = state.lean === 'R' ? '#b2182b' : state.lean === 'D' ? '#2166ac' : '#666';
+  const egColor = state.efficiencyGap > 0 ? '#b2182b' : state.efficiencyGap < 0 ? '#2166ac' : '#666';
 
   // Format partisan lean as "R+X" or "D+X"
   const partisanLeanLabel = state.partisanLean >= 0
@@ -27,21 +39,19 @@ export function StateTooltip({ hoveredState, districtYear }: StateTooltipProps) 
         top: y + 15,
       }}
     >
-      <div className="tooltip-header">{state.name}</div>
       <div className="tooltip-row">
-        <span className="tooltip-label">Districts{districtYear === '2030' ? ' (2030)' : ''}:</span>
-        <span className="tooltip-value">{districts}</span>
-      </div>
-      <div className="tooltip-row">
-        <span className="tooltip-label">Efficiency Gap:</span>
-        <span className="tooltip-value" style={{ color: leanColor }}>
-          {egSign}{egPercent}%
+        <span className="tooltip-name-lean">
+          <span className="tooltip-name">{state.name}</span>
+          <span style={{ color: partisanLeanColor }}>{partisanLeanLabel}</span>
+        </span>
+        <span className="tooltip-value" style={{ color: egColor }}>
+          {egSign}{egPercent}% EG
         </span>
       </div>
       <div className="tooltip-row">
-        <span className="tooltip-label">Partisan Lean:</span>
-        <span className="tooltip-value" style={{ color: partisanLeanColor }}>
-          {partisanLeanLabel}
+        <span className="tooltip-label">{districts} {districts === 1 ? 'district' : 'districts'}{districtYear === '2030' ? ' (2030)' : ''}</span>
+        <span className="tooltip-value" style={{ color: seatsColor }}>
+          {formatSeats(seats)}
         </span>
       </div>
     </div>

@@ -1,14 +1,21 @@
 import { useState, useMemo } from 'react';
-import { RedistrictingAuthority } from '../types';
+import { RedistrictingAuthority, StateData } from '../types';
 import { stateData } from '../data/stateData';
-import { findMatches, DistrictYear } from '../utils/findMatches';
+import { findMatches, getSeats, DistrictYear } from '../utils/findMatches';
+import type { MatchFilters } from '../App';
 
-type SortKey = 'name' | 'districts' | 'efficiencyGap' | 'partisanLean' | 'matches';
+type SortKey = 'name' | 'districts' | 'seats' | 'partisanLean' | 'matches';
 type SortDirection = 'asc' | 'desc';
 
 interface StateTableProps {
   districtYear: DistrictYear;
   onDistrictYearChange: (year: DistrictYear) => void;
+  hideHeader?: boolean;
+  filters?: MatchFilters;
+  selectedStateId?: string | null;
+  lockedStateId?: string | null;
+  onHoverState?: (state: StateData | null) => void;
+  onClickState?: (state: StateData | null) => void;
 }
 
 const authorityLabels: Record<RedistrictingAuthority, string> = {
@@ -18,11 +25,11 @@ const authorityLabels: Record<RedistrictingAuthority, string> = {
   advisory_commission: 'Advisory Commission',
 };
 
-export function StateTable({ districtYear, onDistrictYearChange }: StateTableProps) {
+export function StateTable({ districtYear, onDistrictYearChange, hideHeader, filters, selectedStateId, lockedStateId, onHoverState, onClickState }: StateTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-  const [filterBothVeto, setFilterBothVeto] = useState(false);
-  const [filterBothBallot, setFilterBothBallot] = useState(false);
+  const filterBothVeto = filters?.bothVeto ?? false;
+  const filterBothBallot = filters?.bothBallot ?? false;
 
   const getDistricts = (state: typeof stateData[0]) =>
     districtYear === '2030' ? state.districts2030 : state.districts;
@@ -57,8 +64,8 @@ export function StateTable({ districtYear, onDistrictYearChange }: StateTablePro
         case 'districts':
           comparison = getDistricts(a) - getDistricts(b);
           break;
-        case 'efficiencyGap':
-          comparison = a.efficiencyGap - b.efficiencyGap;
+        case 'seats':
+          comparison = getSeats(a, districtYear) - getSeats(b, districtYear);
           break;
         case 'partisanLean':
           comparison = a.partisanLean - b.partisanLean;
@@ -78,6 +85,16 @@ export function StateTable({ districtYear, onDistrictYearChange }: StateTablePro
       setSortKey(key);
       setSortDirection('asc');
     }
+  };
+
+  const formatSeats = (seats: number) => {
+    const absSeats = Math.abs(seats).toFixed(1);
+    if (seats > 0) {
+      return `R+${absSeats}`;
+    } else if (seats < 0) {
+      return `D+${absSeats}`;
+    }
+    return '0';
   };
 
   const formatEg = (eg: number) => {
@@ -102,64 +119,62 @@ export function StateTable({ districtYear, onDistrictYearChange }: StateTablePro
   );
 
   return (
-    <div className="state-table-container">
-      <h2>All States Overview</h2>
-      <p className="table-description">
-        Complete data for all states with MAR partner potential. States where governor
-        can veto maps or citizens can use ballot initiatives have more pathways for reform.
-      </p>
-      <div className="table-filters">
-        <div className="filter-group">
-          <span className="filter-label">District counts:</span>
-          <div className="toggle-buttons">
-            <button
-              className={districtYear === 'current' ? 'active' : ''}
-              onClick={() => onDistrictYearChange('current')}
-            >
-              Current
-            </button>
-            <button
-              className={districtYear === '2030' ? 'active' : ''}
-              onClick={() => onDistrictYearChange('2030')}
-            >
-              2030 Projected
-            </button>
+    <div className={`state-table-container${hideHeader ? ' embedded' : ''}`}>
+      {!hideHeader && (
+        <>
+          <h2>All States Overview</h2>
+          <p className="table-description">
+            Complete data for all states with MAR partner potential. States where governor
+            can veto maps or citizens can use ballot initiatives have more pathways for reform.
+          </p>
+        </>
+      )}
+      {!hideHeader && (
+        <div className="table-filters">
+          <div className="filter-group">
+            <span className="filter-label">District counts:</span>
+            <div className="toggle-buttons">
+              <button
+                className={districtYear === 'current' ? 'active' : ''}
+                onClick={() => onDistrictYearChange('current')}
+              >
+                Current
+              </button>
+              <button
+                className={districtYear === '2030' ? 'active' : ''}
+                onClick={() => onDistrictYearChange('2030')}
+              >
+                2030 Projected
+              </button>
+            </div>
           </div>
+          <div className="filter-divider" />
+          <span className="filter-label">Filter matches:</span>
+          <label className="filter-checkbox">
+            <input
+              type="checkbox"
+              checked={filterBothVeto}
+              readOnly
+            />
+            Both states have governor veto
+          </label>
+          <label className="filter-checkbox">
+            <input
+              type="checkbox"
+              checked={filterBothBallot}
+              readOnly
+            />
+            Both states have ballot initiative
+          </label>
         </div>
-        <div className="filter-divider" />
-        <span className="filter-label">Filter matches:</span>
-        <label className="filter-checkbox">
-          <input
-            type="checkbox"
-            checked={filterBothVeto}
-            onChange={e => setFilterBothVeto(e.target.checked)}
-          />
-          Both states have governor veto
-        </label>
-        <label className="filter-checkbox">
-          <input
-            type="checkbox"
-            checked={filterBothBallot}
-            onChange={e => setFilterBothBallot(e.target.checked)}
-          />
-          Both states have ballot initiative
-        </label>
-        {(filterBothVeto || filterBothBallot) && (
-          <button
-            className="clear-filters"
-            onClick={() => { setFilterBothVeto(false); setFilterBothBallot(false); }}
-          >
-            Clear filters
-          </button>
-        )}
-      </div>
+      )}
       <div className="table-wrapper">
         <table className="state-table">
           <thead>
             <tr>
               <SortHeader label="State" sortKeyName="name" />
               <SortHeader label={districtYear === '2030' ? 'Districts (2030)' : 'Districts'} sortKeyName="districts" />
-              <SortHeader label="Eff. Gap" sortKeyName="efficiencyGap" />
+              <SortHeader label="Seats" sortKeyName="seats" />
               <SortHeader label="Lean" sortKeyName="partisanLean" />
               <th>Map Authority</th>
               <th>Gov. Veto</th>
@@ -169,12 +184,21 @@ export function StateTable({ districtYear, onDistrictYearChange }: StateTablePro
             </tr>
           </thead>
           <tbody>
-            {sortedStates.map(state => (
-              <tr key={state.id}>
+            {sortedStates.map(state => {
+              const isSingleDistrict = getDistricts(state) === 1;
+              const isSelected = selectedStateId === state.id;
+              return (
+              <tr
+                key={state.id}
+                className={`${isSingleDistrict ? 'single-district' : ''} ${isSelected ? 'selected' : ''} ${lockedStateId === state.id ? 'locked' : ''}`}
+                onMouseEnter={() => !lockedStateId && onHoverState?.(state)}
+                onMouseLeave={() => !lockedStateId && onHoverState?.(null)}
+                onClick={() => onClickState?.(lockedStateId === state.id ? null : state)}
+              >
                 <td className="state-name">{state.name}</td>
                 <td className="center">{getDistricts(state)}</td>
-                <td className={`center ${state.efficiencyGap > 0 ? 'lean-r' : state.efficiencyGap < 0 ? 'lean-d' : ''}`}>
-                  {formatEg(state.efficiencyGap)}
+                <td className={`center ${getSeats(state, districtYear) > 0 ? 'lean-r' : getSeats(state, districtYear) < 0 ? 'lean-d' : ''}`}>
+                  {formatSeats(getSeats(state, districtYear))}
                 </td>
                 <td className={`center ${state.partisanLean >= 0 ? 'lean-d' : 'lean-r'}`}>
                   {formatLean(state.partisanLean)}
@@ -210,7 +234,7 @@ export function StateTable({ districtYear, onDistrictYearChange }: StateTablePro
                         <span
                           key={match.id}
                           className={`match-tag lean-${match.lean.toLowerCase()}`}
-                          title={`${match.name}: ${formatEg(match.efficiencyGap)} EG, ${formatLean(match.partisanLean)}`}
+                          title={`${match.name}: ${formatEg(match.efficiencyGap)}, ${formatLean(match.partisanLean)}`}
                         >
                           {match.id}
                         </span>
@@ -220,11 +244,12 @@ export function StateTable({ districtYear, onDistrictYearChange }: StateTablePro
                       )}
                     </div>
                   ) : (
-                    <span className="no-matches-text">-</span>
+                    <span className="no-matches-text">{isSingleDistrict ? 'N/A' : '-'}</span>
                   )}
                 </td>
               </tr>
-            ))}
+            );
+            })}
           </tbody>
         </table>
       </div>
@@ -232,7 +257,7 @@ export function StateTable({ districtYear, onDistrictYearChange }: StateTablePro
         <h4>Legend</h4>
         <div className="legend-items">
           <div className="legend-item">
-            <strong>Eff. Gap:</strong> Efficiency gap - positive (R advantage), negative (D advantage)
+            <strong>Seats:</strong> Seats impact from gerrymandering - R+ (Republican advantage), D+ (Democratic advantage)
           </div>
           <div className="legend-item">
             <strong>Gov. Veto:</strong> Can governor veto congressional redistricting maps
@@ -241,7 +266,7 @@ export function StateTable({ districtYear, onDistrictYearChange }: StateTablePro
             <strong>Ballot Init.:</strong> State allows citizen ballot initiatives for redistricting reform
           </div>
           <div className="legend-item">
-            <strong>Double Trigger:</strong> States with both Gov. Veto = No AND Ballot Init. = Yes have citizen-only reform pathways
+            <strong>Grayed rows:</strong> Single-district states cannot be gerrymandered and have no MAR partners
           </div>
         </div>
       </div>

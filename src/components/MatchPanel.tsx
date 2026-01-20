@@ -1,13 +1,35 @@
 import { HoveredState } from '../types';
 import { stateData } from '../data/stateData';
-import { findMatches, DistrictYear } from '../utils/findMatches';
+import { findMatches, getSeats, DistrictYear } from '../utils/findMatches';
+import type { MatchFilters } from '../App';
+
+function formatEg(eg: number): string {
+  const percent = (eg * 100).toFixed(1);
+  if (eg > 0) {
+    return `+${percent}% EG`;
+  } else if (eg < 0) {
+    return `${percent}% EG`;
+  }
+  return '0% EG';
+}
+
+function formatSeats(seats: number): string {
+  const absSeats = Math.abs(seats).toFixed(1);
+  if (seats > 0) {
+    return `R+${absSeats} seats`;
+  } else if (seats < 0) {
+    return `D+${absSeats} seats`;
+  }
+  return '0 seats';
+}
 
 interface MatchPanelProps {
   hoveredState: HoveredState | null;
   districtYear: DistrictYear;
+  filters?: MatchFilters;
 }
 
-export function MatchPanel({ hoveredState, districtYear }: MatchPanelProps) {
+export function MatchPanel({ hoveredState, districtYear, filters }: MatchPanelProps) {
   if (!hoveredState) {
     return (
       <div className="match-panel">
@@ -23,21 +45,31 @@ export function MatchPanel({ hoveredState, districtYear }: MatchPanelProps) {
             Matches are states with:
           </p>
           <ul>
-            <li>Similar number of districts (within 25%)</li>
+            <li>Similar district count (within 25%)</li>
             <li>Opposite partisan lean</li>
-            <li>Similar efficiency gap magnitude (±8%)</li>
+            <li>Similar seats impact (±1 seat)</li>
           </ul>
         </div>
       </div>
     );
   }
 
-  const matches = findMatches(hoveredState.state, stateData, districtYear);
+  const allMatches = findMatches(hoveredState.state, stateData, districtYear);
+  const matches = allMatches.filter(match => {
+    if (filters?.bothVeto && !(hoveredState.state.governorCanVeto && match.governorCanVeto)) {
+      return false;
+    }
+    if (filters?.bothBallot && !(hoveredState.state.hasBallotInitiative && match.hasBallotInitiative)) {
+      return false;
+    }
+    return true;
+  });
   const districts = districtYear === '2030'
     ? hoveredState.state.districts2030
     : hoveredState.state.districts;
-  const egPercent = (hoveredState.state.efficiencyGap * 100).toFixed(1);
-  const egSign = hoveredState.state.efficiencyGap > 0 ? '+' : '';
+  const isSingleDistrict = districts === 1;
+  const eg = hoveredState.state.efficiencyGap;
+  const seats = getSeats(hoveredState.state, districtYear);
   const partisanLean = hoveredState.state.partisanLean >= 0
     ? `D+${hoveredState.state.partisanLean.toFixed(1)}`
     : `R+${Math.abs(hoveredState.state.partisanLean).toFixed(1)}`;
@@ -47,39 +79,63 @@ export function MatchPanel({ hoveredState, districtYear }: MatchPanelProps) {
       <h2>MAR Partners</h2>
 
       <div className="selected-state">
-        <h3>{hoveredState.state.name}</h3>
-        <div className="state-stats">
-          <span>{districts} districts</span>
-          <span className={`lean-${hoveredState.state.lean.toLowerCase()}`}>
-            {partisanLean}
+        <div className="state-card-row">
+          <span className="state-card-name-lean">
+            <span className="state-card-name">{hoveredState.state.name}</span>
+            <span className={`state-card-lean ${hoveredState.state.partisanLean >= 0 ? 'lean-d' : 'lean-r'}`}>
+              {partisanLean}
+            </span>
           </span>
-          <span className={`lean-${hoveredState.state.lean.toLowerCase()}`}>
-            {egSign}{egPercent}% EG
+          <span className={`state-card-eg ${eg > 0 ? 'lean-r' : eg < 0 ? 'lean-d' : ''}`}>
+            {formatEg(eg)}
+          </span>
+        </div>
+        <div className="state-card-row">
+          <span className="state-card-districts">{districts} {districts === 1 ? 'district' : 'districts'}</span>
+          <span className={`state-card-seats ${seats > 0 ? 'lean-r' : seats < 0 ? 'lean-d' : ''}`}>
+            {formatSeats(seats)}
           </span>
         </div>
       </div>
 
-      {matches.length > 0 ? (
+      {isSingleDistrict ? (
+        <div className="no-matches">
+          <p>Single-district state</p>
+          <p className="small">
+            States with only one congressional district cannot be gerrymandered and have no MAR partners.
+          </p>
+        </div>
+      ) : matches.length > 0 ? (
         <div className="matches-list">
           <h4>Potential Partners ({matches.length})</h4>
           {matches.map(match => {
             const matchDistricts = districtYear === '2030'
               ? match.districts2030
               : match.districts;
-            const matchEg = (match.efficiencyGap * 100).toFixed(1);
-            const matchSign = match.efficiencyGap > 0 ? '+' : '';
+            const matchEg = match.efficiencyGap;
+            const matchSeats = getSeats(match, districtYear);
             const matchLean = match.partisanLean >= 0
               ? `D+${match.partisanLean.toFixed(1)}`
               : `R+${Math.abs(match.partisanLean).toFixed(1)}`;
             return (
               <div key={match.id} className="match-item">
-                <span className="match-name">{match.name}</span>
-                <span className={`match-lean lean-${match.lean.toLowerCase()}`}>
-                  {matchLean}
-                </span>
-                <span className="match-stats">
-                  {matchDistricts} dist, {matchSign}{matchEg}% EG
-                </span>
+                <div className="state-card-row">
+                  <span className="state-card-name-lean">
+                    <span className="state-card-name">{match.name}</span>
+                    <span className={`state-card-lean ${match.partisanLean >= 0 ? 'lean-d' : 'lean-r'}`}>
+                      {matchLean}
+                    </span>
+                  </span>
+                  <span className={`state-card-eg ${matchEg > 0 ? 'lean-r' : matchEg < 0 ? 'lean-d' : ''}`}>
+                    {formatEg(matchEg)}
+                  </span>
+                </div>
+                <div className="state-card-row">
+                  <span className="state-card-districts">{matchDistricts} districts</span>
+                  <span className={`state-card-seats ${matchSeats > 0 ? 'lean-r' : matchSeats < 0 ? 'lean-d' : ''}`}>
+                    {formatSeats(matchSeats)}
+                  </span>
+                </div>
               </div>
             );
           })}

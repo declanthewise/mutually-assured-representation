@@ -533,6 +533,78 @@ export const stateData: StateData[] = [
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": false
+  },
+  {
+    "id": "AK",
+    "name": "Alaska",
+    "districts": 1,
+    "districts2030": 1,
+    "efficiencyGap": 0,
+    "lean": "N",
+    "partisanLean": -9.8,
+    "redistrictingAuthority": "advisory_commission",
+    "governorCanVeto": true,
+    "hasBallotInitiative": true
+  },
+  {
+    "id": "DE",
+    "name": "Delaware",
+    "districts": 1,
+    "districts2030": 1,
+    "efficiencyGap": 0,
+    "lean": "N",
+    "partisanLean": 6.6,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": false
+  },
+  {
+    "id": "ND",
+    "name": "North Dakota",
+    "districts": 1,
+    "districts2030": 1,
+    "efficiencyGap": 0,
+    "lean": "N",
+    "partisanLean": -19.7,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": true
+  },
+  {
+    "id": "SD",
+    "name": "South Dakota",
+    "districts": 1,
+    "districts2030": 1,
+    "efficiencyGap": 0,
+    "lean": "N",
+    "partisanLean": -16.2,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": true
+  },
+  {
+    "id": "VT",
+    "name": "Vermont",
+    "districts": 1,
+    "districts2030": 1,
+    "efficiencyGap": 0,
+    "lean": "N",
+    "partisanLean": 15.5,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": false
+  },
+  {
+    "id": "WY",
+    "name": "Wyoming",
+    "districts": 1,
+    "districts2030": 1,
+    "efficiencyGap": 0,
+    "lean": "N",
+    "partisanLean": -25.6,
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": true
   }
 ];
 
