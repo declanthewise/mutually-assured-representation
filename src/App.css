@@ -568,7 +568,10 @@ main {
 }
 
 .state-table tbody tr.single-district .lean-r,
-.state-table tbody tr.single-district .lean-d {
+.state-table tbody tr.single-district .lean-d,
+.state-table tbody tr.single-district .state-control-dem,
+.state-table tbody tr.single-district .state-control-rep,
+.state-table tbody tr.single-district .state-control-split {
   color: #bbb;
 }
 

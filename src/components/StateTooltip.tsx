@@ -19,17 +19,18 @@ function formatSeats(seats: number): string {
 export function StateTooltip({ hoveredState, districtYear }: StateTooltipProps) {
   const { state, x, y } = hoveredState;
   const districts = districtYear === '2030' ? state.districts2030 : state.districts;
+  const isSingleDistrict = districts === 1;
   const seats = getSeats(state, districtYear);
-  const seatsColor = seats > 0 ? '#b2182b' : seats < 0 ? '#2166ac' : '#666';
+  const seatsColor = isSingleDistrict ? '#999' : seats > 0 ? '#b2182b' : seats < 0 ? '#2166ac' : '#666';
   const egPercent = (state.efficiencyGap * 100).toFixed(1);
   const egSign = state.efficiencyGap > 0 ? '+' : '';
-  const egColor = state.efficiencyGap > 0 ? '#b2182b' : state.efficiencyGap < 0 ? '#2166ac' : '#666';
+  const egColor = isSingleDistrict ? '#999' : state.efficiencyGap > 0 ? '#b2182b' : state.efficiencyGap < 0 ? '#2166ac' : '#666';
 
   // Format partisan lean as "R+X" or "D+X"
   const partisanLeanLabel = state.partisanLean >= 0
     ? `D+${state.partisanLean.toFixed(1)}`
     : `R+${Math.abs(state.partisanLean).toFixed(1)}`;
-  const partisanLeanColor = state.partisanLean >= 0 ? '#2166ac' : '#b2182b';
+  const partisanLeanColor = isSingleDistrict ? '#999' : state.partisanLean >= 0 ? '#2166ac' : '#b2182b';
 
   return (
     <div
