@@ -1,10 +1,10 @@
 import { useState, useMemo } from 'react';
-import { RedistrictingAuthority, StateData } from '../types';
+import { RedistrictingAuthority, StateControl, StateData } from '../types';
 import { stateData } from '../data/stateData';
 import { findMatches, getSeats, DistrictYear } from '../utils/findMatches';
 import type { MatchFilters } from '../App';
 
-type SortKey = 'name' | 'districts' | 'seats' | 'partisanLean' | 'matches';
+type SortKey = 'name' | 'partisanLean' | 'districts' | 'efficiencyGap' | 'seats' | 'stateControl' | 'matches';
 type SortDirection = 'asc' | 'desc';
 
 interface StateTableProps {
@@ -23,6 +23,12 @@ const authorityLabels: Record<RedistrictingAuthority, string> = {
   independent_commission: 'Independent Commission',
   politician_commission: 'Politician Commission',
   advisory_commission: 'Advisory Commission',
+};
+
+const stateControlLabels: Record<StateControl, string> = {
+  dem: 'D',
+  rep: 'R',
+  split: 'Split',
 };
 
 export function StateTable({ districtYear, onDistrictYearChange, hideHeader, filters, selectedStateId, lockedStateId, onHoverState, onClickState }: StateTableProps) {
@@ -61,14 +67,20 @@ export function StateTable({ districtYear, onDistrictYearChange, hideHeader, fil
         case 'name':
           comparison = a.name.localeCompare(b.name);
           break;
+        case 'partisanLean':
+          comparison = a.partisanLean - b.partisanLean;
+          break;
         case 'districts':
           comparison = getDistricts(a) - getDistricts(b);
+          break;
+        case 'efficiencyGap':
+          comparison = a.efficiencyGap - b.efficiencyGap;
           break;
         case 'seats':
           comparison = getSeats(a, districtYear) - getSeats(b, districtYear);
           break;
-        case 'partisanLean':
-          comparison = a.partisanLean - b.partisanLean;
+        case 'stateControl':
+          comparison = a.stateControl.localeCompare(b.stateControl);
           break;
         case 'matches':
           comparison = a.matches.length - b.matches.length;
@@ -173,14 +185,15 @@ export function StateTable({ districtYear, onDistrictYearChange, hideHeader, fil
           <thead>
             <tr>
               <SortHeader label="State" sortKeyName="name" />
-              <SortHeader label={districtYear === '2030' ? 'Districts (2030)' : 'Districts'} sortKeyName="districts" />
-              <SortHeader label="Seats" sortKeyName="seats" />
-              <SortHeader label="Lean" sortKeyName="partisanLean" />
+              <SortHeader label="Partisan Lean" sortKeyName="partisanLean" />
+              <SortHeader label={districtYear === '2030' ? 'Districts (Projected)' : 'Districts (Current)'} sortKeyName="districts" />
+              <SortHeader label="Efficiency Gap" sortKeyName="efficiencyGap" />
+              <SortHeader label="Seats Impact" sortKeyName="seats" />
+              <SortHeader label="State Control" sortKeyName="stateControl" />
               <th>Map Authority</th>
-              <th>Gov. Veto</th>
-              <th>Ballot Init.</th>
-              <SortHeader label="Matches" sortKeyName="matches" />
-              <th>Best Match Partners</th>
+              <th>Governor Veto</th>
+              <th>Ballot Initiative</th>
+              <SortHeader label="Match Partners" sortKeyName="matches" />
             </tr>
           </thead>
           <tbody>
@@ -196,41 +209,30 @@ export function StateTable({ districtYear, onDistrictYearChange, hideHeader, fil
                 onClick={() => onClickState?.(lockedStateId === state.id ? null : state)}
               >
                 <td className="state-name">{state.name}</td>
-                <td className="center">{getDistricts(state)}</td>
-                <td className={`center ${getSeats(state, districtYear) > 0 ? 'lean-r' : getSeats(state, districtYear) < 0 ? 'lean-d' : ''}`}>
-                  {formatSeats(getSeats(state, districtYear))}
-                </td>
                 <td className={`center ${state.partisanLean >= 0 ? 'lean-d' : 'lean-r'}`}>
                   {formatLean(state.partisanLean)}
                 </td>
+                <td className="center">{getDistricts(state)}</td>
+                <td className={`center ${state.efficiencyGap > 0 ? 'lean-r' : state.efficiencyGap < 0 ? 'lean-d' : ''}`}>
+                  {formatEg(state.efficiencyGap)}
+                </td>
+                <td className={`center ${getSeats(state, districtYear) > 0 ? 'lean-r' : getSeats(state, districtYear) < 0 ? 'lean-d' : ''}`}>
+                  {formatSeats(getSeats(state, districtYear))}
+                </td>
+                <td className={`center state-control-${state.stateControl}`}>
+                  {stateControlLabels[state.stateControl]}
+                </td>
                 <td className="authority">{authorityLabels[state.redistrictingAuthority]}</td>
-                <td className={`center ${state.governorCanVeto ? 'yes' : 'no'}`}>
+                <td className="center">
                   {state.governorCanVeto ? 'Yes' : 'No'}
                 </td>
-                <td className={`center ${state.hasBallotInitiative ? 'yes' : 'no'}`}>
+                <td className="center">
                   {state.hasBallotInitiative ? 'Yes' : 'No'}
-                </td>
-                <td className="center match-count">
-                  {state.matches.length > 0 ? (
-                    <span className="has-matches">
-                      {state.matches.length}
-                      {(filterBothVeto || filterBothBallot) && state.totalMatches !== state.matches.length && (
-                        <span className="total-matches">/{state.totalMatches}</span>
-                      )}
-                    </span>
-                  ) : (
-                    <span className="no-matches-count">
-                      0
-                      {(filterBothVeto || filterBothBallot) && state.totalMatches > 0 && (
-                        <span className="total-matches">/{state.totalMatches}</span>
-                      )}
-                    </span>
-                  )}
                 </td>
                 <td className="matches-cell">
                   {state.matches.length > 0 ? (
                     <div className="match-tags">
-                      {state.matches.slice(0, 3).map(match => (
+                      {state.matches.slice(0, 7).map(match => (
                         <span
                           key={match.id}
                           className={`match-tag lean-${match.lean.toLowerCase()}`}
@@ -239,8 +241,8 @@ export function StateTable({ districtYear, onDistrictYearChange, hideHeader, fil
                           {match.id}
                         </span>
                       ))}
-                      {state.matches.length > 3 && (
-                        <span className="more-matches">+{state.matches.length - 3}</span>
+                      {state.matches.length > 7 && (
+                        <span className="more-matches">+{state.matches.length - 7}</span>
                       )}
                     </div>
                   ) : (
@@ -257,13 +259,16 @@ export function StateTable({ districtYear, onDistrictYearChange, hideHeader, fil
         <h4>Legend</h4>
         <div className="legend-items">
           <div className="legend-item">
-            <strong>Seats:</strong> Seats impact from gerrymandering - R+ (Republican advantage), D+ (Democratic advantage)
+            <strong>Partisan Lean:</strong> State's overall partisan lean - D+ (Democratic), R+ (Republican)
           </div>
           <div className="legend-item">
-            <strong>Gov. Veto:</strong> Can governor veto congressional redistricting maps
+            <strong>Efficiency Gap:</strong> Measures wasted votes - positive = R advantage, negative = D advantage
           </div>
           <div className="legend-item">
-            <strong>Ballot Init.:</strong> State allows citizen ballot initiatives for redistricting reform
+            <strong>Seats Impact:</strong> Net seats gained from gerrymandering - R+ or D+
+          </div>
+          <div className="legend-item">
+            <strong>State Control:</strong> Which party controls the governorship and both legislative chambers
           </div>
           <div className="legend-item">
             <strong>Grayed rows:</strong> Single-district states cannot be gerrymandered and have no MAR partners

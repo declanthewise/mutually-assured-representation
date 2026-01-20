@@ -14,6 +14,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": -0.0808,
     "lean": "D",
     "partisanLean": -15.3,
+    "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": false
@@ -26,6 +27,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0.1388,
     "lean": "R",
     "partisanLean": -15.7,
+    "stateControl": "rep",
     "redistrictingAuthority": "politician_commission",
     "governorCanVeto": true,
     "hasBallotInitiative": true
@@ -38,6 +40,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0.2134,
     "lean": "R",
     "partisanLean": -2.8,
+    "stateControl": "split",
     "redistrictingAuthority": "independent_commission",
     "governorCanVeto": false,
     "hasBallotInitiative": true
@@ -50,6 +53,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": -0.1018,
     "lean": "D",
     "partisanLean": 10.6,
+    "stateControl": "dem",
     "redistrictingAuthority": "independent_commission",
     "governorCanVeto": false,
     "hasBallotInitiative": true
@@ -62,6 +66,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0.1201,
     "lean": "R",
     "partisanLean": 5.7,
+    "stateControl": "dem",
     "redistrictingAuthority": "independent_commission",
     "governorCanVeto": false,
     "hasBallotInitiative": true
@@ -74,6 +79,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": -0.3145,
     "lean": "D",
     "partisanLean": 7.3,
+    "stateControl": "dem",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": false,
     "hasBallotInitiative": false
@@ -86,6 +92,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0.1112,
     "lean": "R",
     "partisanLean": -6.6,
+    "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": true
@@ -98,6 +105,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0.1194,
     "lean": "R",
     "partisanLean": -1.0,
+    "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": false
@@ -110,6 +118,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": -0.0947,
     "lean": "D",
     "partisanLean": 11.8,
+    "stateControl": "dem",
     "redistrictingAuthority": "politician_commission",
     "governorCanVeto": false,
     "hasBallotInitiative": false
@@ -122,6 +131,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0.3697,
     "lean": "R",
     "partisanLean": -6.7,
+    "stateControl": "rep",
     "redistrictingAuthority": "advisory_commission",
     "governorCanVeto": true,
     "hasBallotInitiative": false
@@ -134,6 +144,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0.0929,
     "lean": "R",
     "partisanLean": -18.9,
+    "stateControl": "rep",
     "redistrictingAuthority": "independent_commission",
     "governorCanVeto": false,
     "hasBallotInitiative": true
@@ -146,6 +157,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": -0.1723,
     "lean": "D",
     "partisanLean": 5.3,
+    "stateControl": "dem",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": true
@@ -158,6 +170,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0.0861,
     "lean": "R",
     "partisanLean": -9.5,
+    "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": false
@@ -170,6 +183,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0.0272,
     "lean": "R",
     "partisanLean": -8.3,
+    "stateControl": "split",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": false
@@ -182,6 +196,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0.0005,
     "lean": "N",
     "partisanLean": -15.7,
+    "stateControl": "split",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": false
@@ -194,6 +209,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": -0.0367,
     "lean": "D",
     "partisanLean": -13.0,
+    "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": false
@@ -206,6 +222,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": -0.1763,
     "lean": "D",
     "partisanLean": 13.2,
+    "stateControl": "dem",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": true
@@ -218,6 +235,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": -0.0671,
     "lean": "D",
     "partisanLean": 14.8,
+    "stateControl": "dem",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": true
@@ -230,6 +248,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": -0.38,
     "lean": "D",
     "partisanLean": 3.3,
+    "stateControl": "dem",
     "redistrictingAuthority": "advisory_commission",
     "governorCanVeto": true,
     "hasBallotInitiative": true
@@ -242,6 +261,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0.0487,
     "lean": "R",
     "partisanLean": -0.7,
+    "stateControl": "dem",
     "redistrictingAuthority": "independent_commission",
     "governorCanVeto": false,
     "hasBallotInitiative": true
@@ -254,6 +274,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0.0219,
     "lean": "R",
     "partisanLean": 2.1,
+    "stateControl": "dem",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": false
@@ -266,6 +287,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0.0784,
     "lean": "R",
     "partisanLean": -9.4,
+    "stateControl": "rep",
     "redistrictingAuthority": "politician_commission",
     "governorCanVeto": true,
     "hasBallotInitiative": true
@@ -278,6 +300,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0.0107,
     "lean": "R",
     "partisanLean": -11.5,
+    "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": true
@@ -290,6 +313,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0.308,
     "lean": "R",
     "partisanLean": -10.3,
+    "stateControl": "rep",
     "redistrictingAuthority": "independent_commission",
     "governorCanVeto": false,
     "hasBallotInitiative": true
@@ -302,6 +326,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0.1801,
     "lean": "R",
     "partisanLean": -1.5,
+    "stateControl": "split",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": false,
     "hasBallotInitiative": false
@@ -314,6 +339,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0.2277,
     "lean": "R",
     "partisanLean": -10.3,
+    "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": true
@@ -326,6 +352,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": -0.4298,
     "lean": "D",
     "partisanLean": 1.4,
+    "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": false
@@ -338,6 +365,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": -0.1274,
     "lean": "D",
     "partisanLean": 2.9,
+    "stateControl": "dem",
     "redistrictingAuthority": "politician_commission",
     "governorCanVeto": false,
     "hasBallotInitiative": false
@@ -350,6 +378,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": -0.3986,
     "lean": "D",
     "partisanLean": 3.0,
+    "stateControl": "dem",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": true
@@ -362,6 +391,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": -0.2327,
     "lean": "D",
     "partisanLean": -1.5,
+    "stateControl": "dem",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": true
@@ -374,6 +404,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": -0.0404,
     "lean": "D",
     "partisanLean": 6.2,
+    "stateControl": "dem",
     "redistrictingAuthority": "independent_commission",
     "governorCanVeto": true,
     "hasBallotInitiative": false
@@ -386,6 +417,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0.0444,
     "lean": "R",
     "partisanLean": -5.8,
+    "stateControl": "rep",
     "redistrictingAuthority": "politician_commission",
     "governorCanVeto": true,
     "hasBallotInitiative": true
@@ -398,6 +430,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0.1183,
     "lean": "R",
     "partisanLean": -17.5,
+    "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": true
@@ -410,6 +443,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": -0.2194,
     "lean": "D",
     "partisanLean": 7.4,
+    "stateControl": "dem",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": true
@@ -422,6 +456,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0.0605,
     "lean": "R",
     "partisanLean": -1.1,
+    "stateControl": "split",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": false
@@ -434,6 +469,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": -0.2618,
     "lean": "D",
     "partisanLean": 6.8,
+    "stateControl": "dem",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": false
@@ -446,6 +482,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0.1699,
     "lean": "R",
     "partisanLean": -9.1,
+    "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": false
@@ -458,6 +495,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0.1074,
     "lean": "R",
     "partisanLean": -15.0,
+    "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": false
@@ -470,6 +508,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0.0753,
     "lean": "R",
     "partisanLean": -7.1,
+    "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": false
@@ -482,6 +521,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0.1825,
     "lean": "R",
     "partisanLean": -11.1,
+    "stateControl": "rep",
     "redistrictingAuthority": "advisory_commission",
     "governorCanVeto": true,
     "hasBallotInitiative": true
@@ -494,6 +534,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0.0193,
     "lean": "R",
     "partisanLean": 3.0,
+    "stateControl": "split",
     "redistrictingAuthority": "politician_commission",
     "governorCanVeto": true,
     "hasBallotInitiative": false
@@ -506,6 +547,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": -0.1466,
     "lean": "D",
     "partisanLean": 9.4,
+    "stateControl": "dem",
     "redistrictingAuthority": "independent_commission",
     "governorCanVeto": false,
     "hasBallotInitiative": true
@@ -518,6 +560,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0.2337,
     "lean": "R",
     "partisanLean": -0.5,
+    "stateControl": "split",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": false
@@ -530,6 +573,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0.0758,
     "lean": "R",
     "partisanLean": -21.3,
+    "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": false
@@ -542,6 +586,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0,
     "lean": "N",
     "partisanLean": -9.8,
+    "stateControl": "rep",
     "redistrictingAuthority": "advisory_commission",
     "governorCanVeto": true,
     "hasBallotInitiative": true
@@ -554,6 +599,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0,
     "lean": "N",
     "partisanLean": 6.6,
+    "stateControl": "dem",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": false
@@ -566,6 +612,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0,
     "lean": "N",
     "partisanLean": -19.7,
+    "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": true
@@ -578,6 +625,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0,
     "lean": "N",
     "partisanLean": -16.2,
+    "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": true
@@ -590,6 +638,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0,
     "lean": "N",
     "partisanLean": 15.5,
+    "stateControl": "split",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": false
@@ -602,6 +651,7 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0,
     "lean": "N",
     "partisanLean": -25.6,
+    "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": true

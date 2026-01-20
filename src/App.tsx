@@ -70,13 +70,13 @@ function App() {
                   className={districtYear === 'current' ? 'active' : ''}
                   onClick={() => setDistrictYear('current')}
                 >
-                  Current
+                  2020 (Current)
                 </button>
                 <button
                   className={districtYear === '2030' ? 'active' : ''}
                   onClick={() => setDistrictYear('2030')}
                 >
-                  2030 Projected
+                  2030 (Projected)
                 </button>
               </div>
             </div>
@@ -137,7 +137,6 @@ function App() {
       <footer>
         <p>
           Data from <a href="https://planscore.org" target="_blank" rel="noopener noreferrer">PlanScore</a> (2024 election results).
-          Efficiency gap measures wasted votes between parties.
         </p>
       </footer>
     </div>

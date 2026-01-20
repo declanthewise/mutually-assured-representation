@@ -259,7 +259,9 @@ main {
 .matches-list {
   flex: 1;
   overflow-y: auto;
+  scrollbar-gutter: stable;
   min-height: 0;
+  max-height: 450px;
 }
 
 .matches-list h4 {
@@ -408,7 +410,7 @@ main {
   padding: 0;
   box-shadow: none;
   max-height: 570px;
-  overflow-y: auto;
+  overflow: auto;
 }
 
 .state-table-container.embedded .table-filters {
@@ -421,13 +423,14 @@ main {
 }
 
 .state-table-container.embedded .table-wrapper {
-  overflow-x: auto;
+  overflow: visible;
 }
 
-.state-table-container.embedded .state-table thead {
+.state-table-container.embedded .state-table thead th {
   position: sticky;
-  top: 52px;
+  top: 0;
   z-index: 5;
+  background: #f5f5f5;
 }
 
 .state-table-container.embedded .table-legend {
@@ -513,7 +516,19 @@ main {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
+  table-layout: fixed;
 }
+
+.state-table th:nth-child(1) { width: 120px; } /* State */
+.state-table th:nth-child(2) { width: 80px; } /* Partisan Lean */
+.state-table th:nth-child(3) { width: 80px; } /* Districts */
+.state-table th:nth-child(4) { width: 85px; } /* Efficiency Gap */
+.state-table th:nth-child(5) { width: 70px; } /* Seats Impact */
+.state-table th:nth-child(6) { width: 65px; } /* State Control */
+.state-table th:nth-child(7) { width: 155px; } /* Map Authority */
+.state-table th:nth-child(8) { width: 75px; } /* Governor Veto */
+.state-table th:nth-child(9) { width: 70px; } /* Ballot Initiative */
+.state-table th:nth-child(10) { width: auto; } /* Match Partners */
 
 .state-table th {
   background: #f5f5f5;
@@ -521,7 +536,6 @@ main {
   text-align: left;
   font-weight: 600;
   border-bottom: 2px solid #e0e0e0;
-  white-space: nowrap;
 }
 
 .state-table th.sortable {
@@ -599,6 +613,18 @@ main {
   color: #666;
 }
 
+.state-table .state-control-dem {
+  color: #2166ac;
+}
+
+.state-table .state-control-rep {
+  color: #b2182b;
+}
+
+.state-table .state-control-split {
+  color: #666;
+}
+
 .state-table .yes {
   color: #2e7d32;
   font-weight: 500;
@@ -629,22 +655,24 @@ main {
 }
 
 .matches-cell {
-  min-width: 140px;
+  overflow: hidden;
 }
 
 .match-tags {
   display: flex;
-  gap: 0.25rem;
-  flex-wrap: wrap;
+  gap: 0.2rem;
+  flex-wrap: nowrap;
+  align-items: center;
 }
 
 .match-tag {
   display: inline-block;
-  padding: 0.15rem 0.4rem;
+  padding: 0.1rem 0.3rem;
   border-radius: 3px;
   font-size: 0.75rem;
   font-weight: 500;
   cursor: default;
+  line-height: 1.2;
 }
 
 .match-tag.lean-r {
@@ -668,7 +696,8 @@ main {
 .more-matches {
   font-size: 0.75rem;
   color: #666;
-  padding: 0.15rem 0.3rem;
+  padding: 0 0.2rem;
+  line-height: 1.2;
 }
 
 .no-matches-text {
