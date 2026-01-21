@@ -22,8 +22,8 @@ export function StateTooltip({ hoveredState, districtYear }: StateTooltipProps) 
   const isSingleDistrict = districts === 1;
   const seats = getSeats(state, districtYear);
   const seatsColor = isSingleDistrict ? '#999' : seats > 0 ? '#b2182b' : seats < 0 ? '#2166ac' : '#666';
-  const egPercent = (state.efficiencyGap * 100).toFixed(1);
-  const egSign = state.efficiencyGap > 0 ? '+' : '';
+  const egPercent = Math.abs(state.efficiencyGap * 100).toFixed(1);
+  const egLabel = state.efficiencyGap > 0 ? `R+${egPercent}%` : state.efficiencyGap < 0 ? `D+${egPercent}%` : '0%';
   const egColor = isSingleDistrict ? '#999' : state.efficiencyGap > 0 ? '#b2182b' : state.efficiencyGap < 0 ? '#2166ac' : '#666';
 
   // Format partisan lean as "R+X" or "D+X"
@@ -46,7 +46,7 @@ export function StateTooltip({ hoveredState, districtYear }: StateTooltipProps) 
           <span style={{ color: partisanLeanColor }}>{partisanLeanLabel}</span>
         </span>
         <span className="tooltip-value" style={{ color: egColor }}>
-          {egSign}{egPercent}% EG
+          {egLabel} EG
         </span>
       </div>
       <div className="tooltip-row">

@@ -68,16 +68,16 @@ export function StateTable({ districtYear, onDistrictYearChange, hideHeader, fil
           comparison = a.name.localeCompare(b.name);
           break;
         case 'partisanLean':
-          comparison = a.partisanLean - b.partisanLean;
+          comparison = Math.abs(a.partisanLean) - Math.abs(b.partisanLean);
           break;
         case 'districts':
           comparison = getDistricts(a) - getDistricts(b);
           break;
         case 'efficiencyGap':
-          comparison = a.efficiencyGap - b.efficiencyGap;
+          comparison = Math.abs(a.efficiencyGap) - Math.abs(b.efficiencyGap);
           break;
         case 'seats':
-          comparison = getSeats(a, districtYear) - getSeats(b, districtYear);
+          comparison = Math.abs(getSeats(a, districtYear)) - Math.abs(getSeats(b, districtYear));
           break;
         case 'stateControl':
           comparison = a.stateControl.localeCompare(b.stateControl);
@@ -95,7 +95,7 @@ export function StateTable({ districtYear, onDistrictYearChange, hideHeader, fil
       setSortDirection(d => d === 'asc' ? 'desc' : 'asc');
     } else {
       setSortKey(key);
-      setSortDirection('asc');
+      setSortDirection('desc');
     }
   };
 
@@ -110,8 +110,13 @@ export function StateTable({ districtYear, onDistrictYearChange, hideHeader, fil
   };
 
   const formatEg = (eg: number) => {
-    const percent = (eg * 100).toFixed(1);
-    return eg > 0 ? `+${percent}%` : `${percent}%`;
+    const percent = Math.abs(eg * 100).toFixed(1);
+    if (eg > 0) {
+      return `R+${percent}%`;
+    } else if (eg < 0) {
+      return `D+${percent}%`;
+    }
+    return '0%';
   };
 
   const formatLean = (lean: number) => {
@@ -121,14 +126,16 @@ export function StateTable({ districtYear, onDistrictYearChange, hideHeader, fil
     return `R+${Math.abs(lean).toFixed(1)}`;
   };
 
-  const SortHeader = ({ label, sortKeyName }: { label: string; sortKeyName: SortKey }) => (
-    <th onClick={() => handleSort(sortKeyName)} className="sortable">
-      {label}
-      {sortKey === sortKeyName && (
-        <span className="sort-indicator">{sortDirection === 'asc' ? ' \u25B2' : ' \u25BC'}</span>
-      )}
-    </th>
-  );
+  const SortHeader = ({ label, sortKeyName }: { label: string; sortKeyName: SortKey }) => {
+    const isActive = sortKey === sortKeyName;
+    const arrow = sortDirection === 'asc' ? ' \u25B2' : ' \u25BC';
+    return (
+      <th onClick={() => handleSort(sortKeyName)} className="sortable">
+        {label}
+        {isActive && <span className="sort-indicator">{arrow}</span>}
+      </th>
+    );
+  };
 
   return (
     <div className={`state-table-container${hideHeader ? ' embedded' : ''}`}>
@@ -185,9 +192,9 @@ export function StateTable({ districtYear, onDistrictYearChange, hideHeader, fil
           <thead>
             <tr>
               <SortHeader label="State" sortKeyName="name" />
-              <SortHeader label="Partisan Lean" sortKeyName="partisanLean" />
+              <SortHeader label="Partisan Lean (2024 Pres)" sortKeyName="partisanLean" />
               <SortHeader label={districtYear === '2030' ? 'Districts (Projected)' : 'Districts (Current)'} sortKeyName="districts" />
-              <SortHeader label="Efficiency Gap" sortKeyName="efficiencyGap" />
+              <SortHeader label="Efficiency Gap (2024)" sortKeyName="efficiencyGap" />
               <SortHeader label="Seats Impact" sortKeyName="seats" />
               <SortHeader label="State Control" sortKeyName="stateControl" />
               <th>Map Authority</th>

@@ -1,5 +1,14 @@
 import { StateData } from '../types';
 
+// All data calculated from PlanScore 2024 raw data (https://planscore.org)
+// See scripts/calculate-efficiency-gap.cjs for calculation details
+//
+// Efficiency gap: EG = (Wasted Dem Votes - Wasted Rep Votes) / Total Votes
+//   Uses estimated votes (votes_dem_est, votes_rep_est) to handle uncontested races
+//
+// Partisan lean: Vote-weighted average of district presidential vote share (dpres) minus 50
+//   Positive = D lean, Negative = R lean
+//
 // 2030 projections based on Brennan Center and ESRI analysis
 // Sources:
 // - https://www.brennancenter.org/our-work/analysis-opinion/how-congressional-maps-could-change-2030
@@ -585,7 +594,7 @@ export const stateData: StateData[] = [
     "districts2030": 1,
     "efficiencyGap": 0,
     "lean": "N",
-    "partisanLean": -9.8,
+    "partisanLean": -6.9,
     "stateControl": "rep",
     "redistrictingAuthority": "advisory_commission",
     "governorCanVeto": true,
@@ -598,7 +607,7 @@ export const stateData: StateData[] = [
     "districts2030": 1,
     "efficiencyGap": 0,
     "lean": "N",
-    "partisanLean": 6.6,
+    "partisanLean": 7.5,
     "stateControl": "dem",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
@@ -611,7 +620,7 @@ export const stateData: StateData[] = [
     "districts2030": 1,
     "efficiencyGap": 0,
     "lean": "N",
-    "partisanLean": -19.7,
+    "partisanLean": -18.7,
     "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
@@ -624,7 +633,7 @@ export const stateData: StateData[] = [
     "districts2030": 1,
     "efficiencyGap": 0,
     "lean": "N",
-    "partisanLean": -16.2,
+    "partisanLean": -15.0,
     "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
@@ -637,7 +646,7 @@ export const stateData: StateData[] = [
     "districts2030": 1,
     "efficiencyGap": 0,
     "lean": "N",
-    "partisanLean": 15.5,
+    "partisanLean": 16.4,
     "stateControl": "split",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
@@ -650,7 +659,7 @@ export const stateData: StateData[] = [
     "districts2030": 1,
     "efficiencyGap": 0,
     "lean": "N",
-    "partisanLean": -25.6,
+    "partisanLean": -23.5,
     "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,

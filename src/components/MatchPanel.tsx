@@ -4,11 +4,11 @@ import { findMatches, getSeats, DistrictYear } from '../utils/findMatches';
 import type { MatchFilters } from '../App';
 
 function formatEg(eg: number): string {
-  const percent = (eg * 100).toFixed(1);
+  const percent = Math.abs(eg * 100).toFixed(1);
   if (eg > 0) {
-    return `+${percent}% EG`;
+    return `R+${percent}% EG`;
   } else if (eg < 0) {
-    return `${percent}% EG`;
+    return `D+${percent}% EG`;
   }
   return '0% EG';
 }
@@ -45,8 +45,8 @@ export function MatchPanel({ hoveredState, districtYear, filters }: MatchPanelPr
             Matches are states with:
           </p>
           <ul>
+            <li>Opposite partisan lean</li>            
             <li>Similar district count (within 25%)</li>
-            <li>Opposite partisan lean</li>
             <li>Similar seats impact (±1 seat)</li>
           </ul>
         </div>

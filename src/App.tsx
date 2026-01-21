@@ -136,7 +136,7 @@ function App() {
 
       <footer>
         <p>
-          Data from <a href="https://planscore.org" target="_blank" rel="noopener noreferrer">PlanScore</a> (2024 election results).
+          Built by Declan Fitzsimons with Claude Code. Data from <a href="https://github.com/PlanScore/National-EG-Map/blob/main/PlanScore%20Production%20Data%20(2025)%20-%20USH%20Outcomes%20(2025).tsv" target="_blank" rel="noopener noreferrer">PlanScore</a>.
         </p>
       </footer>
     </div>

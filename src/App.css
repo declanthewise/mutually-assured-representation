@@ -520,11 +520,11 @@ main {
 }
 
 .state-table th:nth-child(1) { width: 120px; } /* State */
-.state-table th:nth-child(2) { width: 80px; } /* Partisan Lean */
-.state-table th:nth-child(3) { width: 80px; } /* Districts */
+.state-table th:nth-child(2) { width: 100px; } /* Partisan Lean */
+.state-table th:nth-child(3) { width: 97px; } /* Districts */
 .state-table th:nth-child(4) { width: 85px; } /* Efficiency Gap */
-.state-table th:nth-child(5) { width: 70px; } /* Seats Impact */
-.state-table th:nth-child(6) { width: 65px; } /* State Control */
+.state-table th:nth-child(5) { width: 71px; } /* Seats Impact */
+.state-table th:nth-child(6) { width: 75px; } /* State Control */
 .state-table th:nth-child(7) { width: 155px; } /* Map Authority */
 .state-table th:nth-child(8) { width: 75px; } /* Governor Veto */
 .state-table th:nth-child(9) { width: 70px; } /* Ballot Initiative */
