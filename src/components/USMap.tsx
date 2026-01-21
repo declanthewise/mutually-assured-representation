@@ -4,6 +4,7 @@ import * as topojson from 'topojson-client';
 import { HoveredState } from '../types';
 import { stateData, stateDataById } from '../data/stateData';
 import { findMatches, DistrictYear } from '../utils/findMatches';
+import type { MatchFilters } from '../App';
 
 // FIPS code to state abbreviation mapping
 const fipsToState: Record<string, string> = {
@@ -19,11 +20,6 @@ const fipsToState: Record<string, string> = {
   '50': 'VT', '51': 'VA', '53': 'WA', '54': 'WV', '55': 'WI',
   '56': 'WY'
 };
-
-interface MatchFilters {
-  bothVeto: boolean;
-  bothBallot: boolean;
-}
 
 interface USMapProps {
   onHoverState: (state: HoveredState | null) => void;

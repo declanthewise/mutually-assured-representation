@@ -15,9 +15,5 @@ dist/
 # OS
 .DS_Store
 
-# Temp/data processing
-raw-data.tsv
-process-data.py
-
 # TypeScript build info
 tsconfig.tsbuildinfo

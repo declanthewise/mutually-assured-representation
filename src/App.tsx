@@ -116,7 +116,6 @@ function App() {
           ) : (
             <StateTable
               districtYear={districtYear}
-              onDistrictYearChange={setDistrictYear}
               filters={filters}
               hideHeader
               selectedStateId={activeState?.state.id ?? null}

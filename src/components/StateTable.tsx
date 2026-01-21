@@ -9,7 +9,6 @@ type SortDirection = 'asc' | 'desc';
 
 interface StateTableProps {
   districtYear: DistrictYear;
-  onDistrictYearChange: (year: DistrictYear) => void;
   hideHeader?: boolean;
   filters?: MatchFilters;
   selectedStateId?: string | null;
@@ -31,7 +30,7 @@ const stateControlLabels: Record<StateControl, string> = {
   split: 'Split',
 };
 
-export function StateTable({ districtYear, onDistrictYearChange, hideHeader, filters, selectedStateId, lockedStateId, onHoverState, onClickState }: StateTableProps) {
+export function StateTable({ districtYear, hideHeader, filters, selectedStateId, lockedStateId, onHoverState, onClickState }: StateTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const filterBothVeto = filters?.bothVeto ?? false;
@@ -139,54 +138,6 @@ export function StateTable({ districtYear, onDistrictYearChange, hideHeader, fil
 
   return (
     <div className={`state-table-container${hideHeader ? ' embedded' : ''}`}>
-      {!hideHeader && (
-        <>
-          <h2>All States Overview</h2>
-          <p className="table-description">
-            Complete data for all states with MAR partner potential. States where governor
-            can veto maps or citizens can use ballot initiatives have more pathways for reform.
-          </p>
-        </>
-      )}
-      {!hideHeader && (
-        <div className="table-filters">
-          <div className="filter-group">
-            <span className="filter-label">District counts:</span>
-            <div className="toggle-buttons">
-              <button
-                className={districtYear === 'current' ? 'active' : ''}
-                onClick={() => onDistrictYearChange('current')}
-              >
-                Current
-              </button>
-              <button
-                className={districtYear === '2030' ? 'active' : ''}
-                onClick={() => onDistrictYearChange('2030')}
-              >
-                2030 Projected
-              </button>
-            </div>
-          </div>
-          <div className="filter-divider" />
-          <span className="filter-label">Filter matches:</span>
-          <label className="filter-checkbox">
-            <input
-              type="checkbox"
-              checked={filterBothVeto}
-              readOnly
-            />
-            Both states have governor veto
-          </label>
-          <label className="filter-checkbox">
-            <input
-              type="checkbox"
-              checked={filterBothBallot}
-              readOnly
-            />
-            Both states have ballot initiative
-          </label>
-        </div>
-      )}
       <div className="table-wrapper">
         <table className="state-table">
           <thead>
@@ -261,26 +212,6 @@ export function StateTable({ districtYear, onDistrictYearChange, hideHeader, fil
             })}
           </tbody>
         </table>
-      </div>
-      <div className="table-legend">
-        <h4>Legend</h4>
-        <div className="legend-items">
-          <div className="legend-item">
-            <strong>Partisan Lean:</strong> State's overall partisan lean - D+ (Democratic), R+ (Republican)
-          </div>
-          <div className="legend-item">
-            <strong>Efficiency Gap:</strong> Measures wasted votes - positive = R advantage, negative = D advantage
-          </div>
-          <div className="legend-item">
-            <strong>Seats Impact:</strong> Net seats gained from gerrymandering - R+ or D+
-          </div>
-          <div className="legend-item">
-            <strong>State Control:</strong> Which party controls the governorship and both legislative chambers
-          </div>
-          <div className="legend-item">
-            <strong>Grayed rows:</strong> Single-district states cannot be gerrymandered and have no MAR partners
-          </div>
-        </div>
       </div>
     </div>
   );
