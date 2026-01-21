@@ -146,7 +146,7 @@ export function StateTable({ districtYear, hideHeader, filters, selectedStateId,
               <SortHeader label="Partisan Lean (2024 Pres)" sortKeyName="partisanLean" />
               <SortHeader label={districtYear === '2030' ? 'Districts (Projected)' : 'Districts (Current)'} sortKeyName="districts" />
               <SortHeader label="Efficiency Gap (2024)" sortKeyName="efficiencyGap" />
-              <SortHeader label="Seats Impact" sortKeyName="seats" />
+              <SortHeader label={districtYear === '2030' ? 'Seats Impact (Projected)' : 'Seats Impact (Current)'} sortKeyName="seats" />
               <SortHeader label="State Control" sortKeyName="stateControl" />
               <th>Map Authority</th>
               <th>Governor Veto</th>
