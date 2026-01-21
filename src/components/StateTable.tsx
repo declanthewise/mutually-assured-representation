@@ -37,7 +37,7 @@ export function StateTable({ districtYear, hideHeader, filters, selectedStateId,
   const filterBothBallot = filters?.bothBallot ?? false;
 
   const getDistricts = (state: typeof stateData[0]) =>
-    districtYear === '2030' ? state.districts2030 : state.districts;
+    districtYear === '2032' ? state.districts2032 : state.districts;
 
   const statesWithMatches = useMemo(() => {
     return stateData.map(state => {
@@ -143,10 +143,10 @@ export function StateTable({ districtYear, hideHeader, filters, selectedStateId,
           <thead>
             <tr>
               <SortHeader label="State" sortKeyName="name" />
-              <SortHeader label="Partisan Lean (2024 Pres)" sortKeyName="partisanLean" />
-              <SortHeader label={districtYear === '2030' ? 'Districts (Projected)' : 'Districts (Current)'} sortKeyName="districts" />
-              <SortHeader label="Efficiency Gap (2024)" sortKeyName="efficiencyGap" />
-              <SortHeader label={districtYear === '2030' ? 'Seats Impact (Projected)' : 'Seats Impact (Current)'} sortKeyName="seats" />
+              <SortHeader label="Partisan Lean" sortKeyName="partisanLean" />
+              <SortHeader label="District Counts" sortKeyName="districts" />
+              <SortHeader label="Efficiency Gap" sortKeyName="efficiencyGap" />
+              <SortHeader label="Seats Impact" sortKeyName="seats" />
               <SortHeader label="State Control" sortKeyName="stateControl" />
               <th>Map Authority</th>
               <th>Governor Veto</th>
@@ -212,6 +212,14 @@ export function StateTable({ districtYear, hideHeader, filters, selectedStateId,
             })}
           </tbody>
         </table>
+      </div>
+      <div className="table-legend">
+        <span><strong>Partisan Lean:</strong> 2024 presidential vote share</span>
+        <span><strong>District Counts:</strong> {districtYear === '2032' ? '2032 projected' : '2022 current'}</span>
+        <span><strong>Efficiency Gap:</strong> 2024 House vote share</span>
+        <span><strong>Seats Impact:</strong> EG × District Count ({districtYear === '2032' ? 'projected' : 'current'})</span>
+        <span><strong>State Control:</strong> Government trifecta</span>
+        <span><strong>Map Authority:</strong> Who draws the congressional maps</span>
       </div>
     </div>
   );

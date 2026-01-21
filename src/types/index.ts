@@ -10,7 +10,7 @@ export interface StateData {
   id: string;           // State abbreviation, e.g., "CA"
   name: string;         // Full name, e.g., "California"
   districts: number;    // Number of congressional districts (current)
-  districts2030: number; // Projected districts after 2030 census reapportionment
+  districts2032: number; // Projected districts after 2030 census reapportionment
   efficiencyGap: number; // Efficiency gap: positive = R advantage, negative = D advantage
   lean: 'D' | 'R' | 'N'; // Partisan lean direction
   partisanLean: number; // Partisan lean amount: positive = D lean, negative = R lean

@@ -18,7 +18,7 @@ function formatSeats(seats: number): string {
 
 export function StateTooltip({ hoveredState, districtYear }: StateTooltipProps) {
   const { state, x, y } = hoveredState;
-  const districts = districtYear === '2030' ? state.districts2030 : state.districts;
+  const districts = districtYear === '2032' ? state.districts2032 : state.districts;
   const isSingleDistrict = districts === 1;
   const seats = getSeats(state, districtYear);
   const seatsColor = isSingleDistrict ? '#999' : seats > 0 ? '#b2182b' : seats < 0 ? '#2166ac' : '#666';
@@ -50,7 +50,7 @@ export function StateTooltip({ hoveredState, districtYear }: StateTooltipProps) 
         </span>
       </div>
       <div className="tooltip-row">
-        <span className="tooltip-label">{districts} {districts === 1 ? 'district' : 'districts'}{districtYear === '2030' ? ' (2030)' : ''}</span>
+        <span className="tooltip-label">{districts} {districts === 1 ? 'district' : 'districts'}{districtYear === '2032' ? ' (2030)' : ''}</span>
         <span className="tooltip-value" style={{ color: seatsColor }}>
           {formatSeats(seats)}
         </span>

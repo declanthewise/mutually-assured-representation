@@ -64,19 +64,19 @@ function App() {
               </div>
             </div>
             <div className="year-toggle">
-              <span className="year-label">District counts:</span>
+              <span className="year-label">Districts:</span>
               <div className="toggle-buttons">
                 <button
                   className={districtYear === 'current' ? 'active' : ''}
                   onClick={() => setDistrictYear('current')}
                 >
-                  2020 (Current)
+                  2022 (Current)
                 </button>
                 <button
-                  className={districtYear === '2030' ? 'active' : ''}
-                  onClick={() => setDistrictYear('2030')}
+                  className={districtYear === '2032' ? 'active' : ''}
+                  onClick={() => setDistrictYear('2032')}
                 >
-                  2030 (Projected)
+                  2032 (Projected)
                 </button>
               </div>
             </div>

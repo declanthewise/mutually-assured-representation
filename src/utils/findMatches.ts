@@ -1,13 +1,13 @@
 import { StateData } from '../types';
 
-export type DistrictYear = 'current' | '2030';
+export type DistrictYear = 'current' | '2032';
 
 /**
  * Calculate the seats impact of the efficiency gap for a state.
  * Seats = efficiencyGap * districts
  */
 export function getSeats(state: StateData, districtYear: DistrictYear): number {
-  const districts = districtYear === '2030' ? state.districts2030 : state.districts;
+  const districts = districtYear === '2032' ? state.districts2032 : state.districts;
   return state.efficiencyGap * districts;
 }
 
@@ -25,7 +25,7 @@ export function findMatches(
 ): StateData[] {
   const stateSeats = getSeats(state, districtYear);
   const getDistricts = (s: StateData) =>
-    districtYear === '2030' ? s.districts2030 : s.districts;
+    districtYear === '2032' ? s.districts2032 : s.districts;
 
   const stateDistricts = getDistricts(state);
 

@@ -64,8 +64,8 @@ export function MatchPanel({ hoveredState, districtYear, filters }: MatchPanelPr
     }
     return true;
   });
-  const districts = districtYear === '2030'
-    ? hoveredState.state.districts2030
+  const districts = districtYear === '2032'
+    ? hoveredState.state.districts2032
     : hoveredState.state.districts;
   const isSingleDistrict = districts === 1;
   const eg = hoveredState.state.efficiencyGap;
@@ -109,8 +109,8 @@ export function MatchPanel({ hoveredState, districtYear, filters }: MatchPanelPr
         <div className="matches-list">
           <h4>Potential Partners ({matches.length})</h4>
           {matches.map(match => {
-            const matchDistricts = districtYear === '2030'
-              ? match.districts2030
+            const matchDistricts = districtYear === '2032'
+              ? match.districts2032
               : match.districts;
             const matchEg = match.efficiencyGap;
             const matchSeats = getSeats(match, districtYear);

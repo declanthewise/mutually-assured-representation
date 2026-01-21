@@ -49,8 +49,8 @@ export function USMap({ onHoverState, onClickState, activeState, isLocked, distr
   // Calculate matches when active state changes
   useEffect(() => {
     if (activeState) {
-      const districts = districtYear === '2030'
-        ? activeState.state.districts2030
+      const districts = districtYear === '2032'
+        ? activeState.state.districts2032
         : activeState.state.districts;
       // Don't show matches for single-district states
       if (districts === 1) {
@@ -114,7 +114,7 @@ export function USMap({ onHoverState, onClickState, activeState, isLocked, distr
           const stateId = fipsToState[fips];
           const data = stateDataById[stateId];
           if (!data) return '#ccc';
-          const districts = districtYear === '2030' ? data.districts2030 : data.districts;
+          const districts = districtYear === '2032' ? data.districts2032 : data.districts;
           // Gray out single-district states (can't be gerrymandered)
           if (districts === 1) return '#d0d0d0';
           return colorScale(data.efficiencyGap);
@@ -197,7 +197,7 @@ export function USMap({ onHoverState, onClickState, activeState, isLocked, distr
           const stateId = fipsToState[fips];
           const data = stateDataById[stateId];
           if (!data) return '#666';
-          const districts = districtYear === '2030' ? data.districts2030 : data.districts;
+          const districts = districtYear === '2032' ? data.districts2032 : data.districts;
           // Muted text for single-district states
           if (districts === 1) return '#888';
           // Use dark text on light backgrounds (near 0 efficiency gap)
@@ -210,7 +210,7 @@ export function USMap({ onHoverState, onClickState, activeState, isLocked, distr
           const stateId = fipsToState[fips];
           const data = stateDataById[stateId];
           if (!data) return '';
-          const districts = districtYear === '2030' ? data.districts2030 : data.districts;
+          const districts = districtYear === '2032' ? data.districts2032 : data.districts;
           return districts.toString();
         });
     });
