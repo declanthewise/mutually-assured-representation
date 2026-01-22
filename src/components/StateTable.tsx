@@ -120,9 +120,9 @@ export function StateTable({ districtYear, hideHeader, filters, selectedStateId,
 
   const formatLean = (lean: number) => {
     if (lean >= 0) {
-      return `D+${lean.toFixed(1)}`;
+      return `D+${lean.toFixed(1)}%`;
     }
-    return `R+${Math.abs(lean).toFixed(1)}`;
+    return `R+${Math.abs(lean).toFixed(1)}%`;
   };
 
   const SortHeader = ({ label, sortKeyName }: { label: string; sortKeyName: SortKey }) => {
@@ -212,14 +212,16 @@ export function StateTable({ districtYear, hideHeader, filters, selectedStateId,
             })}
           </tbody>
         </table>
-      </div>
-      <div className="table-legend">
+        <div className="table-legend">
         <span><strong>Partisan Lean:</strong> 2024 presidential vote share</span>
-        <span><strong>District Counts:</strong> {districtYear === '2032' ? '2032 projected' : '2022 current'}</span>
+        <span><strong>District Counts:</strong> Number of districts</span>
         <span><strong>Efficiency Gap:</strong> 2024 House vote share</span>
-        <span><strong>Seats Impact:</strong> EG × District Count ({districtYear === '2032' ? 'projected' : 'current'})</span>
+        <span><strong>Seats Impact:</strong> Efficiency Gap * District Count</span>
         <span><strong>State Control:</strong> Government trifecta</span>
-        <span><strong>Map Authority:</strong> Who draws the congressional maps</span>
+        <span><strong>Map Authority:</strong> <a href="https://www.brennancenter.org/our-work/research-reports/who-draws-maps-legislative-and-congressional-redistricting" target="_blank" rel="noopener noreferrer">Who draws the congressional map</a></span>
+        <span><strong>Governor Veto:</strong> <a href="https://ballotpedia.org/State-by-state_redistricting_procedures" target="_blank" rel="noopener noreferrer">Governor can veto the map</a></span>
+        <span><strong>Ballot Initiative:</strong> <a href="https://ballotpedia.org/States_with_initiative_or_referendum" target="_blank" rel="noopener noreferrer">Citizen initiatives allowed</a></span>
+        </div>
       </div>
     </div>
   );

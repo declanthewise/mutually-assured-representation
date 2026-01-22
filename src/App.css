@@ -188,54 +188,6 @@ main {
   font-size: 0.9rem;
 }
 
-.selected-state {
-  padding: 0.75rem;
-  background: #f5f5f5;
-  border-radius: 6px;
-  margin-bottom: 1rem;
-}
-
-.state-card-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.state-card-row:first-child {
-  margin-bottom: 0.25rem;
-}
-
-.state-card-name {
-  font-weight: 600;
-  font-size: 1rem;
-}
-
-.state-card-name-lean {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.state-card-lean {
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
-.state-card-seats {
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
-.state-card-districts {
-  font-size: 0.85rem;
-  color: #666;
-}
-
-.state-card-eg {
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
 .lean-r {
   color: #b2182b;
   font-weight: 500;
@@ -246,10 +198,6 @@ main {
   font-weight: 500;
 }
 
-.lean-n {
-  color: #666;
-}
-
 .matches-list {
   flex: 1;
   overflow-y: auto;
@@ -258,37 +206,58 @@ main {
   max-height: 450px;
 }
 
-.matches-list h4 {
-  font-size: 0.9rem;
-  color: #666;
-  margin-bottom: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  position: sticky;
-  top: 0;
-  background: #fff;
-  padding-bottom: 0.5rem;
-}
-
 .match-item {
-  padding: 0.5rem 0.75rem;
+  padding: 0.4rem 0.6rem;
   background: #fffbe6;
   border: 1px solid #ffd700;
   border-radius: 4px;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.4rem;
 }
 
-.match-item .state-card-name {
-  font-size: 0.95rem;
+.match-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.9rem;
 }
 
-.match-item .state-card-lean,
-.match-item .state-card-eg {
+.match-state {
+  font-weight: 600;
+}
+
+.match-arrow {
+  color: #888;
+}
+
+.match-comparison {
   font-size: 0.8rem;
 }
 
-.match-item .state-card-districts {
-  font-size: 0.8rem;
+.match-row {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr auto 1fr;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.1rem;
+}
+
+.match-row:last-child {
+  margin-bottom: 0;
+}
+
+.match-label {
+  color: #666;
+}
+
+.match-value {
+  font-weight: 500;
+}
+
+.match-separator {
+  color: #ccc;
+  text-align: center;
 }
 
 .no-matches {
@@ -316,30 +285,41 @@ main {
   padding: 0.75rem 1rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 1000;
-  min-width: 215px;
-}
-
-.tooltip-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   font-size: 0.9rem;
-  margin-bottom: 0.25rem;
-  gap: 1rem;
 }
 
-.tooltip-row:last-child {
-  margin-bottom: 0;
-}
-
-.tooltip-name-lean {
+.tooltip-header {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.25rem;
 }
 
 .tooltip-name {
   font-weight: 600;
+}
+
+.tooltip-districts {
+  color: #666;
+}
+
+.tooltip-divider {
+  height: 1px;
+  background: #d0d0d0;
+  margin: 0.5rem 0;
+}
+
+.tooltip-metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.tooltip-metric:last-child {
+  margin-bottom: 0;
 }
 
 .tooltip-label {
@@ -448,6 +428,7 @@ main {
 
 .state-table {
   width: 100%;
+  min-width: 1020px;
   border-collapse: collapse;
   font-size: 0.9rem;
   table-layout: fixed;
@@ -462,7 +443,7 @@ main {
 .state-table th:nth-child(7) { width: 155px; } /* Map Authority */
 .state-table th:nth-child(8) { width: 80px; } /* Governor Veto */
 .state-table th:nth-child(9) { width: 80px; } /* Ballot Initiative */
-.state-table th:nth-child(10) { width: auto; } /* Match Partners */
+.state-table th:nth-child(10) { width: 200px; min-width: 200px; } /* Match Partners */
 
 .state-table th {
   background: #f5f5f5;
@@ -470,6 +451,8 @@ main {
   text-align: left;
   font-weight: 600;
   border-bottom: 1px solid #e0e0e0;
+  vertical-align: bottom;
+  line-height: 1.2;
 }
 
 .state-table th.sortable {
@@ -613,7 +596,7 @@ main {
 .match-tag.lean-n {
   background: #f5f5f5;
   color: #666;
-  border: 1px solid #ddd;
+  border: 1px solid #ccc;
 }
 
 .more-matches {
@@ -636,8 +619,10 @@ main {
   color: #666;
   border-top: 1px solid #e0e0e0;
   background: #fafafa;
+  min-width: 1020px;
   position: sticky;
   bottom: 0;
+  z-index: 4;
 }
 
 .table-legend span {
@@ -646,6 +631,15 @@ main {
 
 .table-legend strong {
   color: #333;
+}
+
+.table-legend a {
+  color: #2166ac;
+  text-decoration: none;
+}
+
+.table-legend a:hover {
+  text-decoration: underline;
 }
 
 /* Footer */

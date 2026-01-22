@@ -545,7 +545,7 @@ export const stateData: StateData[] = [
     "partisanLean": 3.0,
     "stateControl": "split",
     "redistrictingAuthority": "politician_commission",
-    "governorCanVeto": true,
+    "governorCanVeto": false,
     "hasBallotInitiative": false
   },
   {

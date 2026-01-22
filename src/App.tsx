@@ -64,7 +64,7 @@ function App() {
               </div>
             </div>
             <div className="year-toggle">
-              <span className="year-label">Districts:</span>
+              <span className="year-label">District Counts:</span>
               <div className="toggle-buttons">
                 <button
                   className={districtYear === 'current' ? 'active' : ''}
@@ -135,7 +135,7 @@ function App() {
 
       <footer>
         <p>
-          Built by Declan Fitzsimons with Claude Code. Data from <a href="https://github.com/PlanScore/National-EG-Map/blob/main/PlanScore%20Production%20Data%20(2025)%20-%20USH%20Outcomes%20(2025).tsv" target="_blank" rel="noopener noreferrer">PlanScore</a>.
+          Built by Declan Fitzsimons with Claude Code. Election data from <a href="https://github.com/PlanScore/National-EG-Map/blob/main/PlanScore%20Production%20Data%20(2025)%20-%20USH%20Outcomes%20(2025).tsv" target="_blank" rel="noopener noreferrer">PlanScore</a>.
         </p>
       </footer>
     </div>

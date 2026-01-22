@@ -15,15 +15,13 @@ export function getSeats(state: StateData, districtYear: DistrictYear): number {
  * Find MAR partners for a given state.
  * Matches states with:
  * - Similar district count (within 25%)
- * - Opposite partisan bias (R vs D advantage)
- * - Similar seats impact (within ±1 seat)
+ * - Equal and opposite efficiency gaps (opposite sign, magnitude within 8%)
  */
 export function findMatches(
   state: StateData,
   allStates: StateData[],
   districtYear: DistrictYear = 'current'
 ): StateData[] {
-  const stateSeats = getSeats(state, districtYear);
   const getDistricts = (s: StateData) =>
     districtYear === '2032' ? s.districts2032 : s.districts;
 
@@ -36,18 +34,16 @@ export function findMatches(
     const otherDistricts = getDistricts(other);
     if (otherDistricts === 1) return false;
 
-    // Similar district count (within 25% of smaller count)
+    // 1. Similar district count (within 25%)
     const minDistricts = Math.min(stateDistricts, otherDistricts);
     const maxDistricts = Math.max(stateDistricts, otherDistricts);
     const districtRatio = maxDistricts / minDistricts;
     if (districtRatio > 1.25) return false;
 
-    // Opposite efficiency gap direction
+    // 2. Opposite efficiency gap with similar magnitude
     if (Math.sign(other.efficiencyGap) === Math.sign(state.efficiencyGap)) return false;
-
-    // Similar seats magnitude (within ±1 seat)
-    const otherSeats = getSeats(other, districtYear);
-    if (Math.abs(Math.abs(otherSeats) - Math.abs(stateSeats)) > 1) return false;
+    const egDiff = Math.abs(Math.abs(other.efficiencyGap) - Math.abs(state.efficiencyGap));
+    if (egDiff > 0.06) return false; // 6% tolerance
 
     return true;
   });
