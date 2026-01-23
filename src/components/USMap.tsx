@@ -31,6 +31,29 @@ interface USMapProps {
   filters?: MatchFilters;
 }
 
+function MapLegend({ districtYear }: { districtYear: DistrictYear }) {
+  const is2032 = districtYear === '2032';
+
+  return (
+    <div className="map-legend">
+      <h3>{is2032 ? 'Partisan Lean' : 'Efficiency Gap (EG)'}</h3>
+      <div className="legend-scale">
+        <div className={`legend-gradient${is2032 ? ' lean' : ''}`} />
+        <div className="legend-labels">
+          <span>{is2032 ? 'R +20%' : 'D +20%'}</span>
+          <span>Neutral</span>
+          <span>{is2032 ? 'D +20%' : 'R +20%'}</span>
+        </div>
+      </div>
+      <p className="legend-explanation">
+        {is2032
+          ? <>Based on <a href="https://en.wikipedia.org/wiki/2024_United_States_presidential_election" target="_blank" rel="noopener noreferrer">2024 presidential results</a>.</>
+          : <>Measure of wasted votes. Data from <a href="https://github.com/PlanScore/National-EG-Map" target="_blank" rel="noopener noreferrer">PlanScore</a>.</>}
+      </p>
+    </div>
+  );
+}
+
 export function USMap({ onHoverState, onClickState, activeState, isLocked, districtYear, lockedStateId, filters }: USMapProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [matches, setMatches] = useState<string[]>([]);
@@ -85,11 +108,17 @@ export function USMap({ onHoverState, onClickState, activeState, isLocked, distr
 
     svg.attr('viewBox', `0 0 ${width} ${height}`);
 
-    // Color scale: blue (D) to gray (neutral) to red (R) based on efficiency gap
+    // Color scale: blue (D) to gray (neutral) to red (R)
     // Efficiency gap: negative = D advantage, positive = R advantage
-    const colorScale = d3.scaleLinear<string>()
+    // Partisan lean: positive = D lean, negative = R lean
+    const egColorScale = d3.scaleLinear<string>()
       .domain([-0.2, 0, 0.2])
       .range(['#2166ac', '#f0f0f0', '#b2182b'])
+      .clamp(true);
+
+    const leanColorScale = d3.scaleLinear<string>()
+      .domain([-20, 0, 20])
+      .range(['#b2182b', '#f0f0f0', '#2166ac'])
       .clamp(true);
 
     // Load US Atlas TopoJSON
@@ -117,7 +146,11 @@ export function USMap({ onHoverState, onClickState, activeState, isLocked, distr
           const districts = districtYear === '2032' ? data.districts2032 : data.districts;
           // Gray out single-district states (can't be gerrymandered)
           if (districts === 1) return '#d0d0d0';
-          return colorScale(data.efficiencyGap);
+          // Use partisan lean for 2032, efficiency gap for current
+          if (districtYear === '2032') {
+            return leanColorScale(data.partisanLean);
+          }
+          return egColorScale(data.efficiencyGap);
         })
         .attr('stroke', '#fff')
         .attr('stroke-width', 1)
@@ -200,7 +233,11 @@ export function USMap({ onHoverState, onClickState, activeState, isLocked, distr
           const districts = districtYear === '2032' ? data.districts2032 : data.districts;
           // Muted text for single-district states
           if (districts === 1) return '#888';
-          // Use dark text on light backgrounds (near 0 efficiency gap)
+          // Use dark text on light backgrounds (near neutral)
+          if (districtYear === '2032') {
+            const lean = Math.abs(data.partisanLean);
+            return lean < 8 ? '#333' : '#fff';
+          }
           const eg = Math.abs(data.efficiencyGap);
           return eg < 0.08 ? '#333' : '#fff';
         })
@@ -251,6 +288,9 @@ export function USMap({ onHoverState, onClickState, activeState, isLocked, distr
   }, [activeState, matches, lockedStateId]);
 
   return (
-    <svg ref={svgRef} className="us-map" />
+    <div className="map-wrapper">
+      <svg ref={svgRef} className="us-map" />
+      <MapLegend districtYear={districtYear} />
+    </div>
   );
 }

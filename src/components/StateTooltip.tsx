@@ -42,21 +42,25 @@ export function StateTooltip({ hoveredState, districtYear }: StateTooltipProps) 
     >
       <div className="tooltip-header">
         <span className="tooltip-name">{state.name}</span>
-        <span className="tooltip-districts">{districts} {districts === 1 ? 'district' : 'districts'}{districtYear === '2032' ? ' (2030)' : ''}</span>
+        <span className="tooltip-districts">{districts} {districts === 1 ? 'district' : 'districts'}</span>
       </div>
       <div className="tooltip-metric">
         <span className="tooltip-label">Partisan Lean</span>
         <span className="tooltip-value" style={{ color: partisanLeanColor }}>{partisanLeanLabel}</span>
       </div>
-      <div className="tooltip-divider" />
-      <div className="tooltip-metric">
-        <span className="tooltip-label">Efficiency Gap</span>
-        <span className="tooltip-value" style={{ color: egColor }}>{egLabel}</span>
-      </div>
-      <div className="tooltip-metric">
-        <span className="tooltip-label">Seats Impact</span>
-        <span className="tooltip-value" style={{ color: seatsColor }}>{formatSeats(seats)}</span>
-      </div>
+      {districtYear !== '2032' && (
+        <>
+          <div className="tooltip-divider" />
+          <div className="tooltip-metric">
+            <span className="tooltip-label">Efficiency Gap</span>
+            <span className="tooltip-value" style={{ color: egColor }}>{egLabel}</span>
+          </div>
+          <div className="tooltip-metric">
+            <span className="tooltip-label">Seats Impact</span>
+            <span className="tooltip-value" style={{ color: seatsColor }}>{formatSeats(seats)}</span>
+          </div>
+        </>
+      )}
     </div>
   );
 }

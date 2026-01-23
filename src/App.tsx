@@ -1,8 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { USMap } from './components/USMap';
 import { StateTooltip } from './components/StateTooltip';
 import { MatchPanel } from './components/MatchPanel';
-import { Legend } from './components/Legend';
 import { StateTable } from './components/StateTable';
 import { HoveredState } from './types';
 import { DistrictYear } from './utils/findMatches';
@@ -20,6 +19,22 @@ function App() {
   const [districtYear, setDistrictYear] = useState<DistrictYear>('current');
   const [viewTab, setViewTab] = useState<ViewTab>('map');
   const [filters, setFilters] = useState<MatchFilters>({ bothVeto: false, bothBallot: false });
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const [mapContainerHeight, setMapContainerHeight] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    const el = mapContainerRef.current;
+    if (!el) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setMapContainerHeight(entry.contentRect.height);
+      }
+    });
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // Use locked state if set, otherwise use hovered state
   const activeState = lockedState ?? hoveredState;
@@ -45,7 +60,7 @@ function App() {
       </header>
 
       <main>
-        <div className="map-container">
+        <div className="map-container" ref={mapContainerRef}>
           <div className="map-header">
             <div className="view-toggle">
               <div className="toggle-buttons">
@@ -101,18 +116,15 @@ function App() {
             </div>
           </div>
           {viewTab === 'map' ? (
-            <>
-              <USMap
-                onHoverState={setHoveredState}
-                onClickState={handleClickState}
-                activeState={activeState}
-                isLocked={lockedState !== null}
-                lockedStateId={lockedState?.state.id ?? null}
-                districtYear={districtYear}
-                filters={filters}
-              />
-              <Legend />
-            </>
+            <USMap
+              onHoverState={setHoveredState}
+              onClickState={handleClickState}
+              activeState={activeState}
+              isLocked={lockedState !== null}
+              lockedStateId={lockedState?.state.id ?? null}
+              districtYear={districtYear}
+              filters={filters}
+            />
           ) : (
             <StateTable
               districtYear={districtYear}
@@ -127,7 +139,7 @@ function App() {
         </div>
 
         <aside className="sidebar">
-          <MatchPanel hoveredState={activeState} districtYear={districtYear} filters={filters} />
+          <MatchPanel hoveredState={activeState} districtYear={districtYear} filters={filters} maxHeight={mapContainerHeight} />
         </aside>
       </main>
 
@@ -135,7 +147,7 @@ function App() {
 
       <footer>
         <p>
-          Built by Declan Fitzsimons with Claude Code. Election data from <a href="https://github.com/PlanScore/National-EG-Map/blob/main/PlanScore%20Production%20Data%20(2025)%20-%20USH%20Outcomes%20(2025).tsv" target="_blank" rel="noopener noreferrer">PlanScore</a>.
+          Built by Declan Fitzsimons with Claude Code.
         </p>
       </footer>
     </div>
