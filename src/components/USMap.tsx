@@ -47,7 +47,7 @@ function MapLegend({ districtYear }: { districtYear: DistrictYear }) {
       </div>
       <p className="legend-explanation">
         {is2032
-          ? <>Based on <a href="https://en.wikipedia.org/wiki/2024_United_States_presidential_election" target="_blank" rel="noopener noreferrer">2024 presidential results</a>.</>
+          ? <>Based on <a href="https://en.wikipedia.org/wiki/Cook_Partisan_Voting_Index" target="_blank" rel="noopener noreferrer">Cook PVI</a>.</>
           : <>Measure of wasted votes. Data from <a href="https://github.com/PlanScore/National-EG-Map" target="_blank" rel="noopener noreferrer">PlanScore</a>.</>}
       </p>
     </div>

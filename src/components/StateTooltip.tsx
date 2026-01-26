@@ -26,11 +26,13 @@ export function StateTooltip({ hoveredState, districtYear }: StateTooltipProps) 
   const egLabel = state.efficiencyGap > 0 ? `R+${egPercent}%` : state.efficiencyGap < 0 ? `D+${egPercent}%` : '0%';
   const egColor = isSingleDistrict ? '#999' : state.efficiencyGap > 0 ? '#b2182b' : state.efficiencyGap < 0 ? '#2166ac' : '#666';
 
-  // Format partisan lean as "R+X" or "D+X"
-  const partisanLeanLabel = state.partisanLean >= 0
-    ? `D+${state.partisanLean.toFixed(1)}%`
-    : `R+${Math.abs(state.partisanLean).toFixed(1)}%`;
-  const partisanLeanColor = isSingleDistrict ? '#999' : state.partisanLean >= 0 ? '#2166ac' : '#b2182b';
+  // Format partisan lean as "R+X%" or "D+X%" or "EVEN"
+  const partisanLeanLabel = state.partisanLean === 0
+    ? 'EVEN'
+    : state.partisanLean > 0
+      ? `D+${Math.round(state.partisanLean)}%`
+      : `R+${Math.round(Math.abs(state.partisanLean))}%`;
+  const partisanLeanColor = isSingleDistrict ? '#999' : state.partisanLean > 0 ? '#2166ac' : state.partisanLean < 0 ? '#b2182b' : '#666';
 
   return (
     <div

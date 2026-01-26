@@ -24,10 +24,13 @@ function formatEg(eg: number): string {
 }
 
 function formatLean(lean: number): string {
-  if (lean >= 0) {
-    return `D+${lean.toFixed(1)}%`;
+  if (lean === 0) {
+    return 'EVEN';
   }
-  return `R+${Math.abs(lean).toFixed(1)}%`;
+  if (lean > 0) {
+    return `D+${Math.round(lean)}%`;
+  }
+  return `R+${Math.round(Math.abs(lean))}%`;
 }
 
 interface MatchPanelProps {
@@ -140,11 +143,11 @@ export function MatchPanel({ hoveredState, districtYear, filters, maxHeight }: M
                       <>
                         <div className="match-row">
                           <span className="match-label">Partisan Lean</span>
-                          <span className={`match-value ${lean >= 0 ? 'lean-d' : 'lean-r'}`}>
+                          <span className={`match-value ${lean > 0 ? 'lean-d' : lean < 0 ? 'lean-r' : ''}`}>
                             {formatLean(lean)}
                           </span>
                           <span className="match-separator">|</span>
-                          <span className={`match-value ${matchLean >= 0 ? 'lean-d' : 'lean-r'}`}>
+                          <span className={`match-value ${matchLean > 0 ? 'lean-d' : matchLean < 0 ? 'lean-r' : ''}`}>
                             {formatLean(matchLean)}
                           </span>
                         </div>

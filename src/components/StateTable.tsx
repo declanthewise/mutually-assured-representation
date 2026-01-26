@@ -8,24 +8,25 @@ import type { MatchFilters } from '../App';
  * Get background color for a state based on partisan lean.
  * More partisan = more intense color.
  * D-leaning (positive) = blue, R-leaning (negative) = red.
+ * States at or near 0 lean are more transparent.
  */
 function getPartisanColor(state: StateData): string {
   const lean = state.partisanLean;
-  // Max lean around 30% for full saturation
-  const intensity = Math.min(Math.abs(lean) / 30, 1);
 
-  if (lean >= 0) {
+  // Max lean around 20% for full saturation (Cook PVI scale)
+  const intensity = Math.min(Math.abs(lean) / 20, 1);
+
+  // Opacity scales with intensity - neutral states are more transparent
+  const opacity = 0.2 + intensity * 0.8;
+
+  if (lean === 0) {
+    return 'rgba(200, 200, 200, 0.3)';
+  } else if (lean > 0) {
     // D-leaning: blue
-    const r = Math.round(230 - intensity * 130);
-    const g = Math.round(230 - intensity * 100);
-    const b = Math.round(250 - intensity * 50);
-    return `rgb(${r}, ${g}, ${b})`;
+    return `rgba(100, 130, 255, ${opacity})`;
   } else {
     // R-leaning: red
-    const r = Math.round(250 - intensity * 50);
-    const g = Math.round(230 - intensity * 130);
-    const b = Math.round(230 - intensity * 130);
-    return `rgb(${r}, ${g}, ${b})`;
+    return `rgba(255, 100, 100, ${opacity})`;
   }
 }
 
@@ -144,10 +145,13 @@ export function StateTable({ districtYear, hideHeader, filters, selectedStateId,
   };
 
   const formatLean = (lean: number) => {
-    if (lean >= 0) {
-      return `D+${lean.toFixed(1)}%`;
+    if (lean === 0) {
+      return 'EVEN';
     }
-    return `R+${Math.abs(lean).toFixed(1)}%`;
+    if (lean > 0) {
+      return `D+${Math.round(lean)}%`;
+    }
+    return `R+${Math.round(Math.abs(lean))}%`;
   };
 
   const SortHeader = ({ label, sortKeyName }: { label: string; sortKeyName: SortKey }) => {
@@ -192,7 +196,7 @@ export function StateTable({ districtYear, hideHeader, filters, selectedStateId,
                 onClick={() => onClickState?.(lockedStateId === state.id ? null : state)}
               >
                 <td className="state-name">{state.name}</td>
-                <td className={`center ${state.partisanLean >= 0 ? 'lean-d' : 'lean-r'}`}>
+                <td className={`center ${state.partisanLean > 0 ? 'lean-d' : state.partisanLean < 0 ? 'lean-r' : ''}`}>
                   {formatLean(state.partisanLean)}
                 </td>
                 <td className="center">{getDistricts(state)}</td>
@@ -227,7 +231,6 @@ export function StateTable({ districtYear, hideHeader, filters, selectedStateId,
                               key={match.id}
                               className="match-tag"
                               style={{ backgroundColor: bgColor }}
-                              title={`${match.name}: ${formatEg(match.efficiencyGap)}, ${formatLean(match.partisanLean)}`}
                             >
                               {match.id}
                             </span>
@@ -245,7 +248,7 @@ export function StateTable({ districtYear, hideHeader, filters, selectedStateId,
           </tbody>
         </table>
         <div className="table-legend">
-        <span><strong>Partisan Lean:</strong> <a href="https://en.wikipedia.org/wiki/2024_United_States_presidential_election" target="_blank" rel="noopener noreferrer">2024 presidential results</a></span>
+        <span><strong>Partisan Lean:</strong> <a href="https://en.wikipedia.org/wiki/Cook_Partisan_Voting_Index" target="_blank" rel="noopener noreferrer">Cook PVI</a></span>
         <span><strong>District Counts:</strong> Number of congressional districts</span>
         <span><strong>Efficiency Gap:</strong> <a href="https://github.com/PlanScore/National-EG-Map" target="_blank" rel="noopener noreferrer">2024 House results</a></span>
         <span><strong>Seats Impact:</strong> Seats gained from gerrymandering</span>

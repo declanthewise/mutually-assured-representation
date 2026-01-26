@@ -12,7 +12,6 @@ export interface StateData {
   districts: number;    // Number of congressional districts (current)
   districts2032: number; // Projected districts after 2030 census reapportionment
   efficiencyGap: number; // Efficiency gap: positive = R advantage, negative = D advantage
-  lean: 'D' | 'R' | 'N'; // Partisan lean direction
   partisanLean: number; // Partisan lean amount: positive = D lean, negative = R lean
   stateControl: StateControl; // Party control: dem (trifecta), rep (trifecta), or split
   redistrictingAuthority: RedistrictingAuthority; // Who draws the congressional maps
