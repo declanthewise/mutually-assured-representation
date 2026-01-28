@@ -173,7 +173,7 @@ export function StateTable({ districtYear, hideHeader, filters, selectedStateId,
             <tr>
               <SortHeader label="State" sortKeyName="name" />
               <SortHeader label="Partisan Lean" sortKeyName="partisanLean" />
-              <SortHeader label="District Counts" sortKeyName="districts" />
+              <SortHeader label="Districts" sortKeyName="districts" />
               <SortHeader label="Efficiency Gap" sortKeyName="efficiencyGap" />
               <SortHeader label="Seats Impact" sortKeyName="seats" />
               <SortHeader label="State Control" sortKeyName="stateControl" />
@@ -249,7 +249,7 @@ export function StateTable({ districtYear, hideHeader, filters, selectedStateId,
         </table>
         <div className="table-legend">
         <span><strong>Partisan Lean:</strong> <a href="https://en.wikipedia.org/wiki/Cook_Partisan_Voting_Index" target="_blank" rel="noopener noreferrer">Cook PVI</a></span>
-        <span><strong>District Counts:</strong> Number of congressional districts</span>
+        <span><strong>Districts:</strong> Number of congressional districts</span>
         <span><strong>Efficiency Gap:</strong> <a href="https://github.com/PlanScore/National-EG-Map" target="_blank" rel="noopener noreferrer">2024 House results</a></span>
         <span><strong>Seats Impact:</strong> Seats gained from gerrymandering</span>
         <span><strong>State Control:</strong> Government trifecta</span>

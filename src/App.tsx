@@ -3,10 +3,11 @@ import { USMap } from './components/USMap';
 import { StateTooltip } from './components/StateTooltip';
 import { MatchPanel } from './components/MatchPanel';
 import { StateTable } from './components/StateTable';
+import { BipartiteMatchGraph } from './components/BipartiteMatchGraph';
 import { HoveredState } from './types';
 import { DistrictYear } from './utils/findMatches';
 
-type ViewTab = 'map' | 'table';
+type ViewTab = 'map' | 'table' | 'graph';
 
 export interface MatchFilters {
   bothVeto: boolean;
@@ -76,22 +77,28 @@ function App() {
                 >
                   Table
                 </button>
+                <button
+                  className={viewTab === 'graph' ? 'active' : ''}
+                  onClick={() => setViewTab('graph')}
+                >
+                  Matches
+                </button>
               </div>
             </div>
             <div className="year-toggle">
-              <span className="year-label">District Counts:</span>
+              <span className="year-label">Apportionment:</span>
               <div className="toggle-buttons">
                 <button
                   className={districtYear === 'current' ? 'active' : ''}
                   onClick={() => setDistrictYear('current')}
                 >
-                  2022 (Current)
+                  2022
                 </button>
                 <button
                   className={districtYear === '2032' ? 'active' : ''}
                   onClick={() => setDistrictYear('2032')}
                 >
-                  2032 (Projected)
+                  2032
                 </button>
               </div>
             </div>
@@ -125,11 +132,20 @@ function App() {
               districtYear={districtYear}
               filters={filters}
             />
-          ) : (
+          ) : viewTab === 'table' ? (
             <StateTable
               districtYear={districtYear}
               filters={filters}
               hideHeader
+              selectedStateId={activeState?.state.id ?? null}
+              lockedStateId={lockedState?.state.id ?? null}
+              onHoverState={(state) => setHoveredState(state ? { state, x: 0, y: 0 } : null)}
+              onClickState={(state) => handleClickState(state ? { state, x: 0, y: 0 } : null)}
+            />
+          ) : (
+            <BipartiteMatchGraph
+              districtYear={districtYear}
+              filters={filters}
               selectedStateId={activeState?.state.id ?? null}
               lockedStateId={lockedState?.state.id ?? null}
               onHoverState={(state) => setHoveredState(state ? { state, x: 0, y: 0 } : null)}
