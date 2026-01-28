@@ -1,7 +1,7 @@
 import { StateData } from '../types';
 
 // Efficiency gap calculated from PlanScore 2024 raw data (https://planscore.org)
-// See scripts/calculate-efficiency-gap.cjs for calculation details
+// See scripts/calculate-metrics.cjs for calculation details
 //
 // Efficiency gap: EG = (Wasted Dem Votes - Wasted Rep Votes) / Total Votes
 //   Uses estimated votes (votes_dem_est, votes_rep_est) to handle uncontested races
@@ -9,11 +9,11 @@ import { StateData } from '../types';
 // Partisan lean: 2025 Cook PVI (75/25 weighted average of 2020+2024, relative to national average)
 //   Positive = D lean, Negative = R lean
 //
-// 2032 projections based on Brennan Center and ESRI analysis
+// 2032 projections based on Brennan Center projections using Census Bureau's Vintage 2025 estimates
+// 
 // Sources:
 // - https://en.wikipedia.org/wiki/Cook_Partisan_Voting_Index
-// - https://www.brennancenter.org/our-work/analysis-opinion/how-congressional-maps-could-change-2030
-// - https://thearp.org/blog/apportionment/2030-apportionment-forecast-2024/
+// - https://www.brennancenter.org/our-work/analysis-opinion/big-changes-ahead-voting-maps-after-next-census
 
 export const stateData: StateData[] = [
   {
@@ -29,14 +29,14 @@ export const stateData: StateData[] = [
     "hasBallotInitiative": false
   },
   {
-    "id": "AR",
-    "name": "Arkansas",
-    "districts": 4,
-    "districts2032": 4,
-    "efficiencyGap": 0.1388,
-    "partisanLean": -15,
+    "id": "AK",
+    "name": "Alaska",
+    "districts": 1,
+    "districts2032": 1,
+    "efficiencyGap": 0,
+    "partisanLean": -6,
     "stateControl": "rep",
-    "redistrictingAuthority": "politician_commission",
+    "redistrictingAuthority": "advisory_commission",
     "governorCanVeto": true,
     "hasBallotInitiative": true
   },
@@ -50,6 +50,18 @@ export const stateData: StateData[] = [
     "stateControl": "split",
     "redistrictingAuthority": "independent_commission",
     "governorCanVeto": false,
+    "hasBallotInitiative": true
+  },
+  {
+    "id": "AR",
+    "name": "Arkansas",
+    "districts": 4,
+    "districts2032": 4,
+    "efficiencyGap": 0.1388,
+    "partisanLean": -15,
+    "stateControl": "rep",
+    "redistrictingAuthority": "politician_commission",
+    "governorCanVeto": true,
     "hasBallotInitiative": true
   },
   {
@@ -89,6 +101,18 @@ export const stateData: StateData[] = [
     "hasBallotInitiative": false
   },
   {
+    "id": "DE",
+    "name": "Delaware",
+    "districts": 1,
+    "districts2032": 1,
+    "efficiencyGap": 0,
+    "partisanLean": 8,
+    "stateControl": "dem",
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": false
+  },
+  {
     "id": "FL",
     "name": "Florida",
     "districts": 28,
@@ -125,18 +149,6 @@ export const stateData: StateData[] = [
     "hasBallotInitiative": false
   },
   {
-    "id": "IA",
-    "name": "Iowa",
-    "districts": 4,
-    "districts2032": 4,
-    "efficiencyGap": 0.3697,
-    "partisanLean": -6,
-    "stateControl": "rep",
-    "redistrictingAuthority": "advisory_commission",
-    "governorCanVeto": true,
-    "hasBallotInitiative": false
-  },
-  {
     "id": "ID",
     "name": "Idaho",
     "districts": 2,
@@ -152,7 +164,7 @@ export const stateData: StateData[] = [
     "id": "IL",
     "name": "Illinois",
     "districts": 17,
-    "districts2032": 15,
+    "districts2032": 16,
     "efficiencyGap": -0.1723,
     "partisanLean": 6,
     "stateControl": "dem",
@@ -169,6 +181,18 @@ export const stateData: StateData[] = [
     "partisanLean": -9,
     "stateControl": "rep",
     "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": false
+  },
+  {
+    "id": "IA",
+    "name": "Iowa",
+    "districts": 4,
+    "districts2032": 4,
+    "efficiencyGap": 0.3697,
+    "partisanLean": -6,
+    "stateControl": "rep",
+    "redistrictingAuthority": "advisory_commission",
     "governorCanVeto": true,
     "hasBallotInitiative": false
   },
@@ -209,14 +233,14 @@ export const stateData: StateData[] = [
     "hasBallotInitiative": false
   },
   {
-    "id": "MA",
-    "name": "Massachusetts",
-    "districts": 9,
-    "districts2032": 9,
-    "efficiencyGap": -0.1763,
-    "partisanLean": 14,
+    "id": "ME",
+    "name": "Maine",
+    "districts": 2,
+    "districts2032": 2,
+    "efficiencyGap": -0.38,
+    "partisanLean": 4,
     "stateControl": "dem",
-    "redistrictingAuthority": "legislature",
+    "redistrictingAuthority": "advisory_commission",
     "governorCanVeto": true,
     "hasBallotInitiative": true
   },
@@ -233,14 +257,14 @@ export const stateData: StateData[] = [
     "hasBallotInitiative": true
   },
   {
-    "id": "ME",
-    "name": "Maine",
-    "districts": 2,
-    "districts2032": 2,
-    "efficiencyGap": -0.38,
-    "partisanLean": 4,
+    "id": "MA",
+    "name": "Massachusetts",
+    "districts": 9,
+    "districts2032": 9,
+    "efficiencyGap": -0.1763,
+    "partisanLean": 14,
     "stateControl": "dem",
-    "redistrictingAuthority": "advisory_commission",
+    "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": true
   },
@@ -260,25 +284,13 @@ export const stateData: StateData[] = [
     "id": "MN",
     "name": "Minnesota",
     "districts": 8,
-    "districts2032": 8,
+    "districts2032": 7,
     "efficiencyGap": 0.0219,
     "partisanLean": 3,
     "stateControl": "dem",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": false
-  },
-  {
-    "id": "MO",
-    "name": "Missouri",
-    "districts": 8,
-    "districts2032": 8,
-    "efficiencyGap": 0.0784,
-    "partisanLean": -9,
-    "stateControl": "rep",
-    "redistrictingAuthority": "politician_commission",
-    "governorCanVeto": true,
-    "hasBallotInitiative": true
   },
   {
     "id": "MS",
@@ -289,6 +301,18 @@ export const stateData: StateData[] = [
     "partisanLean": -11,
     "stateControl": "rep",
     "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": true
+  },
+  {
+    "id": "MO",
+    "name": "Missouri",
+    "districts": 8,
+    "districts2032": 8,
+    "efficiencyGap": 0.0784,
+    "partisanLean": -9,
+    "stateControl": "rep",
+    "redistrictingAuthority": "politician_commission",
     "governorCanVeto": true,
     "hasBallotInitiative": true
   },
@@ -305,18 +329,6 @@ export const stateData: StateData[] = [
     "hasBallotInitiative": true
   },
   {
-    "id": "NC",
-    "name": "North Carolina",
-    "districts": 14,
-    "districts2032": 15,
-    "efficiencyGap": 0.1801,
-    "partisanLean": -1,
-    "stateControl": "split",
-    "redistrictingAuthority": "legislature",
-    "governorCanVeto": false,
-    "hasBallotInitiative": false
-  },
-  {
     "id": "NE",
     "name": "Nebraska",
     "districts": 3,
@@ -324,6 +336,18 @@ export const stateData: StateData[] = [
     "efficiencyGap": 0.2277,
     "partisanLean": -10,
     "stateControl": "rep",
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": true
+  },
+  {
+    "id": "NV",
+    "name": "Nevada",
+    "districts": 4,
+    "districts2032": 4,
+    "efficiencyGap": -0.2327,
+    "partisanLean": -1,
+    "stateControl": "dem",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
     "hasBallotInitiative": true
@@ -365,28 +389,40 @@ export const stateData: StateData[] = [
     "hasBallotInitiative": true
   },
   {
-    "id": "NV",
-    "name": "Nevada",
-    "districts": 4,
-    "districts2032": 4,
-    "efficiencyGap": -0.2327,
-    "partisanLean": -1,
-    "stateControl": "dem",
-    "redistrictingAuthority": "legislature",
-    "governorCanVeto": true,
-    "hasBallotInitiative": true
-  },
-  {
     "id": "NY",
     "name": "New York",
     "districts": 26,
-    "districts2032": 23,
+    "districts2032": 24,
     "efficiencyGap": -0.0404,
     "partisanLean": 8,
     "stateControl": "dem",
     "redistrictingAuthority": "independent_commission",
     "governorCanVeto": true,
     "hasBallotInitiative": false
+  },
+  {
+    "id": "NC",
+    "name": "North Carolina",
+    "districts": 14,
+    "districts2032": 15,
+    "efficiencyGap": 0.1801,
+    "partisanLean": -1,
+    "stateControl": "split",
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": false,
+    "hasBallotInitiative": false
+  },
+  {
+    "id": "ND",
+    "name": "North Dakota",
+    "districts": 1,
+    "districts2032": 1,
+    "efficiencyGap": 0,
+    "partisanLean": -18,
+    "stateControl": "rep",
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": true
   },
   {
     "id": "OH",
@@ -416,7 +452,7 @@ export const stateData: StateData[] = [
     "id": "OR",
     "name": "Oregon",
     "districts": 6,
-    "districts2032": 6,
+    "districts2032": 5,
     "efficiencyGap": -0.2194,
     "partisanLean": 8,
     "stateControl": "dem",
@@ -440,7 +476,7 @@ export const stateData: StateData[] = [
     "id": "RI",
     "name": "Rhode Island",
     "districts": 2,
-    "districts2032": 2,
+    "districts2032": 1,
     "efficiencyGap": -0.2618,
     "partisanLean": 8,
     "stateControl": "dem",
@@ -452,7 +488,7 @@ export const stateData: StateData[] = [
     "id": "SC",
     "name": "South Carolina",
     "districts": 7,
-    "districts2032": 8,
+    "districts2032": 7,
     "efficiencyGap": 0.1699,
     "partisanLean": -8,
     "stateControl": "rep",
@@ -461,10 +497,22 @@ export const stateData: StateData[] = [
     "hasBallotInitiative": false
   },
   {
+    "id": "SD",
+    "name": "South Dakota",
+    "districts": 1,
+    "districts2032": 1,
+    "efficiencyGap": 0,
+    "partisanLean": -15,
+    "stateControl": "rep",
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": true
+  },
+  {
     "id": "TN",
     "name": "Tennessee",
     "districts": 9,
-    "districts2032": 10,
+    "districts2032": 9,
     "efficiencyGap": 0.1074,
     "partisanLean": -14,
     "stateControl": "rep",
@@ -497,6 +545,18 @@ export const stateData: StateData[] = [
     "hasBallotInitiative": true
   },
   {
+    "id": "VT",
+    "name": "Vermont",
+    "districts": 1,
+    "districts2032": 1,
+    "efficiencyGap": 0,
+    "partisanLean": 17,
+    "stateControl": "split",
+    "redistrictingAuthority": "legislature",
+    "governorCanVeto": true,
+    "hasBallotInitiative": false
+  },
+  {
     "id": "VA",
     "name": "Virginia",
     "districts": 11,
@@ -521,18 +581,6 @@ export const stateData: StateData[] = [
     "hasBallotInitiative": true
   },
   {
-    "id": "WI",
-    "name": "Wisconsin",
-    "districts": 8,
-    "districts2032": 8,
-    "efficiencyGap": 0.2337,
-    "partisanLean": 0,
-    "stateControl": "split",
-    "redistrictingAuthority": "legislature",
-    "governorCanVeto": true,
-    "hasBallotInitiative": false
-  },
-  {
     "id": "WV",
     "name": "West Virginia",
     "districts": 2,
@@ -545,60 +593,12 @@ export const stateData: StateData[] = [
     "hasBallotInitiative": false
   },
   {
-    "id": "AK",
-    "name": "Alaska",
-    "districts": 1,
-    "districts2032": 1,
-    "efficiencyGap": 0,
-    "partisanLean": -6,
-    "stateControl": "rep",
-    "redistrictingAuthority": "advisory_commission",
-    "governorCanVeto": true,
-    "hasBallotInitiative": true
-  },
-  {
-    "id": "DE",
-    "name": "Delaware",
-    "districts": 1,
-    "districts2032": 1,
-    "efficiencyGap": 0,
-    "partisanLean": 8,
-    "stateControl": "dem",
-    "redistrictingAuthority": "legislature",
-    "governorCanVeto": true,
-    "hasBallotInitiative": false
-  },
-  {
-    "id": "ND",
-    "name": "North Dakota",
-    "districts": 1,
-    "districts2032": 1,
-    "efficiencyGap": 0,
-    "partisanLean": -18,
-    "stateControl": "rep",
-    "redistrictingAuthority": "legislature",
-    "governorCanVeto": true,
-    "hasBallotInitiative": true
-  },
-  {
-    "id": "SD",
-    "name": "South Dakota",
-    "districts": 1,
-    "districts2032": 1,
-    "efficiencyGap": 0,
-    "partisanLean": -15,
-    "stateControl": "rep",
-    "redistrictingAuthority": "legislature",
-    "governorCanVeto": true,
-    "hasBallotInitiative": true
-  },
-  {
-    "id": "VT",
-    "name": "Vermont",
-    "districts": 1,
-    "districts2032": 1,
-    "efficiencyGap": 0,
-    "partisanLean": 17,
+    "id": "WI",
+    "name": "Wisconsin",
+    "districts": 8,
+    "districts2032": 7,
+    "efficiencyGap": 0.2337,
+    "partisanLean": 0,
     "stateControl": "split",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
