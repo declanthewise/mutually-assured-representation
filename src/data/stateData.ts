@@ -10,7 +10,7 @@ import { StateData } from '../types';
 //   Positive = D lean, Negative = R lean
 //
 // 2032 projections based on Brennan Center projections using Census Bureau's Vintage 2025 estimates
-// 
+//
 // Sources:
 // - https://en.wikipedia.org/wiki/Cook_Partisan_Voting_Index
 // - https://www.brennancenter.org/our-work/analysis-opinion/big-changes-ahead-voting-maps-after-next-census
