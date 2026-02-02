@@ -24,3 +24,5 @@ export interface HoveredState {
   x: number;
   y: number;
 }
+
+export type MatchPair = [string, string];

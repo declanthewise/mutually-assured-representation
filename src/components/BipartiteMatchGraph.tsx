@@ -1,22 +1,13 @@
-import { useMemo } from 'react';
-import { StateData } from '../types';
-import { stateData } from '../data/stateData';
-import { findMatches, isStrongMatch, DistrictYear } from '../utils/findMatches';
-import type { MatchFilters } from '../App';
+import { useMemo, useState } from 'react';
+import { StateData, MatchPair } from '../types';
+import { findMatches, isStrongMatch } from '../utils/findMatches';
 
 interface BipartiteMatchGraphProps {
-  districtYear: DistrictYear;
-  filters: MatchFilters;
-  onHoverState?: (state: StateData | null) => void;
-  onClickState?: (state: StateData | null) => void;
-  selectedStateId?: string | null;
-  lockedStateId?: string | null;
+  groupStates: StateData[];
+  selectedMatches: MatchPair[];
+  onToggleMatch: (pair: MatchPair) => void;
 }
 
-/**
- * Get background color for a state based on partisan lean.
- * D-leaning (positive) = blue, R-leaning (negative) = red.
- */
 function getPartisanColor(state: StateData): string {
   const lean = state.partisanLean;
   const intensity = Math.min(Math.abs(lean) / 20, 1);
@@ -51,29 +42,39 @@ const BOX_HEIGHT = 20;
 const LEFT_X = 90;
 const RIGHT_X = 220;
 
+function pairKey(a: string, b: string): string {
+  return [a, b].sort().join('-');
+}
+
 export function BipartiteMatchGraph({
-  districtYear,
-  filters,
-  onHoverState,
-  onClickState,
-  selectedStateId,
-  lockedStateId,
+  groupStates,
+  selectedMatches,
+  onToggleMatch,
 }: BipartiteMatchGraphProps) {
-  const getDistricts = (state: StateData) =>
-    districtYear === '2032' ? state.districts2032 : state.districts;
+  const [activeStateId, setActiveStateId] = useState<string | null>(null);
+
+  const getDistricts = (state: StateData) => state.districts2032;
+
+  // Selected pair keys for quick lookup
+  const selectedPairKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const [a, b] of selectedMatches) {
+      keys.add(pairKey(a, b));
+    }
+    return keys;
+  }, [selectedMatches]);
 
   // Split states into D-leaning (left) and R-leaning (right) columns
   const { leftColumn, rightColumn } = useMemo(() => {
     const left: StateData[] = [];
     const right: StateData[] = [];
 
-    for (const state of stateData) {
+    for (const state of groupStates) {
       if (state.partisanLean > 0) {
         left.push(state);
       } else if (state.partisanLean < 0) {
         right.push(state);
       } else {
-        // Special case: MI (lean=0) -> D column, WI (lean=0) -> R column
         if (state.id === 'MI') {
           left.push(state);
         } else if (state.id === 'WI') {
@@ -82,23 +83,20 @@ export function BipartiteMatchGraph({
       }
     }
 
-    // Sort by district count descending
     left.sort((a, b) => getDistricts(b) - getDistricts(a));
     right.sort((a, b) => getDistricts(b) - getDistricts(a));
 
     return { leftColumn: left, rightColumn: right };
-  }, [districtYear]);
+  }, [groupStates]);
 
-  // Get all unique district counts (sorted descending) for row positions
   const uniqueDistrictCounts = useMemo(() => {
     const counts = new Set<number>();
-    for (const state of stateData) {
+    for (const state of groupStates) {
       counts.add(getDistricts(state));
     }
     return Array.from(counts).sort((a, b) => b - a);
-  }, [districtYear]);
+  }, [groupStates]);
 
-  // Count max states per district count in either column (for spacing calculation)
   const maxStatesPerDistrict = useMemo(() => {
     const leftCounts = new Map<number, number>();
     const rightCounts = new Map<number, number>();
@@ -119,23 +117,20 @@ export function BipartiteMatchGraph({
     return maxPerDistrict;
   }, [leftColumn, rightColumn, uniqueDistrictCounts]);
 
-  // Calculate positions for states - vertically stacked within each district count
   const { leftPositions, rightPositions, totalHeight } = useMemo(() => {
     const topPadding = 50;
     const bottomPadding = 30;
-    const gap = 8; // gap between district groups
+    const gap = 8;
 
-    // Calculate starting Y for each district count
     const districtStartY = new Map<number, number>();
     let currentY = topPadding;
     for (const d of uniqueDistrictCounts) {
       districtStartY.set(d, currentY);
       currentY += (maxStatesPerDistrict.get(d) ?? 1) * BOX_HEIGHT + gap;
     }
-    const totalHeight = currentY - gap + bottomPadding; // remove last gap, add bottom padding
+    const totalHeight = currentY - gap + bottomPadding;
 
     const calculatePositions = (states: StateData[]): PositionedState[] => {
-      // Group states by district count
       const byDistricts = new Map<number, StateData[]>();
       for (const state of states) {
         const d = getDistricts(state);
@@ -146,13 +141,8 @@ export function BipartiteMatchGraph({
       const positions: PositionedState[] = [];
       for (const [districts, statesInGroup] of byDistricts) {
         const startY = districtStartY.get(districts)!;
-
-        // Stack states vertically within the group
         statesInGroup.forEach((state, i) => {
-          positions.push({
-            state,
-            y: startY + i * BOX_HEIGHT,
-          });
+          positions.push({ state, y: startY + i * BOX_HEIGHT });
         });
       }
 
@@ -166,31 +156,21 @@ export function BipartiteMatchGraph({
     };
   }, [leftColumn, rightColumn, uniqueDistrictCounts, maxStatesPerDistrict]);
 
-  // Build lookup maps for positions
   const positionMap = useMemo(() => {
     const map = new Map<string, PositionedState>();
-    for (const pos of leftPositions) {
-      map.set(pos.state.id, pos);
-    }
-    for (const pos of rightPositions) {
-      map.set(pos.state.id, pos);
-    }
+    for (const pos of leftPositions) map.set(pos.state.id, pos);
+    for (const pos of rightPositions) map.set(pos.state.id, pos);
     return map;
   }, [leftPositions, rightPositions]);
 
-  // Track which column each state is in
   const stateColumn = useMemo(() => {
     const map = new Map<string, 'left' | 'right'>();
-    for (const pos of leftPositions) {
-      map.set(pos.state.id, 'left');
-    }
-    for (const pos of rightPositions) {
-      map.set(pos.state.id, 'right');
-    }
+    for (const pos of leftPositions) map.set(pos.state.id, 'left');
+    for (const pos of rightPositions) map.set(pos.state.id, 'right');
     return map;
   }, [leftPositions, rightPositions]);
 
-  // Calculate all match lines
+  // Match lines: computed only within this group
   const matchLines = useMemo(() => {
     const lines: MatchLine[] = [];
     const seenPairs = new Set<string>();
@@ -198,35 +178,23 @@ export function BipartiteMatchGraph({
     const allPositionedStates = [...leftPositions, ...rightPositions];
 
     for (const { state } of allPositionedStates) {
-      // Skip single-district states
       if (getDistricts(state) === 1) continue;
 
-      const matches = findMatches(state, stateData, districtYear);
-      const filteredMatches = matches.filter(match => {
-        if (filters.bothVeto && !(state.governorCanVeto && match.governorCanVeto)) {
-          return false;
-        }
-        if (filters.bothBallot && !(state.hasBallotInitiative && match.hasBallotInitiative)) {
-          return false;
-        }
-        return true;
-      });
+      const matches = findMatches(state, groupStates, '2032');
 
-      for (const match of filteredMatches) {
-        // Create a canonical pair key to avoid duplicates
-        const pairKey = [state.id, match.id].sort().join('-');
-        if (seenPairs.has(pairKey)) continue;
-        seenPairs.add(pairKey);
+      for (const match of matches) {
+        const pk = pairKey(state.id, match.id);
+        if (seenPairs.has(pk)) continue;
+        seenPairs.add(pk);
 
         const fromPos = positionMap.get(state.id);
         const toPos = positionMap.get(match.id);
-        const fromColumn = stateColumn.get(state.id);
-        const toColumn = stateColumn.get(match.id);
+        const fromCol = stateColumn.get(state.id);
+        const toCol = stateColumn.get(match.id);
 
-        if (fromPos && toPos && fromColumn && toColumn) {
-          // Calculate actual X positions
-          const fromX = fromColumn === 'left' ? LEFT_X : RIGHT_X;
-          const toX = toColumn === 'left' ? LEFT_X : RIGHT_X;
+        if (fromPos && toPos && fromCol && toCol) {
+          const fromX = fromCol === 'left' ? LEFT_X : RIGHT_X;
+          const toX = toCol === 'left' ? LEFT_X : RIGHT_X;
 
           lines.push({
             fromState: state,
@@ -235,43 +203,44 @@ export function BipartiteMatchGraph({
             toY: toPos.y + BOX_HEIGHT / 2,
             fromX,
             toX,
-            isStrong: isStrongMatch(state, match, districtYear),
+            isStrong: isStrongMatch(state, match, '2032'),
           });
         }
       }
     }
 
     return lines;
-  }, [leftPositions, rightPositions, positionMap, stateColumn, districtYear, filters]);
+  }, [leftPositions, rightPositions, positionMap, stateColumn, groupStates]);
 
-  // Determine which state is currently active (selected or locked)
-  const activeStateId = lockedStateId ?? selectedStateId;
-
-  // Get the set of states that are related to the active state
-  const relatedStateIds = useMemo(() => {
-    const related = new Set<string>();
-    if (!activeStateId) return related;
-
-    related.add(activeStateId);
+  // States connected to the active state
+  const activeMatchIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (!activeStateId) return ids;
+    ids.add(activeStateId);
     for (const line of matchLines) {
-      if (line.fromState.id === activeStateId) {
-        related.add(line.toState.id);
-      } else if (line.toState.id === activeStateId) {
-        related.add(line.fromState.id);
-      }
+      if (line.fromState.id === activeStateId) ids.add(line.toState.id);
+      else if (line.toState.id === activeStateId) ids.add(line.fromState.id);
     }
-    return related;
+    return ids;
   }, [activeStateId, matchLines]);
-
-  const handleStateHover = (state: StateData | null) => {
-    if (!lockedStateId) {
-      onHoverState?.(state);
-    }
-  };
 
   const handleStateClick = (state: StateData) => {
     if (getDistricts(state) === 1) return;
-    onClickState?.(lockedStateId === state.id ? null : state);
+
+    if (!activeStateId) {
+      // Step 1: activate a state to see its matches
+      setActiveStateId(state.id);
+    } else if (state.id === activeStateId) {
+      // Clicking the active state again deactivates it
+      setActiveStateId(null);
+    } else if (activeMatchIds.has(state.id)) {
+      // Step 2: clicking a match partner toggles the pair
+      const pair: MatchPair = [activeStateId, state.id];
+      onToggleMatch(pair);
+    } else {
+      // Clicking a non-match state: switch active to that state
+      setActiveStateId(state.id);
+    }
   };
 
   const renderStateBox = (pos: PositionedState, x: number, align: 'left' | 'right') => {
@@ -279,8 +248,10 @@ export function BipartiteMatchGraph({
     const districts = getDistricts(state);
     const isSingleDistrict = districts === 1;
     const isActive = state.id === activeStateId;
-    const isRelated = relatedStateIds.has(state.id);
-    const isDimmed = activeStateId && !isRelated;
+    const isMatchTarget = activeStateId && activeMatchIds.has(state.id) && !isActive;
+    const isDimmed = activeStateId && !activeMatchIds.has(state.id);
+    const isSelected = selectedPairKeys.has(pairKey(activeStateId ?? '', state.id)) ||
+      selectedMatches.some(([a, b]) => a === state.id || b === state.id);
 
     const boxX = align === 'left' ? x - BOX_WIDTH : x;
 
@@ -288,8 +259,6 @@ export function BipartiteMatchGraph({
       <g
         key={state.id}
         className={`state-box-group ${isSingleDistrict ? 'single-district' : ''} ${isActive ? 'active' : ''} ${isDimmed ? 'dimmed' : ''}`}
-        onMouseEnter={() => !isSingleDistrict && handleStateHover(state)}
-        onMouseLeave={() => handleStateHover(null)}
         onClick={() => handleStateClick(state)}
         style={{ cursor: isSingleDistrict ? 'default' : 'pointer' }}
       >
@@ -299,10 +268,28 @@ export function BipartiteMatchGraph({
           width={BOX_WIDTH}
           height={BOX_HEIGHT}
           fill={isSingleDistrict ? 'rgba(200, 200, 200, 0.3)' : getPartisanColor(state)}
-          stroke={isActive ? '#000' : isSingleDistrict ? '#ddd' : '#999'}
-          strokeWidth={isActive ? 2 : 1}
+          stroke={
+            isActive ? '#000' :
+            isSelected ? '#c9a227' :
+            isMatchTarget ? '#666' :
+            isSingleDistrict ? '#ddd' : '#999'
+          }
+          strokeWidth={isActive ? 2.5 : isSelected ? 2 : 1}
           rx={3}
         />
+        {isSelected && (
+          <rect
+            x={boxX - 2}
+            y={y - 2}
+            width={BOX_WIDTH + 4}
+            height={BOX_HEIGHT + 4}
+            fill="none"
+            stroke="#c9a227"
+            strokeWidth={2}
+            rx={4}
+            opacity={0.6}
+          />
+        )}
         <text
           x={boxX + BOX_WIDTH / 2}
           y={y + BOX_HEIGHT / 2}
@@ -321,12 +308,13 @@ export function BipartiteMatchGraph({
   const renderMatchLine = (line: MatchLine, index: number) => {
     const { fromState, toState, fromY, toY, fromX, toX, isStrong } = line;
 
-    // Determine if this line is related to the active state
     const isRelatedLine = !activeStateId ||
       fromState.id === activeStateId ||
       toState.id === activeStateId;
 
-    // Use bezier curve for smoother lines
+    const pk = pairKey(fromState.id, toState.id);
+    const isPairSelected = selectedPairKeys.has(pk);
+
     const controlX = (LEFT_X + RIGHT_X) / 2;
 
     return (
@@ -334,15 +322,14 @@ export function BipartiteMatchGraph({
         key={`${fromState.id}-${toState.id}-${index}`}
         d={`M ${fromX} ${fromY} C ${controlX} ${fromY}, ${controlX} ${toY}, ${toX} ${toY}`}
         fill="none"
-        stroke={isStrong ? '#4caf50' : '#ffd700'}
-        strokeWidth={isStrong ? 2 : 1.5}
-        strokeOpacity={isRelatedLine ? (isStrong ? 0.8 : 0.6) : 0.15}
-        className={`match-line ${isStrong ? 'strong' : 'weak'} ${!isRelatedLine ? 'dimmed' : ''}`}
+        stroke={isPairSelected ? '#c9a227' : isStrong ? '#4caf50' : '#ffd700'}
+        strokeWidth={isPairSelected ? 3 : isStrong ? 2 : 1.5}
+        strokeOpacity={isPairSelected ? 1 : isRelatedLine ? (isStrong ? 0.8 : 0.6) : 0.15}
+        className={`match-line ${isStrong ? 'strong' : 'weak'} ${!isRelatedLine && !isPairSelected ? 'dimmed' : ''}`}
       />
     );
   };
 
-  // Get district counts and their center Y positions for each column
   const leftDistrictLabels = useMemo(() => {
     const groups = new Map<number, { minY: number; maxY: number }>();
     for (const pos of leftPositions) {
@@ -379,18 +366,25 @@ export function BipartiteMatchGraph({
     }));
   }, [rightPositions]);
 
+  if (groupStates.length === 0) return null;
+
   return (
     <div className="bipartite-graph-wrapper">
       <svg viewBox={`0 0 320 ${totalHeight}`} className="bipartite-graph">
         {/* Column labels */}
         <text x={LEFT_X - BOX_WIDTH / 2} y={20} textAnchor="middle" fontSize={14} fontWeight={600} fill="#2166ac">
-          D-Leaning States
+          D-Leaning
         </text>
         <text x={RIGHT_X + BOX_WIDTH / 2} y={20} textAnchor="middle" fontSize={14} fontWeight={600} fill="#b2182b">
-          R-Leaning States
+          R-Leaning
         </text>
 
-        {/* District count labels for left column */}
+        {/* Instruction text */}
+        <text x={160} y={38} textAnchor="middle" fontSize={10} fill="#999">
+          {activeStateId ? 'Click a highlighted match to select the pair' : 'Click a state to see its matches'}
+        </text>
+
+        {/* District count labels */}
         {leftDistrictLabels.map(({ districts, centerY }) => (
           <text
             key={`left-${districts}`}
@@ -404,8 +398,6 @@ export function BipartiteMatchGraph({
             {districts}
           </text>
         ))}
-
-        {/* District count labels for right column */}
         {rightDistrictLabels.map(({ districts, centerY }) => (
           <text
             key={`right-${districts}`}
@@ -420,17 +412,15 @@ export function BipartiteMatchGraph({
           </text>
         ))}
 
-        {/* Match lines (render first so they're behind boxes) */}
+        {/* Match lines (behind boxes) */}
         <g className="match-lines">
           {matchLines.map((line, i) => renderMatchLine(line, i))}
         </g>
 
-        {/* Left column (D-leaning) */}
+        {/* State boxes */}
         <g className="left-column">
           {leftPositions.map(pos => renderStateBox(pos, LEFT_X, 'left'))}
         </g>
-
-        {/* Right column (R-leaning) */}
         <g className="right-column">
           {rightPositions.map(pos => renderStateBox(pos, RIGHT_X, 'right'))}
         </g>
@@ -439,15 +429,15 @@ export function BipartiteMatchGraph({
       <div className="graph-legend">
         <div className="legend-item">
           <span className="legend-line strong"></span>
-          <span>Strong match (seats within 0.7)</span>
+          <span>Strong match</span>
         </div>
         <div className="legend-item">
           <span className="legend-line weak"></span>
           <span>Weak match</span>
         </div>
         <div className="legend-item">
-          <span className="legend-box grayed"></span>
-          <span>Single-district state (N/A)</span>
+          <span className="legend-line selected"></span>
+          <span>Selected pair</span>
         </div>
       </div>
     </div>
