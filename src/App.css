@@ -59,7 +59,7 @@ body {
 }
 
 .visualization-full {
-  max-width: 1100px;
+  max-width: 980px;
   margin: 1.5rem auto 0;
   padding: 0 1.5rem;
   width: 100%;
@@ -105,7 +105,7 @@ body {
    =========================== */
 
 .hero-section {
-  max-width: 1100px;
+  max-width: 980px;
   margin: 0 auto;
   padding: 2rem 1.5rem 0;
   width: 100%;
@@ -114,7 +114,7 @@ body {
 .hero-map-wrapper {
   background: #fff;
   border-radius: 8px;
-  padding: 1rem;
+  padding: 0.5rem;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
@@ -126,6 +126,7 @@ body {
 
 .hero-map-legend {
   padding: 0.75rem 0.5rem 0;
+  text-align: center;
 }
 
 .hero-map-legend .legend-scale {
@@ -133,6 +134,7 @@ body {
   flex-direction: column;
   gap: 0.25rem;
   max-width: 300px;
+  margin: 0 auto;
 }
 
 .hero-map-legend .legend-explanation {
@@ -319,7 +321,7 @@ body {
 .result-map-wrapper {
   background: #fff;
   border-radius: 8px;
-  padding: 1rem;
+  padding: 0.5rem;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
