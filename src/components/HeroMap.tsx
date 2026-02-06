@@ -29,10 +29,10 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
 
     svg.attr('viewBox', `0 0 ${width} ${height}`);
 
-    // Green (competitive) to yellow (safe) based on % of safe seats
+    // Light gray (competitive) to yellow (safe) based on % of safe seats
     const safeSeatsColorScale = d3.scaleLinear<string>()
       .domain([0, 100])
-      .range(['#2ca02c', '#f0e442'])
+      .range(['#e3e3e3', '#f0e442'])
       .clamp(true);
 
     const states = topojson.feature(topoData, topoData.objects.states);
@@ -49,7 +49,6 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
         const stateId = fipsToState[fips];
         const data = stateDataById[stateId];
         if (!data) return '#ccc';
-        if (data.districts === 1) return '#d0d0d0';
         const safePercent = (data.safeSeats / data.districts) * 100;
         return safeSeatsColorScale(safePercent);
       })
@@ -87,7 +86,7 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
       .attr('d', path)
       .attr('pointer-events', 'none');
 
-    // District count labels
+    // State abbreviation labels
     svg.append('g')
       .attr('class', 'labels')
       .selectAll('text')
@@ -113,27 +112,34 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
         const stateId = fipsToState[fips];
         const data = stateDataById[stateId];
         if (!data) return '';
-        return data.districts2032.toString();
+        return data.id;
       });
+
+    // In-map annotation, positioned in the Northeast/Great Lakes gap
+    const noteGroup = svg.append('g')
+      .attr('pointer-events', 'none');
+
+    noteGroup.append('text')
+      .attr('x', 700)
+      .attr('y', 60)
+      .attr('font-size', '13px')
+      .attr('font-weight', '500')
+      .attr('fill', '#6f6f6f')
+      .attr('letter-spacing', '0.01em')
+      .selectAll('tspan')
+      .data([
+        'Percentage of safe seats',
+        '(Cook PVI ≥ 10)',
+      ])
+      .join('tspan')
+      .attr('x', 700)
+      .attr('dy', (_d, i) => (i === 0 ? 0 : 17))
+      .text(d => d);
   }, [topoData]);
 
   return (
     <div className="hero-map-wrapper">
       <svg ref={svgRef} className="hero-map" />
-      <div className="hero-map-legend">
-        <div className="legend-scale">
-          <div className="legend-gradient safe-seats" />
-          <div className="legend-labels">
-            <span>0% Safe</span>
-            <span>50%</span>
-            <span>100% Safe</span>
-          </div>
-        </div>
-        <p className="legend-explanation">
-          Percentage of safe seats (|<a href="https://en.wikipedia.org/wiki/Cook_Partisan_Voting_Index" target="_blank" rel="noopener noreferrer">Cook PVI</a>| ≥ 10).
-          Numbers show projected 2032 districts.
-        </p>
-      </div>
     </div>
   );
 }

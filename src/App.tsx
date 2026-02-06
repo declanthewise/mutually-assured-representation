@@ -29,6 +29,12 @@ function App() {
 
   return (
     <article className="article">
+      <section className="hero-section">
+        {topoData && (
+          <HeroMap topoData={topoData} onHoverState={setHoveredState} />
+        )}
+      </section>
+
       <header className="article-header">
         <h1>Mutually Assured Representation</h1>
         <p className="article-subtitle">
@@ -38,12 +44,6 @@ function App() {
           Built by Declan Fitzsimons with Claude Code
         </p>
       </header>
-
-      <section className="hero-section">
-        {topoData && (
-          <HeroMap topoData={topoData} onHoverState={setHoveredState} />
-        )}
-      </section>
 
       <section className="article-body">
         <p>
