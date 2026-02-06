@@ -36,10 +36,10 @@ export function ResultMap({ topoData, selectedMatches }: ResultMapProps) {
 
     svg.attr('viewBox', `0 0 ${width} ${height}`);
 
-    // Light gray (competitive) to yellow (safe) based on % of safe seats
+    // Green (competitive) to yellow (safe) based on % of safe seats
     const safeSeatsColorScale = d3.scaleLinear<string>()
       .domain([0, 100])
-      .range(['#e3e3e3', '#f0e442'])
+      .range(['#2ca25f', '#f0e442'])
       .clamp(true);
 
     const states = topojson.feature(topoData, topoData.objects.states);

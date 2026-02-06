@@ -75,7 +75,7 @@ body {
   padding: 1.75rem 1.5rem 2rem;
   border-top: 1px solid #d9d6cf;
   border-bottom: 1px solid #d9d6cf;
-  text-align: left;
+  text-align: center;
 }
 
 .article-header h1 {
@@ -89,11 +89,23 @@ body {
   text-wrap: balance;
 }
 
+.headline-kicker {
+  display: block;
+  font-size: 0.6em;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.3rem;
+}
+
+.headline-title {
+  display: block;
+}
+
 .article-subtitle {
   color: #2d2d2d;
   font-size: clamp(1.1rem, 1.8vw, 1.3rem);
   max-width: 640px;
-  margin: 0 0 0.9rem;
+  margin: 0 auto 0.9rem;
   line-height: 1.45;
 }
 
@@ -143,7 +155,7 @@ body {
 }
 
 .legend-gradient.safe-seats {
-  background: linear-gradient(to right, #2ca02c, #f0e442);
+  background: linear-gradient(to right, #2ca25f, #f0e442);
 }
 
 .legend-labels {

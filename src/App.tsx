@@ -36,12 +36,15 @@ function App() {
       </section>
 
       <header className="article-header">
-        <h1>Mutually Assured Representation</h1>
+        <h1>
+          <span className="headline-kicker">How to fix the House:</span>
+          <span className="headline-title">Mutually Assured Representation</span>
+        </h1>
         <p className="article-subtitle">
           An interactive guide to interstate pacts that could end gerrymandering
         </p>
         <p className="article-byline">
-          Built by Declan Fitzsimons with Claude Code
+          By Declan Fitzsimons
         </p>
       </header>
 
