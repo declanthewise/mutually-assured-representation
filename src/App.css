@@ -166,6 +166,10 @@ body {
   background: linear-gradient(to right, #b2182b, #f0f0f0, #2166ac);
 }
 
+.legend-gradient.safe-seats {
+  background: linear-gradient(to right, #2ca02c, #f0e442);
+}
+
 .legend-labels {
   display: flex;
   justify-content: space-between;

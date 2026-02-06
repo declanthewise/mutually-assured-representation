@@ -36,9 +36,10 @@ export function ResultMap({ topoData, selectedMatches }: ResultMapProps) {
 
     svg.attr('viewBox', `0 0 ${width} ${height}`);
 
-    const leanColorScale = d3.scaleLinear<string>()
-      .domain([-20, 0, 20])
-      .range(['#b2182b', '#f0f0f0', '#2166ac'])
+    // Green (competitive) to yellow (safe) based on % of safe seats
+    const safeSeatsColorScale = d3.scaleLinear<string>()
+      .domain([0, 100])
+      .range(['#2ca02c', '#f0e442'])
       .clamp(true);
 
     const states = topojson.feature(topoData, topoData.objects.states);
@@ -73,8 +74,9 @@ export function ResultMap({ topoData, selectedMatches }: ResultMapProps) {
         if (hasMatches && !matchedStateIds.has(stateId)) {
           return '#e8e8e8';
         }
-        if (data.districts2032 === 1 && !matchedStateIds.has(stateId)) return '#d0d0d0';
-        return leanColorScale(data.partisanLean);
+        if (data.districts === 1 && !matchedStateIds.has(stateId)) return '#d0d0d0';
+        const safePercent = (data.safeSeats / data.districts) * 100;
+        return safeSeatsColorScale(safePercent);
       })
       .attr('stroke', (d: any) => {
         const fips = d.id.toString().padStart(2, '0');
@@ -123,8 +125,8 @@ export function ResultMap({ topoData, selectedMatches }: ResultMapProps) {
         if (hasMatches && !matchedStateIds.has(stateId)) return '#bbb';
         const data = stateDataById[stateId];
         if (!data) return '#666';
-        if (data.districts2032 === 1) return '#888';
-        return Math.abs(data.partisanLean) < 8 ? '#333' : '#fff';
+        if (data.districts === 1) return '#888';
+        return '#333'; // Dark text works on both green and yellow
       })
       .attr('pointer-events', 'none')
       .text((d: any) => {

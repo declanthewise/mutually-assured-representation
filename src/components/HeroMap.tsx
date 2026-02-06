@@ -29,9 +29,10 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
 
     svg.attr('viewBox', `0 0 ${width} ${height}`);
 
-    const leanColorScale = d3.scaleLinear<string>()
-      .domain([-20, 0, 20])
-      .range(['#b2182b', '#f0f0f0', '#2166ac'])
+    // Green (competitive) to yellow (safe) based on % of safe seats
+    const safeSeatsColorScale = d3.scaleLinear<string>()
+      .domain([0, 100])
+      .range(['#2ca02c', '#f0e442'])
       .clamp(true);
 
     const states = topojson.feature(topoData, topoData.objects.states);
@@ -48,8 +49,9 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
         const stateId = fipsToState[fips];
         const data = stateDataById[stateId];
         if (!data) return '#ccc';
-        if (data.districts2032 === 1) return '#d0d0d0';
-        return leanColorScale(data.partisanLean);
+        if (data.districts === 1) return '#d0d0d0';
+        const safePercent = (data.safeSeats / data.districts) * 100;
+        return safeSeatsColorScale(safePercent);
       })
       .attr('stroke', '#fff')
       .attr('stroke-width', 1)
@@ -102,8 +104,8 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
         const stateId = fipsToState[fips];
         const data = stateDataById[stateId];
         if (!data) return '#666';
-        if (data.districts2032 === 1) return '#888';
-        return Math.abs(data.partisanLean) < 8 ? '#333' : '#fff';
+        if (data.districts === 1) return '#888';
+        return '#333'; // Dark text works on both green and yellow
       })
       .attr('pointer-events', 'none')
       .text((d: any) => {
@@ -120,15 +122,15 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
       <svg ref={svgRef} className="hero-map" />
       <div className="hero-map-legend">
         <div className="legend-scale">
-          <div className="legend-gradient lean" />
+          <div className="legend-gradient safe-seats" />
           <div className="legend-labels">
-            <span>R +20%</span>
-            <span>Neutral</span>
-            <span>D +20%</span>
+            <span>0% Safe</span>
+            <span>50%</span>
+            <span>100% Safe</span>
           </div>
         </div>
         <p className="legend-explanation">
-          Partisan lean based on <a href="https://en.wikipedia.org/wiki/Cook_Partisan_Voting_Index" target="_blank" rel="noopener noreferrer">Cook PVI</a>.
+          Percentage of safe seats (|<a href="https://en.wikipedia.org/wiki/Cook_Partisan_Voting_Index" target="_blank" rel="noopener noreferrer">Cook PVI</a>| ≥ 10).
           Numbers show projected 2032 districts.
         </p>
       </div>
