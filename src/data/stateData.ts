@@ -9,9 +9,15 @@ import { StateData } from '../types';
 // Partisan lean: 2025 Cook PVI (75/25 weighted average of 2020+2024, relative to national average)
 //   Positive = D lean, Negative = R lean
 //
+// Safe/competitive seats: Aggregated from district-level 2025 Cook PVI data
+//   Safe seat: |PVI| >= 10 (e.g., R+10 or D+10 or stronger)
+//   Competitive seat: |PVI| < 10
+//
 // 2032 projections based on Brennan Center projections using Census Bureau's Vintage 2025 estimates
 //
 // Sources:
+// - https://github.com/PlanScore/National-EG-Map
+// - https://www.cookpolitical.com/cook-pvi/2025-partisan-voting-index/district-map-and-list
 // - https://en.wikipedia.org/wiki/Cook_Partisan_Voting_Index
 // - https://www.brennancenter.org/our-work/analysis-opinion/big-changes-ahead-voting-maps-after-next-census
 
@@ -26,7 +32,11 @@ export const stateData: StateData[] = [
     "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": false
+    "hasBallotInitiative": false,
+    "safeSeats": 6,
+    "safeR": 5,
+    "safeD": 1,
+    "competitiveSeats": 1
   },
   {
     "id": "AK",
@@ -38,7 +48,11 @@ export const stateData: StateData[] = [
     "stateControl": "rep",
     "redistrictingAuthority": "advisory_commission",
     "governorCanVeto": true,
-    "hasBallotInitiative": true
+    "hasBallotInitiative": true,
+    "safeSeats": 0,
+    "safeR": 0,
+    "safeD": 0,
+    "competitiveSeats": 1
   },
   {
     "id": "AZ",
@@ -50,7 +64,11 @@ export const stateData: StateData[] = [
     "stateControl": "split",
     "redistrictingAuthority": "independent_commission",
     "governorCanVeto": false,
-    "hasBallotInitiative": true
+    "hasBallotInitiative": true,
+    "safeSeats": 4,
+    "safeR": 2,
+    "safeD": 2,
+    "competitiveSeats": 5
   },
   {
     "id": "AR",
@@ -62,7 +80,11 @@ export const stateData: StateData[] = [
     "stateControl": "rep",
     "redistrictingAuthority": "politician_commission",
     "governorCanVeto": true,
-    "hasBallotInitiative": true
+    "hasBallotInitiative": true,
+    "safeSeats": 3,
+    "safeR": 3,
+    "safeD": 0,
+    "competitiveSeats": 1
   },
   {
     "id": "CA",
@@ -74,7 +96,11 @@ export const stateData: StateData[] = [
     "stateControl": "dem",
     "redistrictingAuthority": "independent_commission",
     "governorCanVeto": false,
-    "hasBallotInitiative": true
+    "hasBallotInitiative": true,
+    "safeSeats": 32,
+    "safeR": 2,
+    "safeD": 30,
+    "competitiveSeats": 20
   },
   {
     "id": "CO",
@@ -86,7 +112,11 @@ export const stateData: StateData[] = [
     "stateControl": "dem",
     "redistrictingAuthority": "independent_commission",
     "governorCanVeto": false,
-    "hasBallotInitiative": true
+    "hasBallotInitiative": true,
+    "safeSeats": 3,
+    "safeR": 0,
+    "safeD": 3,
+    "competitiveSeats": 5
   },
   {
     "id": "CT",
@@ -98,7 +128,11 @@ export const stateData: StateData[] = [
     "stateControl": "dem",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": false,
-    "hasBallotInitiative": false
+    "hasBallotInitiative": false,
+    "safeSeats": 2,
+    "safeR": 0,
+    "safeD": 2,
+    "competitiveSeats": 3
   },
   {
     "id": "DE",
@@ -110,7 +144,11 @@ export const stateData: StateData[] = [
     "stateControl": "dem",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": false
+    "hasBallotInitiative": false,
+    "safeSeats": 0,
+    "safeR": 0,
+    "safeD": 0,
+    "competitiveSeats": 1
   },
   {
     "id": "FL",
@@ -122,7 +160,11 @@ export const stateData: StateData[] = [
     "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": true
+    "hasBallotInitiative": true,
+    "safeSeats": 14,
+    "safeR": 11,
+    "safeD": 3,
+    "competitiveSeats": 14
   },
   {
     "id": "GA",
@@ -134,7 +176,11 @@ export const stateData: StateData[] = [
     "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": false
+    "hasBallotInitiative": false,
+    "safeSeats": 11,
+    "safeR": 7,
+    "safeD": 4,
+    "competitiveSeats": 3
   },
   {
     "id": "HI",
@@ -146,7 +192,11 @@ export const stateData: StateData[] = [
     "stateControl": "dem",
     "redistrictingAuthority": "politician_commission",
     "governorCanVeto": false,
-    "hasBallotInitiative": false
+    "hasBallotInitiative": false,
+    "safeSeats": 2,
+    "safeR": 0,
+    "safeD": 2,
+    "competitiveSeats": 0
   },
   {
     "id": "ID",
@@ -158,7 +208,11 @@ export const stateData: StateData[] = [
     "stateControl": "rep",
     "redistrictingAuthority": "independent_commission",
     "governorCanVeto": false,
-    "hasBallotInitiative": true
+    "hasBallotInitiative": true,
+    "safeSeats": 2,
+    "safeR": 2,
+    "safeD": 0,
+    "competitiveSeats": 0
   },
   {
     "id": "IL",
@@ -170,7 +224,11 @@ export const stateData: StateData[] = [
     "stateControl": "dem",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": true
+    "hasBallotInitiative": true,
+    "safeSeats": 11,
+    "safeR": 3,
+    "safeD": 8,
+    "competitiveSeats": 6
   },
   {
     "id": "IN",
@@ -182,7 +240,11 @@ export const stateData: StateData[] = [
     "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": false
+    "hasBallotInitiative": false,
+    "safeSeats": 7,
+    "safeR": 6,
+    "safeD": 1,
+    "competitiveSeats": 2
   },
   {
     "id": "IA",
@@ -194,7 +256,11 @@ export const stateData: StateData[] = [
     "stateControl": "rep",
     "redistrictingAuthority": "advisory_commission",
     "governorCanVeto": true,
-    "hasBallotInitiative": false
+    "hasBallotInitiative": false,
+    "safeSeats": 1,
+    "safeR": 1,
+    "safeD": 0,
+    "competitiveSeats": 3
   },
   {
     "id": "KS",
@@ -206,7 +272,11 @@ export const stateData: StateData[] = [
     "stateControl": "split",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": false
+    "hasBallotInitiative": false,
+    "safeSeats": 3,
+    "safeR": 3,
+    "safeD": 0,
+    "competitiveSeats": 1
   },
   {
     "id": "KY",
@@ -218,7 +288,11 @@ export const stateData: StateData[] = [
     "stateControl": "split",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": false
+    "hasBallotInitiative": false,
+    "safeSeats": 5,
+    "safeR": 4,
+    "safeD": 1,
+    "competitiveSeats": 1
   },
   {
     "id": "LA",
@@ -230,7 +304,11 @@ export const stateData: StateData[] = [
     "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": false
+    "hasBallotInitiative": false,
+    "safeSeats": 5,
+    "safeR": 4,
+    "safeD": 1,
+    "competitiveSeats": 1
   },
   {
     "id": "ME",
@@ -242,7 +320,11 @@ export const stateData: StateData[] = [
     "stateControl": "dem",
     "redistrictingAuthority": "advisory_commission",
     "governorCanVeto": true,
-    "hasBallotInitiative": true
+    "hasBallotInitiative": true,
+    "safeSeats": 1,
+    "safeR": 0,
+    "safeD": 1,
+    "competitiveSeats": 1
   },
   {
     "id": "MD",
@@ -254,7 +336,11 @@ export const stateData: StateData[] = [
     "stateControl": "dem",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": true
+    "hasBallotInitiative": true,
+    "safeSeats": 6,
+    "safeR": 0,
+    "safeD": 6,
+    "competitiveSeats": 2
   },
   {
     "id": "MA",
@@ -266,7 +352,11 @@ export const stateData: StateData[] = [
     "stateControl": "dem",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": true
+    "hasBallotInitiative": true,
+    "safeSeats": 7,
+    "safeR": 0,
+    "safeD": 7,
+    "competitiveSeats": 2
   },
   {
     "id": "MI",
@@ -278,7 +368,11 @@ export const stateData: StateData[] = [
     "stateControl": "dem",
     "redistrictingAuthority": "independent_commission",
     "governorCanVeto": false,
-    "hasBallotInitiative": true
+    "hasBallotInitiative": true,
+    "safeSeats": 7,
+    "safeR": 4,
+    "safeD": 3,
+    "competitiveSeats": 6
   },
   {
     "id": "MN",
@@ -290,7 +384,11 @@ export const stateData: StateData[] = [
     "stateControl": "dem",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": false
+    "hasBallotInitiative": false,
+    "safeSeats": 5,
+    "safeR": 2,
+    "safeD": 3,
+    "competitiveSeats": 3
   },
   {
     "id": "MS",
@@ -302,7 +400,11 @@ export const stateData: StateData[] = [
     "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": true
+    "hasBallotInitiative": true,
+    "safeSeats": 4,
+    "safeR": 3,
+    "safeD": 1,
+    "competitiveSeats": 0
   },
   {
     "id": "MO",
@@ -314,7 +416,11 @@ export const stateData: StateData[] = [
     "stateControl": "rep",
     "redistrictingAuthority": "politician_commission",
     "governorCanVeto": true,
-    "hasBallotInitiative": true
+    "hasBallotInitiative": true,
+    "safeSeats": 7,
+    "safeR": 5,
+    "safeD": 2,
+    "competitiveSeats": 1
   },
   {
     "id": "MT",
@@ -326,7 +432,11 @@ export const stateData: StateData[] = [
     "stateControl": "rep",
     "redistrictingAuthority": "independent_commission",
     "governorCanVeto": false,
-    "hasBallotInitiative": true
+    "hasBallotInitiative": true,
+    "safeSeats": 1,
+    "safeR": 1,
+    "safeD": 0,
+    "competitiveSeats": 1
   },
   {
     "id": "NE",
@@ -338,7 +448,11 @@ export const stateData: StateData[] = [
     "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": true
+    "hasBallotInitiative": true,
+    "safeSeats": 1,
+    "safeR": 1,
+    "safeD": 0,
+    "competitiveSeats": 2
   },
   {
     "id": "NV",
@@ -350,7 +464,11 @@ export const stateData: StateData[] = [
     "stateControl": "dem",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": true
+    "hasBallotInitiative": true,
+    "safeSeats": 0,
+    "safeR": 0,
+    "safeD": 0,
+    "competitiveSeats": 4
   },
   {
     "id": "NH",
@@ -362,7 +480,11 @@ export const stateData: StateData[] = [
     "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": false
+    "hasBallotInitiative": false,
+    "safeSeats": 0,
+    "safeR": 0,
+    "safeD": 0,
+    "competitiveSeats": 2
   },
   {
     "id": "NJ",
@@ -374,7 +496,11 @@ export const stateData: StateData[] = [
     "stateControl": "dem",
     "redistrictingAuthority": "politician_commission",
     "governorCanVeto": false,
-    "hasBallotInitiative": false
+    "hasBallotInitiative": false,
+    "safeSeats": 5,
+    "safeR": 1,
+    "safeD": 4,
+    "competitiveSeats": 7
   },
   {
     "id": "NM",
@@ -386,7 +512,11 @@ export const stateData: StateData[] = [
     "stateControl": "dem",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": true
+    "hasBallotInitiative": true,
+    "safeSeats": 0,
+    "safeR": 0,
+    "safeD": 0,
+    "competitiveSeats": 3
   },
   {
     "id": "NY",
@@ -398,7 +528,11 @@ export const stateData: StateData[] = [
     "stateControl": "dem",
     "redistrictingAuthority": "independent_commission",
     "governorCanVeto": true,
-    "hasBallotInitiative": false
+    "hasBallotInitiative": false,
+    "safeSeats": 16,
+    "safeR": 4,
+    "safeD": 12,
+    "competitiveSeats": 10
   },
   {
     "id": "NC",
@@ -410,7 +544,11 @@ export const stateData: StateData[] = [
     "stateControl": "split",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": false,
-    "hasBallotInitiative": false
+    "hasBallotInitiative": false,
+    "safeSeats": 5,
+    "safeR": 2,
+    "safeD": 3,
+    "competitiveSeats": 9
   },
   {
     "id": "ND",
@@ -422,7 +560,11 @@ export const stateData: StateData[] = [
     "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": true
+    "hasBallotInitiative": true,
+    "safeSeats": 1,
+    "safeR": 1,
+    "safeD": 0,
+    "competitiveSeats": 0
   },
   {
     "id": "OH",
@@ -434,7 +576,11 @@ export const stateData: StateData[] = [
     "stateControl": "rep",
     "redistrictingAuthority": "politician_commission",
     "governorCanVeto": true,
-    "hasBallotInitiative": true
+    "hasBallotInitiative": true,
+    "safeSeats": 8,
+    "safeR": 6,
+    "safeD": 2,
+    "competitiveSeats": 7
   },
   {
     "id": "OK",
@@ -446,7 +592,11 @@ export const stateData: StateData[] = [
     "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": true
+    "hasBallotInitiative": true,
+    "safeSeats": 4,
+    "safeR": 4,
+    "safeD": 0,
+    "competitiveSeats": 1
   },
   {
     "id": "OR",
@@ -458,7 +608,11 @@ export const stateData: StateData[] = [
     "stateControl": "dem",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": true
+    "hasBallotInitiative": true,
+    "safeSeats": 3,
+    "safeR": 1,
+    "safeD": 2,
+    "competitiveSeats": 3
   },
   {
     "id": "PA",
@@ -470,7 +624,11 @@ export const stateData: StateData[] = [
     "stateControl": "split",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": false
+    "hasBallotInitiative": false,
+    "safeSeats": 10,
+    "safeR": 6,
+    "safeD": 4,
+    "competitiveSeats": 7
   },
   {
     "id": "RI",
@@ -482,7 +640,11 @@ export const stateData: StateData[] = [
     "stateControl": "dem",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": false
+    "hasBallotInitiative": false,
+    "safeSeats": 1,
+    "safeR": 0,
+    "safeD": 1,
+    "competitiveSeats": 1
   },
   {
     "id": "SC",
@@ -494,7 +656,11 @@ export const stateData: StateData[] = [
     "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": false
+    "hasBallotInitiative": false,
+    "safeSeats": 5,
+    "safeR": 4,
+    "safeD": 1,
+    "competitiveSeats": 2
   },
   {
     "id": "SD",
@@ -506,7 +672,11 @@ export const stateData: StateData[] = [
     "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": true
+    "hasBallotInitiative": true,
+    "safeSeats": 1,
+    "safeR": 1,
+    "safeD": 0,
+    "competitiveSeats": 0
   },
   {
     "id": "TN",
@@ -518,7 +688,11 @@ export const stateData: StateData[] = [
     "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": false
+    "hasBallotInitiative": false,
+    "safeSeats": 8,
+    "safeR": 7,
+    "safeD": 1,
+    "competitiveSeats": 1
   },
   {
     "id": "TX",
@@ -530,7 +704,11 @@ export const stateData: StateData[] = [
     "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": false
+    "hasBallotInitiative": false,
+    "safeSeats": 32,
+    "safeR": 21,
+    "safeD": 11,
+    "competitiveSeats": 6
   },
   {
     "id": "UT",
@@ -542,7 +720,11 @@ export const stateData: StateData[] = [
     "stateControl": "rep",
     "redistrictingAuthority": "advisory_commission",
     "governorCanVeto": true,
-    "hasBallotInitiative": true
+    "hasBallotInitiative": true,
+    "safeSeats": 4,
+    "safeR": 4,
+    "safeD": 0,
+    "competitiveSeats": 0
   },
   {
     "id": "VT",
@@ -554,7 +736,11 @@ export const stateData: StateData[] = [
     "stateControl": "split",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": false
+    "hasBallotInitiative": false,
+    "safeSeats": 1,
+    "safeR": 0,
+    "safeD": 1,
+    "competitiveSeats": 0
   },
   {
     "id": "VA",
@@ -566,7 +752,11 @@ export const stateData: StateData[] = [
     "stateControl": "split",
     "redistrictingAuthority": "politician_commission",
     "governorCanVeto": false,
-    "hasBallotInitiative": false
+    "hasBallotInitiative": false,
+    "safeSeats": 6,
+    "safeR": 2,
+    "safeD": 4,
+    "competitiveSeats": 5
   },
   {
     "id": "WA",
@@ -578,7 +768,11 @@ export const stateData: StateData[] = [
     "stateControl": "dem",
     "redistrictingAuthority": "independent_commission",
     "governorCanVeto": false,
-    "hasBallotInitiative": true
+    "hasBallotInitiative": true,
+    "safeSeats": 6,
+    "safeR": 1,
+    "safeD": 5,
+    "competitiveSeats": 4
   },
   {
     "id": "WV",
@@ -590,7 +784,11 @@ export const stateData: StateData[] = [
     "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": false
+    "hasBallotInitiative": false,
+    "safeSeats": 2,
+    "safeR": 2,
+    "safeD": 0,
+    "competitiveSeats": 0
   },
   {
     "id": "WI",
@@ -602,7 +800,11 @@ export const stateData: StateData[] = [
     "stateControl": "split",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": false
+    "hasBallotInitiative": false,
+    "safeSeats": 4,
+    "safeR": 2,
+    "safeD": 2,
+    "competitiveSeats": 4
   },
   {
     "id": "WY",
@@ -614,7 +816,11 @@ export const stateData: StateData[] = [
     "stateControl": "rep",
     "redistrictingAuthority": "legislature",
     "governorCanVeto": true,
-    "hasBallotInitiative": true
+    "hasBallotInitiative": true,
+    "safeSeats": 1,
+    "safeR": 1,
+    "safeD": 0,
+    "competitiveSeats": 0
   }
 ];
 
