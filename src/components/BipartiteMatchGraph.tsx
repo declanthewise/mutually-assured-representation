@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { StateData, MatchPair } from '../types';
-import { findMatches, isStrongMatch } from '../utils/findMatches';
+import { findMatches, isStrongMatch, getSeats } from '../utils/findMatches';
 
 interface BipartiteMatchGraphProps {
   groupStates: StateData[];
@@ -37,10 +37,23 @@ interface MatchLine {
   isStrong: boolean;
 }
 
-const BOX_WIDTH = 50;
-const BOX_HEIGHT = 20;
-const LEFT_X = 90;
-const RIGHT_X = 220;
+const BOX_WIDTH = 110;
+const BOX_HEIGHT = 36;
+const INNER_GAP = 3;
+const LEFT_X = 145;
+const RIGHT_X = 235;
+
+function formatLean(lean: number): string {
+  if (lean === 0) return 'EVEN';
+  const dir = lean > 0 ? 'D' : 'R';
+  return `${dir}+${Math.abs(lean).toFixed(0)}%`;
+}
+
+function formatSeats(seats: number): string {
+  if (Math.abs(seats) < 0.05) return '0';
+  const dir = seats > 0 ? 'D' : 'R';
+  return `${dir}+${Math.abs(seats).toFixed(1)}`;
+}
 
 function pairKey(a: string, b: string): string {
   return [a, b].sort().join('-');
@@ -118,17 +131,22 @@ export function BipartiteMatchGraph({
   }, [leftColumn, rightColumn, uniqueDistrictCounts]);
 
   const { leftPositions, rightPositions, totalHeight } = useMemo(() => {
-    const topPadding = 50;
-    const bottomPadding = 30;
-    const gap = 8;
+    const topPadding = 8;
+    const bottomPadding = 8;
+    const groupGap = 8;
 
+    // Calculate start Y and allocated height for each district count group
     const districtStartY = new Map<number, number>();
+    const districtAllocatedHeight = new Map<number, number>();
     let currentY = topPadding;
     for (const d of uniqueDistrictCounts) {
+      const maxStates = maxStatesPerDistrict.get(d) ?? 1;
+      const allocatedHeight = maxStates * BOX_HEIGHT + (maxStates - 1) * INNER_GAP;
       districtStartY.set(d, currentY);
-      currentY += (maxStatesPerDistrict.get(d) ?? 1) * BOX_HEIGHT + gap;
+      districtAllocatedHeight.set(d, allocatedHeight);
+      currentY += allocatedHeight + groupGap;
     }
-    const totalHeight = currentY - gap + bottomPadding;
+    const totalHeight = currentY - groupGap + bottomPadding;
 
     const calculatePositions = (states: StateData[]): PositionedState[] => {
       const byDistricts = new Map<number, StateData[]>();
@@ -141,8 +159,12 @@ export function BipartiteMatchGraph({
       const positions: PositionedState[] = [];
       for (const [districts, statesInGroup] of byDistricts) {
         const startY = districtStartY.get(districts)!;
+        const allocatedHeight = districtAllocatedHeight.get(districts)!;
+        const n = statesInGroup.length;
+        const groupHeight = n * BOX_HEIGHT + (n - 1) * INNER_GAP;
+        const offset = (allocatedHeight - groupHeight) / 2;
         statesInGroup.forEach((state, i) => {
-          positions.push({ state, y: startY + i * BOX_HEIGHT });
+          positions.push({ state, y: startY + offset + i * (BOX_HEIGHT + INNER_GAP) });
         });
       }
 
@@ -254,6 +276,7 @@ export function BipartiteMatchGraph({
       selectedMatches.some(([a, b]) => a === state.id || b === state.id);
 
     const boxX = align === 'left' ? x - BOX_WIDTH : x;
+    const seats = getSeats(state, '2032');
 
     return (
       <g
@@ -262,6 +285,14 @@ export function BipartiteMatchGraph({
         onClick={() => handleStateClick(state)}
         style={{ cursor: isSingleDistrict ? 'default' : 'pointer' }}
       >
+        <rect
+          x={boxX}
+          y={y}
+          width={BOX_WIDTH}
+          height={BOX_HEIGHT}
+          fill="white"
+          rx={3}
+        />
         <rect
           x={boxX}
           y={y}
@@ -291,16 +322,49 @@ export function BipartiteMatchGraph({
           />
         )}
         <text
-          x={boxX + BOX_WIDTH / 2}
-          y={y + BOX_HEIGHT / 2}
-          textAnchor="middle"
+          x={boxX + 6}
+          y={y + 10}
+          textAnchor="start"
           dominantBaseline="central"
-          fontSize={11}
+          fontSize={10}
           fill={isSingleDistrict ? '#999' : '#333'}
           fontWeight={isActive ? 600 : 500}
         >
-          {state.id}
+          {state.name}
         </text>
+        {!isSingleDistrict && (
+          <>
+            <text
+              x={boxX + BOX_WIDTH - 6}
+              y={y + 10}
+              textAnchor="end"
+              dominantBaseline="central"
+              fontSize={9}
+              fill="#555"
+            >
+              {formatLean(state.partisanLean)}
+            </text>
+            <line
+              x1={boxX + 6}
+              y1={y + 19}
+              x2={boxX + BOX_WIDTH - 6}
+              y2={y + 19}
+              stroke="#666"
+              strokeOpacity={0.3}
+              strokeWidth={0.5}
+            />
+            <text
+              x={boxX + BOX_WIDTH / 2}
+              y={y + 28}
+              textAnchor="middle"
+              dominantBaseline="central"
+              fontSize={9}
+              fill="#555"
+            >
+              Seats: {formatSeats(seats)}
+            </text>
+          </>
+        )}
       </g>
     );
   };
@@ -322,9 +386,9 @@ export function BipartiteMatchGraph({
         key={`${fromState.id}-${toState.id}-${index}`}
         d={`M ${fromX} ${fromY} C ${controlX} ${fromY}, ${controlX} ${toY}, ${toX} ${toY}`}
         fill="none"
-        stroke={isPairSelected ? '#c9a227' : isStrong ? '#4caf50' : '#ffd700'}
+        stroke={isPairSelected ? '#c9a227' : '#ccc'}
         strokeWidth={isPairSelected ? 3 : isStrong ? 2 : 1.5}
-        strokeOpacity={isPairSelected ? 1 : isRelatedLine ? (isStrong ? 0.8 : 0.6) : 0.15}
+        strokeOpacity={isPairSelected ? 1 : isRelatedLine ? 0.7 : 0.15}
         className={`match-line ${isStrong ? 'strong' : 'weak'} ${!isRelatedLine && !isPairSelected ? 'dimmed' : ''}`}
       />
     );
@@ -370,20 +434,10 @@ export function BipartiteMatchGraph({
 
   return (
     <div className="bipartite-graph-wrapper">
-      <svg viewBox={`0 0 320 ${totalHeight}`} className="bipartite-graph">
-        {/* Column labels */}
-        <text x={LEFT_X - BOX_WIDTH / 2} y={20} textAnchor="middle" fontSize={14} fontWeight={600} fill="#2166ac">
-          D-Leaning
-        </text>
-        <text x={RIGHT_X + BOX_WIDTH / 2} y={20} textAnchor="middle" fontSize={14} fontWeight={600} fill="#b2182b">
-          R-Leaning
-        </text>
-
-        {/* Instruction text */}
-        <text x={160} y={38} textAnchor="middle" fontSize={10} fill="#999">
-          {activeStateId ? 'Click a highlighted match to select the pair' : 'Click a state to see its matches'}
-        </text>
-
+      <div style={{ textAlign: 'center', fontSize: 11, color: '#999', marginBottom: 4 }}>
+        {activeStateId ? 'Click a highlighted match to select the pair' : 'Click a state to see its matches'}
+      </div>
+      <svg viewBox={`0 0 390 ${totalHeight}`} className="bipartite-graph">
         {/* District count labels */}
         {leftDistrictLabels.map(({ districts, centerY }) => (
           <text
@@ -425,21 +479,6 @@ export function BipartiteMatchGraph({
           {rightPositions.map(pos => renderStateBox(pos, RIGHT_X, 'right'))}
         </g>
       </svg>
-
-      <div className="graph-legend">
-        <div className="legend-item">
-          <span className="legend-line strong"></span>
-          <span>Strong match</span>
-        </div>
-        <div className="legend-item">
-          <span className="legend-line weak"></span>
-          <span>Weak match</span>
-        </div>
-        <div className="legend-item">
-          <span className="legend-line selected"></span>
-          <span>Selected pair</span>
-        </div>
-      </div>
     </div>
   );
 }
