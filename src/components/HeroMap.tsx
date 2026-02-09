@@ -152,7 +152,7 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
       .data([
         'Circles sized by number of safe seats. States',
         'colored by percentage of competitive seats.',
-        '(Safe = Cook PVI ≥ 10)'
+        '(Safe = Cook PVI ≥ 10); 2020 apportionment'
       ])
       .join('tspan')
       .attr('x', 700)
