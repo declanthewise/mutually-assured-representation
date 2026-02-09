@@ -36,10 +36,10 @@ export function ResultMap({ topoData, selectedMatches }: ResultMapProps) {
 
     svg.attr('viewBox', `0 0 ${width} ${height}`);
 
-    // Green (competitive) to yellow (safe) based on % of safe seats
+    // Green (competitive) to gray (safe) based on % of safe seats
     const safeSeatsColorScale = d3.scaleLinear<string>()
       .domain([0, 100])
-      .range(['#2ca25f', '#f0e442'])
+      .range(['#2ca25f', '#d0d0d0'])
       .clamp(true);
 
     const states = topojson.feature(topoData, topoData.objects.states);
@@ -99,7 +99,35 @@ export function ResultMap({ topoData, selectedMatches }: ResultMapProps) {
       .attr('d', path)
       .attr('pointer-events', 'none');
 
-    // State labels
+    // Circles sized by nominal number of safe seats
+    const maxSafeSeats = 32;
+    const maxRadius = 35;
+    const safeSeatsRadius = d3.scaleSqrt()
+      .domain([0, maxSafeSeats])
+      .range([0, maxRadius]);
+
+    svg.append('g')
+      .attr('class', 'safe-seat-circles')
+      .selectAll('circle')
+      .data((states as any).features)
+      .join('circle')
+      .attr('cx', (d: any) => path.centroid(d)[0])
+      .attr('cy', (d: any) => path.centroid(d)[1])
+      .attr('r', (d: any) => {
+        const fips = d.id.toString().padStart(2, '0');
+        const stateId = fipsToState[fips];
+        const data = stateDataById[stateId];
+        if (!data || data.safeSeats === 0) return 0;
+        if (hasMatches && !matchedStateIds.has(stateId)) return 0;
+        return safeSeatsRadius(data.safeSeats);
+      })
+      .attr('fill', '#e8a832')
+      .attr('fill-opacity', 0.75)
+      .attr('stroke', '#c98a1a')
+      .attr('stroke-width', 0.5)
+      .attr('pointer-events', 'none');
+
+    // State labels (drawn after circles so they render on top)
     svg.append('g')
       .selectAll('text')
       .data((states as any).features)
@@ -124,8 +152,7 @@ export function ResultMap({ topoData, selectedMatches }: ResultMapProps) {
         if (hasMatches && !matchedStateIds.has(stateId)) return '#bbb';
         const data = stateDataById[stateId];
         if (!data) return '#666';
-        if (data.districts === 1) return '#888';
-        return '#333'; // Dark text works on both green and yellow
+        return '#333';
       })
       .attr('pointer-events', 'none')
       .text((d: any) => {
@@ -165,7 +192,7 @@ export function ResultMap({ topoData, selectedMatches }: ResultMapProps) {
   }, [topoData, selectedMatches, matchedStateIds, hasMatches]);
 
   return (
-    <div className="result-map-wrapper">
+    <>
       <svg ref={svgRef} className="result-map" />
       {!hasMatches && (
         <p className="result-map-empty">
@@ -177,6 +204,6 @@ export function ResultMap({ topoData, selectedMatches }: ResultMapProps) {
           {selectedMatches.length} {selectedMatches.length === 1 ? 'pact' : 'pacts'} selected
         </p>
       )}
-    </div>
+    </>
   );
 }

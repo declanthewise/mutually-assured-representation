@@ -29,10 +29,10 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
 
     svg.attr('viewBox', `0 0 ${width} ${height}`);
 
-    // Green (competitive) to yellow (safe) based on % of safe seats
+    // Green (competitive) to gray (safe) based on % of safe seats
     const safeSeatsColorScale = d3.scaleLinear<string>()
       .domain([0, 100])
-      .range(['#2ca25f', '#f0e442'])
+      .range(['#2ca25f', '#d0d0d0'])
       .clamp(true);
 
     const states = topojson.feature(topoData, topoData.objects.states);
@@ -86,7 +86,34 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
       .attr('d', path)
       .attr('pointer-events', 'none');
 
-    // State abbreviation labels
+    // Circles sized by nominal number of safe seats
+    const maxSafeSeats = 32;
+    const maxRadius = 35;
+    const safeSeatsRadius = d3.scaleSqrt()
+      .domain([0, maxSafeSeats])
+      .range([0, maxRadius]);
+
+    svg.append('g')
+      .attr('class', 'safe-seat-circles')
+      .selectAll('circle')
+      .data((states as any).features)
+      .join('circle')
+      .attr('cx', (d: any) => path.centroid(d)[0])
+      .attr('cy', (d: any) => path.centroid(d)[1])
+      .attr('r', (d: any) => {
+        const fips = d.id.toString().padStart(2, '0');
+        const stateId = fipsToState[fips];
+        const data = stateDataById[stateId];
+        if (!data || data.safeSeats === 0) return 0;
+        return safeSeatsRadius(data.safeSeats);
+      })
+      .attr('fill', '#e8a832')
+      .attr('fill-opacity', 0.75)
+      .attr('stroke', '#c98a1a')
+      .attr('stroke-width', 0.5)
+      .attr('pointer-events', 'none');
+
+    // State abbreviation labels (drawn after circles so they render on top)
     svg.append('g')
       .attr('class', 'labels')
       .selectAll('text')
@@ -103,8 +130,7 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
         const stateId = fipsToState[fips];
         const data = stateDataById[stateId];
         if (!data) return '#666';
-        if (data.districts === 1) return '#888';
-        return '#333'; // Dark text works on both green and yellow
+        return '#333';
       })
       .attr('pointer-events', 'none')
       .text((d: any) => {
@@ -115,31 +141,27 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
         return data.id;
       });
 
-    // In-map annotation, positioned in the Northeast/Great Lakes gap
-    const noteGroup = svg.append('g')
-      .attr('pointer-events', 'none');
-
-    noteGroup.append('text')
+    // In-map annotation above NY/Michigan
+    svg.append('text')
       .attr('x', 700)
-      .attr('y', 60)
-      .attr('font-size', '13px')
-      .attr('font-weight', '500')
-      .attr('fill', '#6f6f6f')
-      .attr('letter-spacing', '0.01em')
+      .attr('y', 42)
+      .attr('font-size', '10px')
+      .attr('fill', '#888')
+      .attr('pointer-events', 'none')
       .selectAll('tspan')
       .data([
-        'Percentage of safe seats',
-        '(Cook PVI ≥ 10)',
+        'Circles sized by number of safe seats. States',
+        'colored by percentage of competitive seats.',
+        '(Safe = Cook PVI ≥ 10)'
       ])
       .join('tspan')
       .attr('x', 700)
-      .attr('dy', (_d, i) => (i === 0 ? 0 : 17))
+      .attr('dy', (_d, i) => (i === 0 ? 0 : 13))
       .text(d => d);
+
   }, [topoData]);
 
   return (
-    <div className="hero-map-wrapper">
-      <svg ref={svgRef} className="hero-map" />
-    </div>
+    <svg ref={svgRef} className="hero-map" />
   );
 }
