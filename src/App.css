@@ -78,7 +78,7 @@ body {
 
 .article-header h1 {
   font-family: 'Playfair Display', Georgia, serif;
-  font-size: clamp(2rem, 4vw, 2.9rem);
+  font-size: clamp(2.4rem, 4vw, 2.9rem);
   font-weight: 600;
   color: #111;
   letter-spacing: 0;
@@ -101,18 +101,12 @@ body {
 
 .article-subtitle {
   color: #2d2d2d;
-  font-size: clamp(1.1rem, 1.8vw, 1.3rem);
+  font-size: clamp(1rem, 1.5vw, 1.1rem);
   max-width: 640px;
-  margin: 0 auto 0.9rem;
+  margin: 0 auto 0;
   line-height: 1.45;
 }
 
-.article-byline {
-  color: #666;
-  font-size: 0.88rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
 
 /* ===========================
    Hero Map Section
@@ -121,21 +115,57 @@ body {
 .hero-section {
   max-width: 980px;
   margin: 0 auto;
-  padding: 0.5rem 1.5rem 0;
+  padding: 0 1.5rem 0;
   width: 100%;
+  position: relative;
+}
+
+.hero-stat-bar {
+  position: absolute;
+  top: 2rem;
+  right: 0;
+  width: 50%;
+  text-align: center;
+  z-index: 1;
+}
+
+.hero-stat-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #666;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.hero-stat-number {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #222;
+  margin: 0;
+}
+
+.hero-stat-total {
+  font-weight: 400;
+  color: #222;
 }
 
 .hero-map {
   width: 100%;
   height: auto;
   display: block;
+  margin: 0;
 }
 
 .hero-map-caption {
   text-align: center;
   font-size: 0.85rem;
   color: #888;
-  padding: 0.5rem 1rem 0.25rem;
+  padding: 0.5rem 1rem 0.75rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid #e0e0e0;
 }
 
 /* ===========================
@@ -145,15 +175,11 @@ body {
 .legend-gradient {
   height: 12px;
   border-radius: 4px;
-  background: linear-gradient(to right, #2166ac, #f0f0f0, #b2182b);
+  background: linear-gradient(to right, #c93135, #f0f0f0, #2e6da4);
 }
 
 .legend-gradient.lean {
-  background: linear-gradient(to right, #b2182b, #f0f0f0, #2166ac);
-}
-
-.legend-gradient.safe-seats {
-  background: linear-gradient(to right, #2ca25f, #d0d0d0);
+  background: linear-gradient(to right, #c93135, #f0f0f0, #2e6da4);
 }
 
 .legend-labels {
@@ -362,6 +388,8 @@ body {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   z-index: 1000;
   font-size: 0.8rem;
+  max-width: 180px;
+  white-space: nowrap;
 }
 
 .tooltip-header {
@@ -393,6 +421,10 @@ body {
 }
 
 .tooltip-label {
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   color: #666;
 }
 
@@ -438,15 +470,15 @@ body {
 
   .article-header {
     margin-top: 0.9rem;
-    padding: 1.1rem 1rem 1.4rem;
+    padding: 1.1rem 1rem 0.5rem;
   }
 
   .article-header h1 {
-    font-size: 1.9rem;
+    font-size: 2.4rem;
   }
 
   .article-subtitle {
-    font-size: 1.05rem;
+    font-size: 1rem;
   }
 
   .article-body {
@@ -458,7 +490,19 @@ body {
   }
 
   .hero-section {
-    padding: 0.5rem 0.5rem 0;
+    padding: 0;
+  }
+
+  .hero-stat-bar {
+    top: 0;
+  }
+
+  .hero-stat-number {
+    font-size: 1.4rem;
+  }
+
+  .hero-stat-label {
+    font-size: 0.65rem;
   }
 
   .match-section {

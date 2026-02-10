@@ -1,8 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
 import { HoveredState } from '../types';
-import { stateDataById } from '../data/stateData';
+import { stateData, stateDataById } from '../data/stateData';
 import { fipsToState } from '../utils/fipsMapping';
 
 interface HeroMapProps {
@@ -13,6 +13,11 @@ interface HeroMapProps {
 export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const onHoverStateRef = useRef(onHoverState);
+
+  const totalSafeSeats = useMemo(
+    () => stateData.reduce((sum, s) => sum + s.safeSeats, 0),
+    []
+  );
 
   useEffect(() => {
     onHoverStateRef.current = onHoverState;
@@ -29,10 +34,10 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
 
     svg.attr('viewBox', `0 0 ${width} ${height}`);
 
-    // Green (competitive) to gray (safe) based on % of safe seats
-    const safeSeatsColorScale = d3.scaleLinear<string>()
-      .domain([0, 100])
-      .range(['#2ca25f', '#d0d0d0'])
+    // Red/blue based on partisan lean (negative = R, positive = D)
+    const leanColorScale = d3.scaleLinear<string>()
+      .domain([-20, 0, 20])
+      .range(['#c93135', '#f0f0f0', '#2e6da4'])
       .clamp(true);
 
     const states = topojson.feature(topoData, topoData.objects.states);
@@ -49,8 +54,7 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
         const stateId = fipsToState[fips];
         const data = stateDataById[stateId];
         if (!data) return '#ccc';
-        const safePercent = (data.safeSeats / data.districts) * 100;
-        return safeSeatsColorScale(safePercent);
+        return leanColorScale(data.partisanLean);
       })
       .attr('stroke', '#fff')
       .attr('stroke-width', 1)
@@ -130,7 +134,7 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
         const stateId = fipsToState[fips];
         const data = stateDataById[stateId];
         if (!data) return '#666';
-        return '#333';
+        return Math.abs(data.partisanLean) > 10 ? '#fff' : '#333';
       })
       .attr('pointer-events', 'none')
       .text((d: any) => {
@@ -141,27 +145,18 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
         return data.id;
       });
 
-    // In-map annotation above NY/Michigan
-    svg.append('text')
-      .attr('x', 700)
-      .attr('y', 42)
-      .attr('font-size', '10px')
-      .attr('fill', '#888')
-      .attr('pointer-events', 'none')
-      .selectAll('tspan')
-      .data([
-        'Circles sized by number of safe seats. States',
-        'colored by percentage of competitive seats.',
-        '(Safe = Cook PVI ≥ 10); 2020 apportionment'
-      ])
-      .join('tspan')
-      .attr('x', 700)
-      .attr('dy', (_d, i) => (i === 0 ? 0 : 13))
-      .text(d => d);
-
   }, [topoData]);
 
   return (
-    <svg ref={svgRef} className="hero-map" />
+    <>
+      <div className="hero-stat-bar">
+        <div className="hero-stat-label">Uncompetitive House Seats</div>
+        <div className="hero-stat-number"><span style={{ color: '#e8a832' }}>{totalSafeSeats}</span><span className="hero-stat-total">/435</span></div>
+      </div>
+      <svg ref={svgRef} className="hero-map" />
+      <p className="hero-map-caption">
+        States colored by partisan lean (Cook PVI). Circles sized by number of uncompetitive House seats (|PVI| &ge; 10).
+      </p>
+    </>
   );
 }

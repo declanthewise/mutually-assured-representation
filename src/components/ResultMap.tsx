@@ -36,10 +36,10 @@ export function ResultMap({ topoData, selectedMatches }: ResultMapProps) {
 
     svg.attr('viewBox', `0 0 ${width} ${height}`);
 
-    // Green (competitive) to gray (safe) based on % of safe seats
-    const safeSeatsColorScale = d3.scaleLinear<string>()
-      .domain([0, 100])
-      .range(['#2ca25f', '#d0d0d0'])
+    // Red/blue based on partisan lean (negative = R, positive = D)
+    const leanColorScale = d3.scaleLinear<string>()
+      .domain([-20, 0, 20])
+      .range(['#c93135', '#f0f0f0', '#2e6da4'])
       .clamp(true);
 
     const states = topojson.feature(topoData, topoData.objects.states);
@@ -74,8 +74,7 @@ export function ResultMap({ topoData, selectedMatches }: ResultMapProps) {
         if (hasMatches && !matchedStateIds.has(stateId)) {
           return '#e8e8e8';
         }
-        const safePercent = (data.safeSeats / data.districts) * 100;
-        return safeSeatsColorScale(safePercent);
+        return leanColorScale(data.partisanLean);
       })
       .attr('stroke', (d: any) => {
         const fips = d.id.toString().padStart(2, '0');
@@ -139,12 +138,12 @@ export function ResultMap({ topoData, selectedMatches }: ResultMapProps) {
       .attr('font-size', (d: any) => {
         const fips = d.id.toString().padStart(2, '0');
         const stateId = fipsToState[fips];
-        return matchedStateIds.has(stateId) ? '11px' : '9px';
+        return matchedStateIds.has(stateId) ? '11px' : '10px';
       })
       .attr('font-weight', (d: any) => {
         const fips = d.id.toString().padStart(2, '0');
         const stateId = fipsToState[fips];
-        return matchedStateIds.has(stateId) ? '700' : '500';
+        return matchedStateIds.has(stateId) ? '700' : '600';
       })
       .attr('fill', (d: any) => {
         const fips = d.id.toString().padStart(2, '0');
@@ -152,7 +151,7 @@ export function ResultMap({ topoData, selectedMatches }: ResultMapProps) {
         if (hasMatches && !matchedStateIds.has(stateId)) return '#bbb';
         const data = stateDataById[stateId];
         if (!data) return '#666';
-        return '#333';
+        return Math.abs(data.partisanLean) > 10 ? '#fff' : '#333';
       })
       .attr('pointer-events', 'none')
       .text((d: any) => {

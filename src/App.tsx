@@ -29,24 +29,21 @@ function App() {
 
   return (
     <article className="article">
-      <section className="hero-section">
-        {topoData && (
-          <HeroMap topoData={topoData} onHoverState={setHoveredState} />
-        )}
-      </section>
-
       <header className="article-header">
         <h1>
           <span className="headline-kicker">How to Stop Gerrymandering:</span>
           <span className="headline-title">Mutually Assured Representation</span>
         </h1>
         <p className="article-subtitle">
-          An interactive guide to matching two states at a time to draw down their arms and redistrict fairly
-        </p>
-        <p className="article-byline">
-          By Declan Fitzsimons
+          An interactive guide to matching Democratic states with Republican states one pair at a time, to draw down their arms and redistrict in unison
         </p>
       </header>
+
+      <section className="hero-section">
+        {topoData && (
+          <HeroMap topoData={topoData} onHoverState={setHoveredState} />
+        )}
+      </section>
 
       <section className="article-body">
         <p>
@@ -135,7 +132,7 @@ function App() {
           Matching criteria: opposite partisan lean (within 5%), similar district count (within 30%).
         </p>
         <p>
-          Built by Declan Fitzsimons with Claude Code.
+          Built by Declan Fitzsimons.
         </p>
       </footer>
 

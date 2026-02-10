@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import * as d3 from 'd3';
 import { StateData, MatchPair } from '../types';
 import { findMatches, isStrongMatch, getSeats } from '../utils/findMatches';
 
@@ -8,18 +9,13 @@ interface BipartiteMatchGraphProps {
   onToggleMatch: (pair: MatchPair) => void;
 }
 
-function getPartisanColor(state: StateData): string {
-  const lean = state.partisanLean;
-  const intensity = Math.min(Math.abs(lean) / 20, 1);
-  const opacity = 0.3 + intensity * 0.7;
+const leanColorScale = d3.scaleLinear<string>()
+  .domain([-20, 0, 20])
+  .range(['#c93135', '#f0f0f0', '#2e6da4'])
+  .clamp(true);
 
-  if (lean === 0) {
-    return 'rgba(200, 200, 200, 0.5)';
-  } else if (lean > 0) {
-    return `rgba(100, 130, 255, ${opacity})`;
-  } else {
-    return `rgba(255, 100, 100, ${opacity})`;
-  }
+function getPartisanColor(state: StateData): string {
+  return leanColorScale(state.partisanLean);
 }
 
 interface PositionedState {
@@ -89,7 +85,7 @@ export function BipartiteMatchGraph({
         right.push(state);
       } else {
         if (state.id === 'MI') {
-          left.push(state);
+          right.push(state);
         } else if (state.id === 'WI') {
           right.push(state);
         }
@@ -327,7 +323,7 @@ export function BipartiteMatchGraph({
           textAnchor="start"
           dominantBaseline="central"
           fontSize={10}
-          fill={isSingleDistrict ? '#999' : '#333'}
+          fill={isSingleDistrict ? '#999' : Math.abs(state.partisanLean) > 10 ? '#fff' : '#333'}
           fontWeight={isActive ? 600 : 500}
         >
           {state.name}
@@ -340,7 +336,7 @@ export function BipartiteMatchGraph({
               textAnchor="end"
               dominantBaseline="central"
               fontSize={9}
-              fill="#555"
+              fill={Math.abs(state.partisanLean) > 10 ? 'rgba(255,255,255,0.85)' : '#555'}
             >
               {formatLean(state.partisanLean)}
             </text>
@@ -349,7 +345,7 @@ export function BipartiteMatchGraph({
               y1={y + 19}
               x2={boxX + BOX_WIDTH - 6}
               y2={y + 19}
-              stroke="#666"
+              stroke={Math.abs(state.partisanLean) > 10 ? '#fff' : '#666'}
               strokeOpacity={0.3}
               strokeWidth={0.5}
             />
@@ -359,7 +355,7 @@ export function BipartiteMatchGraph({
               textAnchor="middle"
               dominantBaseline="central"
               fontSize={9}
-              fill="#555"
+              fill={Math.abs(state.partisanLean) > 10 ? 'rgba(255,255,255,0.85)' : '#555'}
             >
               Seats: {formatSeats(seats)}
             </text>
