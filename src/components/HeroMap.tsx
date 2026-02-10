@@ -2,7 +2,8 @@ import { useEffect, useRef, useMemo } from 'react';
 import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
 import { HoveredState } from '../types';
-import { stateData, stateDataById } from '../data/stateData';
+import { stateDataById } from '../data/stateData';
+import { stateSafeSeats } from '../data/safeSeats';
 import { fipsToState } from '../utils/fipsMapping';
 
 interface HeroMapProps {
@@ -15,7 +16,7 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
   const onHoverStateRef = useRef(onHoverState);
 
   const totalSafeSeats = useMemo(
-    () => stateData.reduce((sum, s) => sum + s.safeSeats, 0),
+    () => Object.values(stateSafeSeats).reduce((sum, s) => sum + s.safeSeats, 0),
     []
   );
 
@@ -107,9 +108,9 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
       .attr('r', (d: any) => {
         const fips = d.id.toString().padStart(2, '0');
         const stateId = fipsToState[fips];
-        const data = stateDataById[stateId];
-        if (!data || data.safeSeats === 0) return 0;
-        return safeSeatsRadius(data.safeSeats);
+        const safeCounts = stateSafeSeats[stateId];
+        if (!safeCounts || safeCounts.safeSeats === 0) return 0;
+        return safeSeatsRadius(safeCounts.safeSeats);
       })
       .attr('fill', '#e8a832')
       .attr('fill-opacity', 0.75)
@@ -155,7 +156,7 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
       </div>
       <svg ref={svgRef} className="hero-map" />
       <p className="hero-map-caption">
-        States colored by partisan lean (Cook PVI). Circles sized by number of uncompetitive House seats (|PVI| &ge; 10).
+        States colored by partisan lean (Cook PVI). Circles sized by number of uncompetitive House seats (|PVI| &ge; 8).
       </p>
     </>
   );

@@ -1,5 +1,6 @@
 import * as d3 from 'd3';
 import { HoveredState } from '../types';
+import { stateSafeSeats } from '../data/safeSeats';
 
 const leanColorScale = d3.scaleLinear<string>()
   .domain([-20, 0, 20])
@@ -22,6 +23,8 @@ const safeColorScale = d3.scaleLinear<string>()
 
 export function StateTooltip({ hoveredState }: StateTooltipProps) {
   const { state, x, y } = hoveredState;
+  const safeCounts = stateSafeSeats[state.id];
+  const safeSeats = safeCounts?.safeSeats ?? 0;
 
   const tooltipWidth = 180;
   const left = Math.min(x + 15, window.innerWidth - tooltipWidth - 8);
@@ -42,7 +45,7 @@ export function StateTooltip({ hoveredState }: StateTooltipProps) {
       </div>
       <div className="tooltip-metric">
         <span className="tooltip-value">
-          <span style={{ color: safeColorScale((state.safeSeats / state.districts) * 100), fontWeight: 700 }}>{state.safeSeats}</span>
+          <span style={{ color: safeColorScale((safeSeats / state.districts) * 100), fontWeight: 700 }}>{safeSeats}</span>
           {' '}/{' '}{state.districts}
         </span>
         <span className="tooltip-label">uncompetitive</span>

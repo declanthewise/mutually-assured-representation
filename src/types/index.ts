@@ -17,10 +17,6 @@ export interface StateData {
   redistrictingAuthority: RedistrictingAuthority; // Who draws the congressional maps
   governorCanVeto: boolean;  // Can governor veto congressional redistricting maps
   hasBallotInitiative: boolean; // Does state allow citizen ballot initiatives
-  safeSeats: number;    // Total safe seats (|PVI| >= 10)
-  safeR: number;        // Safe Republican seats (R+10 or more)
-  safeD: number;        // Safe Democratic seats (D+10 or more)
-  competitiveSeats: number; // Competitive seats (|PVI| < 10)
 }
 
 export interface HoveredState {

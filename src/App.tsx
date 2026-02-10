@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { HeroMap } from './components/HeroMap';
 import { ResultMap } from './components/ResultMap';
 import { BipartiteMatchGraph } from './components/BipartiteMatchGraph';
+import { RatingsBar } from './components/RatingsBar';
 import { StateTooltip } from './components/StateTooltip';
 import { useTopoData } from './hooks/useTopoData';
 import { districtGroups } from './data/districtGroups';
@@ -76,6 +77,8 @@ function App() {
           that pair. Your selections will appear on the de-escalation map at the bottom.
         </p>
       </section>
+
+      <RatingsBar />
 
       {districtGroups.map(group => (
         <section key={group.key} className="match-section">

@@ -1,51 +1,51 @@
-id,name,districts,districts2032,efficiencyGap,partisanLean,stateControl,redistrictingAuthority,governorCanVeto,hasBallotInitiative,safeSeats,safeR,safeD,competitiveSeats
-AL,Alabama,7,7,-0.0808,-15,rep,legislature,TRUE,FALSE,6,5,1,1
-AK,Alaska,1,1,0,-6,rep,advisory_commission,TRUE,TRUE,0,0,0,1
-AZ,Arizona,9,10,0.2134,-2,split,independent_commission,FALSE,TRUE,4,2,2,5
-AR,Arkansas,4,4,0.1388,-15,rep,politician_commission,TRUE,TRUE,3,3,0,1
-CA,California,52,48,-0.1018,12,dem,independent_commission,FALSE,TRUE,32,2,30,20
-CO,Colorado,8,8,0.1201,6,dem,independent_commission,FALSE,TRUE,3,0,3,5
-CT,Connecticut,5,5,-0.3145,8,dem,legislature,FALSE,FALSE,2,0,2,3
-DE,Delaware,1,1,0,8,dem,legislature,TRUE,FALSE,0,0,0,1
-FL,Florida,28,31,0.1112,-5,rep,legislature,TRUE,TRUE,14,11,3,14
-GA,Georgia,14,15,0.1194,-1,rep,legislature,TRUE,FALSE,11,7,4,3
-HI,Hawaii,2,2,-0.0947,13,dem,politician_commission,FALSE,FALSE,2,0,2,0
-ID,Idaho,2,3,0.0929,-18,rep,independent_commission,FALSE,TRUE,2,2,0,0
-IL,Illinois,17,16,-0.1723,6,dem,legislature,TRUE,TRUE,11,3,8,6
-IN,Indiana,9,9,0.0861,-9,rep,legislature,TRUE,FALSE,7,6,1,2
-IA,Iowa,4,4,0.3697,-6,rep,advisory_commission,TRUE,FALSE,1,1,0,3
-KS,Kansas,4,4,0.0272,-8,split,legislature,TRUE,FALSE,3,3,0,1
-KY,Kentucky,6,6,0.0005,-15,split,legislature,TRUE,FALSE,5,4,1,1
-LA,Louisiana,6,6,-0.0367,-11,rep,legislature,TRUE,FALSE,5,4,1,1
-ME,Maine,2,2,-0.38,4,dem,advisory_commission,TRUE,TRUE,1,0,1,1
-MD,Maryland,8,8,-0.0671,15,dem,legislature,TRUE,TRUE,6,0,6,2
-MA,Massachusetts,9,9,-0.1763,14,dem,legislature,TRUE,TRUE,7,0,7,2
-MI,Michigan,13,13,0.0487,0,dem,independent_commission,FALSE,TRUE,7,4,3,6
-MN,Minnesota,8,7,0.0219,3,dem,legislature,TRUE,FALSE,5,2,3,3
-MS,Mississippi,4,4,0.0107,-11,rep,legislature,TRUE,TRUE,4,3,1,0
-MO,Missouri,8,8,0.0784,-9,rep,politician_commission,TRUE,TRUE,7,5,2,1
-MT,Montana,2,2,0.308,-10,rep,independent_commission,FALSE,TRUE,1,1,0,1
-NE,Nebraska,3,3,0.2277,-10,rep,legislature,TRUE,TRUE,1,1,0,2
-NV,Nevada,4,4,-0.2327,-1,dem,legislature,TRUE,TRUE,0,0,0,4
-NH,New Hampshire,2,2,-0.4298,2,rep,legislature,TRUE,FALSE,0,0,0,2
-NJ,New Jersey,12,12,-0.1274,4,dem,politician_commission,FALSE,FALSE,5,1,4,7
-NM,New Mexico,3,3,-0.3986,4,dem,legislature,TRUE,TRUE,0,0,0,3
-NY,New York,26,24,-0.0404,8,dem,independent_commission,TRUE,FALSE,16,4,12,10
-NC,North Carolina,14,15,0.1801,-1,split,legislature,FALSE,FALSE,5,2,3,9
-ND,North Dakota,1,1,0,-18,rep,legislature,TRUE,TRUE,1,1,0,0
-OH,Ohio,15,15,0.0444,-5,rep,politician_commission,TRUE,TRUE,8,6,2,7
-OK,Oklahoma,5,5,0.1183,-17,rep,legislature,TRUE,TRUE,4,4,0,1
-OR,Oregon,6,5,-0.2194,8,dem,legislature,TRUE,TRUE,3,1,2,3
-PA,Pennsylvania,17,16,0.0605,-1,split,legislature,TRUE,FALSE,10,6,4,7
-RI,Rhode Island,2,1,-0.2618,8,dem,legislature,TRUE,FALSE,1,0,1,1
-SC,South Carolina,7,7,0.1699,-8,rep,legislature,TRUE,FALSE,5,4,1,2
-SD,South Dakota,1,1,0,-15,rep,legislature,TRUE,TRUE,1,1,0,0
-TN,Tennessee,9,9,0.1074,-14,rep,legislature,TRUE,FALSE,8,7,1,1
-TX,Texas,38,42,0.0753,-6,rep,legislature,TRUE,FALSE,32,21,11,6
-UT,Utah,4,5,0.1825,-11,rep,advisory_commission,TRUE,TRUE,4,4,0,0
-VT,Vermont,1,1,0,17,split,legislature,TRUE,FALSE,1,0,1,0
-VA,Virginia,11,11,0.0193,3,split,politician_commission,FALSE,FALSE,6,2,4,5
-WA,Washington,10,10,-0.1466,10,dem,independent_commission,FALSE,TRUE,6,1,5,4
-WV,West Virginia,2,2,0.0758,-21,rep,legislature,TRUE,FALSE,2,2,0,0
-WI,Wisconsin,8,7,0.2337,0,split,legislature,TRUE,FALSE,4,2,2,4
-WY,Wyoming,1,1,0,-23,rep,legislature,TRUE,TRUE,1,1,0,0
+id,name,districts,districts2032,efficiencyGap,partisanLean,stateControl,redistrictingAuthority,governorCanVeto,hasBallotInitiative
+AL,Alabama,7,7,-0.0808,-15,rep,legislature,TRUE,FALSE
+AK,Alaska,1,1,0,-6,rep,advisory_commission,TRUE,TRUE
+AZ,Arizona,9,10,0.2134,-2,split,independent_commission,FALSE,TRUE
+AR,Arkansas,4,4,0.1388,-15,rep,politician_commission,TRUE,TRUE
+CA,California,52,48,-0.1018,12,dem,independent_commission,FALSE,TRUE
+CO,Colorado,8,8,0.1201,6,dem,independent_commission,FALSE,TRUE
+CT,Connecticut,5,5,-0.3145,8,dem,legislature,FALSE,FALSE
+DE,Delaware,1,1,0,8,dem,legislature,TRUE,FALSE
+FL,Florida,28,31,0.1112,-5,rep,legislature,TRUE,TRUE
+GA,Georgia,14,15,0.1194,-1,rep,legislature,TRUE,FALSE
+HI,Hawaii,2,2,-0.0947,13,dem,politician_commission,FALSE,FALSE
+ID,Idaho,2,3,0.0929,-18,rep,independent_commission,FALSE,TRUE
+IL,Illinois,17,16,-0.1723,6,dem,legislature,TRUE,TRUE
+IN,Indiana,9,9,0.0861,-9,rep,legislature,TRUE,FALSE
+IA,Iowa,4,4,0.3697,-6,rep,advisory_commission,TRUE,FALSE
+KS,Kansas,4,4,0.0272,-8,split,legislature,TRUE,FALSE
+KY,Kentucky,6,6,0.0005,-15,split,legislature,TRUE,FALSE
+LA,Louisiana,6,6,-0.0367,-11,rep,legislature,TRUE,FALSE
+ME,Maine,2,2,-0.38,4,dem,advisory_commission,TRUE,TRUE
+MD,Maryland,8,8,-0.0671,15,dem,legislature,TRUE,TRUE
+MA,Massachusetts,9,9,-0.1763,14,dem,legislature,TRUE,TRUE
+MI,Michigan,13,13,0.0487,0,dem,independent_commission,FALSE,TRUE
+MN,Minnesota,8,7,0.0219,3,dem,legislature,TRUE,FALSE
+MS,Mississippi,4,4,0.0107,-11,rep,legislature,TRUE,TRUE
+MO,Missouri,8,8,0.0784,-9,rep,politician_commission,TRUE,TRUE
+MT,Montana,2,2,0.308,-10,rep,independent_commission,FALSE,TRUE
+NE,Nebraska,3,3,0.2277,-10,rep,legislature,TRUE,TRUE
+NV,Nevada,4,4,-0.2327,-1,dem,legislature,TRUE,TRUE
+NH,New Hampshire,2,2,-0.4298,2,rep,legislature,TRUE,FALSE
+NJ,New Jersey,12,12,-0.1274,4,dem,politician_commission,FALSE,FALSE
+NM,New Mexico,3,3,-0.3986,4,dem,legislature,TRUE,TRUE
+NY,New York,26,24,-0.0404,8,dem,independent_commission,TRUE,FALSE
+NC,North Carolina,14,15,0.1801,-1,split,legislature,FALSE,FALSE
+ND,North Dakota,1,1,0,-18,rep,legislature,TRUE,TRUE
+OH,Ohio,15,15,0.0444,-5,rep,politician_commission,TRUE,TRUE
+OK,Oklahoma,5,5,0.1183,-17,rep,legislature,TRUE,TRUE
+OR,Oregon,6,5,-0.2194,8,dem,legislature,TRUE,TRUE
+PA,Pennsylvania,17,16,0.0605,-1,split,legislature,TRUE,FALSE
+RI,Rhode Island,2,1,-0.2618,8,dem,legislature,TRUE,FALSE
+SC,South Carolina,7,7,0.1699,-8,rep,legislature,TRUE,FALSE
+SD,South Dakota,1,1,0,-15,rep,legislature,TRUE,TRUE
+TN,Tennessee,9,9,0.1074,-14,rep,legislature,TRUE,FALSE
+TX,Texas,38,42,0.0753,-6,rep,legislature,TRUE,FALSE
+UT,Utah,4,5,0.1825,-11,rep,advisory_commission,TRUE,TRUE
+VT,Vermont,1,1,0,17,split,legislature,TRUE,FALSE
+VA,Virginia,11,11,0.0193,3,split,politician_commission,FALSE,FALSE
+WA,Washington,10,10,-0.1466,10,dem,independent_commission,FALSE,TRUE
+WV,West Virginia,2,2,0.0758,-21,rep,legislature,TRUE,FALSE
+WI,Wisconsin,8,7,0.2337,0,split,legislature,TRUE,FALSE
+WY,Wyoming,1,1,0,-23,rep,legislature,TRUE,TRUE

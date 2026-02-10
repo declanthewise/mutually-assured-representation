@@ -3,6 +3,7 @@ import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
 import { MatchPair } from '../types';
 import { stateDataById } from '../data/stateData';
+import { stateSafeSeats } from '../data/safeSeats';
 import { fipsToState } from '../utils/fipsMapping';
 
 interface ResultMapProps {
@@ -115,10 +116,10 @@ export function ResultMap({ topoData, selectedMatches }: ResultMapProps) {
       .attr('r', (d: any) => {
         const fips = d.id.toString().padStart(2, '0');
         const stateId = fipsToState[fips];
-        const data = stateDataById[stateId];
-        if (!data || data.safeSeats === 0) return 0;
+        const safeCounts = stateSafeSeats[stateId];
+        if (!safeCounts || safeCounts.safeSeats === 0) return 0;
         if (hasMatches && !matchedStateIds.has(stateId)) return 0;
-        return safeSeatsRadius(data.safeSeats);
+        return safeSeatsRadius(safeCounts.safeSeats);
       })
       .attr('fill', '#e8a832')
       .attr('fill-opacity', 0.75)
