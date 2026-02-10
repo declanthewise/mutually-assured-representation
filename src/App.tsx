@@ -24,7 +24,11 @@ function App() {
       if (exists) {
         return prev.filter(([a, b]) => pairKey(a, b) !== pk);
       }
-      return [...prev, pair];
+      // Remove any existing matches involving either state
+      const filtered = prev.filter(([a, b]) =>
+        a !== pair[0] && b !== pair[0] && a !== pair[1] && b !== pair[1]
+      );
+      return [...filtered, pair];
     });
   }, []);
 

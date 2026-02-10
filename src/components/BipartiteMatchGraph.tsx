@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import * as d3 from 'd3';
 import { StateData, MatchPair } from '../types';
 import { findMatches, isStrongMatch, getSeats } from '../utils/findMatches';
@@ -242,22 +242,38 @@ export function BipartiteMatchGraph({
     return ids;
   }, [activeStateId, matchLines]);
 
-  const handleStateClick = (state: StateData) => {
+  // When a state is active, clicking anywhere that isn't a state box deactivates it.
+  useEffect(() => {
+    if (!activeStateId) return;
+    const deactivate = () => setActiveStateId(null);
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('click', deactivate, { once: true });
+    }, 0);
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('click', deactivate);
+    };
+  }, [activeStateId]);
+
+  const handleStateClick = (state: StateData, e: React.MouseEvent) => {
+    // Single-district states can't be activated; let the document listener deactivate
     if (getDistricts(state) === 1) return;
+    // Stop propagation so the document listener doesn't also fire
+    e.stopPropagation();
 
     if (!activeStateId) {
-      // Step 1: activate a state to see its matches
+      // No active state → activate clicked state
       setActiveStateId(state.id);
-    } else if (state.id === activeStateId) {
-      // Clicking the active state again deactivates it
+    } else if (activeMatchIds.has(state.id) && state.id !== activeStateId) {
+      // Match partner → lock the match & deactivate
+      onToggleMatch([activeStateId, state.id]);
       setActiveStateId(null);
-    } else if (activeMatchIds.has(state.id)) {
-      // Step 2: clicking a match partner toggles the pair
-      const pair: MatchPair = [activeStateId, state.id];
-      onToggleMatch(pair);
-    } else {
-      // Clicking a non-match state: switch active to that state
+    } else if (state.id !== activeStateId) {
+      // Unmatchable state → deactivate first, activate second
       setActiveStateId(state.id);
+    } else {
+      // Same state → deactivate
+      setActiveStateId(null);
     }
   };
 
@@ -278,7 +294,7 @@ export function BipartiteMatchGraph({
       <g
         key={state.id}
         className={`state-box-group ${isSingleDistrict ? 'single-district' : ''} ${isActive ? 'active' : ''} ${isDimmed ? 'dimmed' : ''}`}
-        onClick={() => handleStateClick(state)}
+        onClick={(e) => handleStateClick(state, e)}
         style={{ cursor: isSingleDistrict ? 'default' : 'pointer' }}
       >
         <rect
