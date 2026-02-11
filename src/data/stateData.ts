@@ -23,7 +23,7 @@ export const stateData: StateData[] = [
   {
     "id": "AL",
     "name": "Alabama",
-    "districts": 7,
+    "districts2022": 7,
     "districts2032": 7,
     "efficiencyGap": -0.0808,
     "partisanLean": -15,
@@ -35,7 +35,7 @@ export const stateData: StateData[] = [
   {
     "id": "AK",
     "name": "Alaska",
-    "districts": 1,
+    "districts2022": 1,
     "districts2032": 1,
     "efficiencyGap": 0,
     "partisanLean": -6,
@@ -47,7 +47,7 @@ export const stateData: StateData[] = [
   {
     "id": "AZ",
     "name": "Arizona",
-    "districts": 9,
+    "districts2022": 9,
     "districts2032": 10,
     "efficiencyGap": 0.2134,
     "partisanLean": -2,
@@ -59,7 +59,7 @@ export const stateData: StateData[] = [
   {
     "id": "AR",
     "name": "Arkansas",
-    "districts": 4,
+    "districts2022": 4,
     "districts2032": 4,
     "efficiencyGap": 0.1388,
     "partisanLean": -15,
@@ -71,7 +71,7 @@ export const stateData: StateData[] = [
   {
     "id": "CA",
     "name": "California",
-    "districts": 52,
+    "districts2022": 52,
     "districts2032": 48,
     "efficiencyGap": -0.1018,
     "partisanLean": 12,
@@ -83,7 +83,7 @@ export const stateData: StateData[] = [
   {
     "id": "CO",
     "name": "Colorado",
-    "districts": 8,
+    "districts2022": 8,
     "districts2032": 8,
     "efficiencyGap": 0.1201,
     "partisanLean": 6,
@@ -95,7 +95,7 @@ export const stateData: StateData[] = [
   {
     "id": "CT",
     "name": "Connecticut",
-    "districts": 5,
+    "districts2022": 5,
     "districts2032": 5,
     "efficiencyGap": -0.3145,
     "partisanLean": 8,
@@ -107,7 +107,7 @@ export const stateData: StateData[] = [
   {
     "id": "DE",
     "name": "Delaware",
-    "districts": 1,
+    "districts2022": 1,
     "districts2032": 1,
     "efficiencyGap": 0,
     "partisanLean": 8,
@@ -119,7 +119,7 @@ export const stateData: StateData[] = [
   {
     "id": "FL",
     "name": "Florida",
-    "districts": 28,
+    "districts2022": 28,
     "districts2032": 31,
     "efficiencyGap": 0.1112,
     "partisanLean": -5,
@@ -131,7 +131,7 @@ export const stateData: StateData[] = [
   {
     "id": "GA",
     "name": "Georgia",
-    "districts": 14,
+    "districts2022": 14,
     "districts2032": 15,
     "efficiencyGap": 0.1194,
     "partisanLean": -1,
@@ -143,7 +143,7 @@ export const stateData: StateData[] = [
   {
     "id": "HI",
     "name": "Hawaii",
-    "districts": 2,
+    "districts2022": 2,
     "districts2032": 2,
     "efficiencyGap": -0.0947,
     "partisanLean": 13,
@@ -155,7 +155,7 @@ export const stateData: StateData[] = [
   {
     "id": "ID",
     "name": "Idaho",
-    "districts": 2,
+    "districts2022": 2,
     "districts2032": 3,
     "efficiencyGap": 0.0929,
     "partisanLean": -18,
@@ -167,7 +167,7 @@ export const stateData: StateData[] = [
   {
     "id": "IL",
     "name": "Illinois",
-    "districts": 17,
+    "districts2022": 17,
     "districts2032": 16,
     "efficiencyGap": -0.1723,
     "partisanLean": 6,
@@ -179,7 +179,7 @@ export const stateData: StateData[] = [
   {
     "id": "IN",
     "name": "Indiana",
-    "districts": 9,
+    "districts2022": 9,
     "districts2032": 9,
     "efficiencyGap": 0.0861,
     "partisanLean": -9,
@@ -191,7 +191,7 @@ export const stateData: StateData[] = [
   {
     "id": "IA",
     "name": "Iowa",
-    "districts": 4,
+    "districts2022": 4,
     "districts2032": 4,
     "efficiencyGap": 0.3697,
     "partisanLean": -6,
@@ -203,7 +203,7 @@ export const stateData: StateData[] = [
   {
     "id": "KS",
     "name": "Kansas",
-    "districts": 4,
+    "districts2022": 4,
     "districts2032": 4,
     "efficiencyGap": 0.0272,
     "partisanLean": -8,
@@ -215,7 +215,7 @@ export const stateData: StateData[] = [
   {
     "id": "KY",
     "name": "Kentucky",
-    "districts": 6,
+    "districts2022": 6,
     "districts2032": 6,
     "efficiencyGap": 0.0005,
     "partisanLean": -15,
@@ -227,7 +227,7 @@ export const stateData: StateData[] = [
   {
     "id": "LA",
     "name": "Louisiana",
-    "districts": 6,
+    "districts2022": 6,
     "districts2032": 6,
     "efficiencyGap": -0.0367,
     "partisanLean": -11,
@@ -239,7 +239,7 @@ export const stateData: StateData[] = [
   {
     "id": "ME",
     "name": "Maine",
-    "districts": 2,
+    "districts2022": 2,
     "districts2032": 2,
     "efficiencyGap": -0.38,
     "partisanLean": 4,
@@ -251,7 +251,7 @@ export const stateData: StateData[] = [
   {
     "id": "MD",
     "name": "Maryland",
-    "districts": 8,
+    "districts2022": 8,
     "districts2032": 8,
     "efficiencyGap": -0.0671,
     "partisanLean": 15,
@@ -263,7 +263,7 @@ export const stateData: StateData[] = [
   {
     "id": "MA",
     "name": "Massachusetts",
-    "districts": 9,
+    "districts2022": 9,
     "districts2032": 9,
     "efficiencyGap": -0.1763,
     "partisanLean": 14,
@@ -275,7 +275,7 @@ export const stateData: StateData[] = [
   {
     "id": "MI",
     "name": "Michigan",
-    "districts": 13,
+    "districts2022": 13,
     "districts2032": 13,
     "efficiencyGap": 0.0487,
     "partisanLean": 0,
@@ -287,7 +287,7 @@ export const stateData: StateData[] = [
   {
     "id": "MN",
     "name": "Minnesota",
-    "districts": 8,
+    "districts2022": 8,
     "districts2032": 7,
     "efficiencyGap": 0.0219,
     "partisanLean": 3,
@@ -299,7 +299,7 @@ export const stateData: StateData[] = [
   {
     "id": "MS",
     "name": "Mississippi",
-    "districts": 4,
+    "districts2022": 4,
     "districts2032": 4,
     "efficiencyGap": 0.0107,
     "partisanLean": -11,
@@ -311,7 +311,7 @@ export const stateData: StateData[] = [
   {
     "id": "MO",
     "name": "Missouri",
-    "districts": 8,
+    "districts2022": 8,
     "districts2032": 8,
     "efficiencyGap": 0.0784,
     "partisanLean": -9,
@@ -323,7 +323,7 @@ export const stateData: StateData[] = [
   {
     "id": "MT",
     "name": "Montana",
-    "districts": 2,
+    "districts2022": 2,
     "districts2032": 2,
     "efficiencyGap": 0.308,
     "partisanLean": -10,
@@ -335,7 +335,7 @@ export const stateData: StateData[] = [
   {
     "id": "NE",
     "name": "Nebraska",
-    "districts": 3,
+    "districts2022": 3,
     "districts2032": 3,
     "efficiencyGap": 0.2277,
     "partisanLean": -10,
@@ -347,7 +347,7 @@ export const stateData: StateData[] = [
   {
     "id": "NV",
     "name": "Nevada",
-    "districts": 4,
+    "districts2022": 4,
     "districts2032": 4,
     "efficiencyGap": -0.2327,
     "partisanLean": -1,
@@ -359,7 +359,7 @@ export const stateData: StateData[] = [
   {
     "id": "NH",
     "name": "New Hampshire",
-    "districts": 2,
+    "districts2022": 2,
     "districts2032": 2,
     "efficiencyGap": -0.4298,
     "partisanLean": 2,
@@ -371,7 +371,7 @@ export const stateData: StateData[] = [
   {
     "id": "NJ",
     "name": "New Jersey",
-    "districts": 12,
+    "districts2022": 12,
     "districts2032": 12,
     "efficiencyGap": -0.1274,
     "partisanLean": 4,
@@ -383,7 +383,7 @@ export const stateData: StateData[] = [
   {
     "id": "NM",
     "name": "New Mexico",
-    "districts": 3,
+    "districts2022": 3,
     "districts2032": 3,
     "efficiencyGap": -0.3986,
     "partisanLean": 4,
@@ -395,7 +395,7 @@ export const stateData: StateData[] = [
   {
     "id": "NY",
     "name": "New York",
-    "districts": 26,
+    "districts2022": 26,
     "districts2032": 24,
     "efficiencyGap": -0.0404,
     "partisanLean": 8,
@@ -407,7 +407,7 @@ export const stateData: StateData[] = [
   {
     "id": "NC",
     "name": "North Carolina",
-    "districts": 14,
+    "districts2022": 14,
     "districts2032": 15,
     "efficiencyGap": 0.1801,
     "partisanLean": -1,
@@ -419,7 +419,7 @@ export const stateData: StateData[] = [
   {
     "id": "ND",
     "name": "North Dakota",
-    "districts": 1,
+    "districts2022": 1,
     "districts2032": 1,
     "efficiencyGap": 0,
     "partisanLean": -18,
@@ -431,7 +431,7 @@ export const stateData: StateData[] = [
   {
     "id": "OH",
     "name": "Ohio",
-    "districts": 15,
+    "districts2022": 15,
     "districts2032": 15,
     "efficiencyGap": 0.0444,
     "partisanLean": -5,
@@ -443,7 +443,7 @@ export const stateData: StateData[] = [
   {
     "id": "OK",
     "name": "Oklahoma",
-    "districts": 5,
+    "districts2022": 5,
     "districts2032": 5,
     "efficiencyGap": 0.1183,
     "partisanLean": -17,
@@ -455,7 +455,7 @@ export const stateData: StateData[] = [
   {
     "id": "OR",
     "name": "Oregon",
-    "districts": 6,
+    "districts2022": 6,
     "districts2032": 5,
     "efficiencyGap": -0.2194,
     "partisanLean": 8,
@@ -467,7 +467,7 @@ export const stateData: StateData[] = [
   {
     "id": "PA",
     "name": "Pennsylvania",
-    "districts": 17,
+    "districts2022": 17,
     "districts2032": 16,
     "efficiencyGap": 0.0605,
     "partisanLean": -1,
@@ -479,7 +479,7 @@ export const stateData: StateData[] = [
   {
     "id": "RI",
     "name": "Rhode Island",
-    "districts": 2,
+    "districts2022": 2,
     "districts2032": 1,
     "efficiencyGap": -0.2618,
     "partisanLean": 8,
@@ -491,7 +491,7 @@ export const stateData: StateData[] = [
   {
     "id": "SC",
     "name": "South Carolina",
-    "districts": 7,
+    "districts2022": 7,
     "districts2032": 7,
     "efficiencyGap": 0.1699,
     "partisanLean": -8,
@@ -503,7 +503,7 @@ export const stateData: StateData[] = [
   {
     "id": "SD",
     "name": "South Dakota",
-    "districts": 1,
+    "districts2022": 1,
     "districts2032": 1,
     "efficiencyGap": 0,
     "partisanLean": -15,
@@ -515,7 +515,7 @@ export const stateData: StateData[] = [
   {
     "id": "TN",
     "name": "Tennessee",
-    "districts": 9,
+    "districts2022": 9,
     "districts2032": 9,
     "efficiencyGap": 0.1074,
     "partisanLean": -14,
@@ -527,7 +527,7 @@ export const stateData: StateData[] = [
   {
     "id": "TX",
     "name": "Texas",
-    "districts": 38,
+    "districts2022": 38,
     "districts2032": 42,
     "efficiencyGap": 0.0753,
     "partisanLean": -6,
@@ -539,7 +539,7 @@ export const stateData: StateData[] = [
   {
     "id": "UT",
     "name": "Utah",
-    "districts": 4,
+    "districts2022": 4,
     "districts2032": 5,
     "efficiencyGap": 0.1825,
     "partisanLean": -11,
@@ -551,7 +551,7 @@ export const stateData: StateData[] = [
   {
     "id": "VT",
     "name": "Vermont",
-    "districts": 1,
+    "districts2022": 1,
     "districts2032": 1,
     "efficiencyGap": 0,
     "partisanLean": 17,
@@ -563,7 +563,7 @@ export const stateData: StateData[] = [
   {
     "id": "VA",
     "name": "Virginia",
-    "districts": 11,
+    "districts2022": 11,
     "districts2032": 11,
     "efficiencyGap": 0.0193,
     "partisanLean": 3,
@@ -575,7 +575,7 @@ export const stateData: StateData[] = [
   {
     "id": "WA",
     "name": "Washington",
-    "districts": 10,
+    "districts2022": 10,
     "districts2032": 10,
     "efficiencyGap": -0.1466,
     "partisanLean": 10,
@@ -587,7 +587,7 @@ export const stateData: StateData[] = [
   {
     "id": "WV",
     "name": "West Virginia",
-    "districts": 2,
+    "districts2022": 2,
     "districts2032": 2,
     "efficiencyGap": 0.0758,
     "partisanLean": -21,
@@ -599,7 +599,7 @@ export const stateData: StateData[] = [
   {
     "id": "WI",
     "name": "Wisconsin",
-    "districts": 8,
+    "districts2022": 8,
     "districts2032": 7,
     "efficiencyGap": 0.2337,
     "partisanLean": 0,
@@ -611,7 +611,7 @@ export const stateData: StateData[] = [
   {
     "id": "WY",
     "name": "Wyoming",
-    "districts": 1,
+    "districts2022": 1,
     "districts2032": 1,
     "efficiencyGap": 0,
     "partisanLean": -23,

@@ -12,7 +12,7 @@ const STRONG_PARTISAN_THRESHOLD = 8;
  *   (negated because partisanLean uses opposite sign convention: positive = D, negative = R)
  */
 export function getSeats(state: StateData, districtYear: DistrictYear): number {
-  const districts = districtYear === '2032' ? state.districts2032 : state.districts;
+  const districts = districtYear === '2032' ? state.districts2032 : state.districts2022;
   if (districtYear === '2032') {
     return -(state.partisanLean / 100) * districts;
   }
@@ -64,7 +64,7 @@ export function findMatches(
   districtYear: DistrictYear = 'current'
 ): StateData[] {
   const getDistricts = (s: StateData) =>
-    districtYear === '2032' ? s.districts2032 : s.districts;
+    districtYear === '2032' ? s.districts2032 : s.districts2022;
 
   const stateSeats = Math.abs(getSeats(state, districtYear));
   const stateDistricts = getDistricts(state);

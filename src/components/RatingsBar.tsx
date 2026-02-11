@@ -74,7 +74,7 @@ export function RatingsBar() {
           className="ratings-bar-majority"
           style={{ left: `${majorityPct}%` }}
         >
-          <span className="majority-label">{MAJORITY} FOR A MAJORITY</span>
+          <span className="majority-label">{MAJORITY} MAJORITY</span>
         </div>
       </div>
     </div>

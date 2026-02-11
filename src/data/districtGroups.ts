@@ -10,16 +10,14 @@ export interface DistrictGroup {
 }
 
 function getGroup(state: StateData): string {
-  const d = state.districts2032;
+  const d = state.districts2022;
   if (d >= 24) return 'big';
-  if (d >= 7) return 'medium';
-  if (d >= 2) return 'small';
+  if (d >= 2) return 'midSmall';
   return 'single';
 }
 
 const bigStates = stateData.filter(s => getGroup(s) === 'big');
-const mediumStates = stateData.filter(s => getGroup(s) === 'medium');
-const smallStates = stateData.filter(s => getGroup(s) === 'small');
+const midSmallStates = stateData.filter(s => getGroup(s) === 'midSmall');
 const singleStates = stateData.filter(s => getGroup(s) === 'single');
 
 export const districtGroups: DistrictGroup[] = [
@@ -31,18 +29,11 @@ export const districtGroups: DistrictGroup[] = [
     states: bigStates,
   },
   {
-    key: 'medium',
-    label: 'Medium States',
-    description: 'States with 7 to 16 districts form the heart of potential pacts. This is where most actionable matches live.',
-    range: '7–16',
-    states: mediumStates,
-  },
-  {
-    key: 'small',
-    label: 'Small States',
-    description: 'States with 2 to 6 districts have fewer seats at stake, but pacts here still matter at the margins.',
-    range: '2–6',
-    states: smallStates,
+    key: 'midSmall',
+    label: 'Mid & Small States',
+    description: 'States with 2 to 23 districts. This is where most actionable matches live.',
+    range: '2–23',
+    states: midSmallStates,
   },
   {
     key: 'single',

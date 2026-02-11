@@ -62,7 +62,7 @@ export function BipartiteMatchGraph({
 }: BipartiteMatchGraphProps) {
   const [activeStateId, setActiveStateId] = useState<string | null>(null);
 
-  const getDistricts = (state: StateData) => state.districts2032;
+  const getDistricts = (state: StateData) => state.districts2022;
 
   // Selected pair keys for quick lookup
   const selectedPairKeys = useMemo(() => {
@@ -198,7 +198,7 @@ export function BipartiteMatchGraph({
     for (const { state } of allPositionedStates) {
       if (getDistricts(state) === 1) continue;
 
-      const matches = findMatches(state, groupStates, '2032');
+      const matches = findMatches(state, groupStates, 'current');
 
       for (const match of matches) {
         const pk = pairKey(state.id, match.id);
@@ -221,7 +221,7 @@ export function BipartiteMatchGraph({
             toY: toPos.y + BOX_HEIGHT / 2,
             fromX,
             toX,
-            isStrong: isStrongMatch(state, match, '2032'),
+            isStrong: isStrongMatch(state, match, 'current'),
           });
         }
       }
@@ -288,7 +288,7 @@ export function BipartiteMatchGraph({
       selectedMatches.some(([a, b]) => a === state.id || b === state.id);
 
     const boxX = align === 'left' ? x - BOX_WIDTH : x;
-    const seats = getSeats(state, '2032');
+    const seats = getSeats(state, 'current');
 
     return (
       <g

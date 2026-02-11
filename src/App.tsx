@@ -40,7 +40,7 @@ function App() {
           <span className="headline-title">Mutually Assured Representation</span>
         </h1>
         <p className="article-subtitle">
-          An interactive guide to matching Democratic states with Republican states one pair at a time, to draw down their arms and redistrict in unison
+          An interactive guide to matching Democratic states with Republican states one truce at a time, to draw down their arms and redistrict in unison
         </p>
       </header>
 

@@ -45,8 +45,8 @@ export function StateTooltip({ hoveredState }: StateTooltipProps) {
       </div>
       <div className="tooltip-metric">
         <span className="tooltip-value">
-          <span style={{ color: safeColorScale((safeSeats / state.districts) * 100), fontWeight: 700 }}>{safeSeats}</span>
-          {' '}/{' '}{state.districts}
+          <span style={{ color: safeColorScale((safeSeats / state.districts2022) * 100), fontWeight: 700 }}>{safeSeats}</span>
+          {' '}/{' '}{state.districts2022}
         </span>
         <span className="tooltip-label">uncompetitive</span>
       </div>

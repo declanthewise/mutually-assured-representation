@@ -9,7 +9,7 @@ export type StateControl = 'dem' | 'rep' | 'split';
 export interface StateData {
   id: string;           // State abbreviation, e.g., "CA"
   name: string;         // Full name, e.g., "California"
-  districts: number;    // Number of congressional districts (current)
+  districts2022: number; // Number of congressional districts (2022 apportionment)
   districts2032: number; // Projected districts after 2030 census reapportionment
   efficiencyGap: number; // Efficiency gap: positive = R advantage, negative = D advantage
   partisanLean: number; // Partisan lean amount: positive = D lean, negative = R lean
