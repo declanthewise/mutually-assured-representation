@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { HeroMap } from './components/HeroMap';
 import { ResultMap } from './components/ResultMap';
 import { BipartiteMatchGraph } from './components/BipartiteMatchGraph';
@@ -6,6 +6,8 @@ import { RatingsBar } from './components/RatingsBar';
 import { StateTooltip } from './components/StateTooltip';
 import { useTopoData } from './hooks/useTopoData';
 import { districtGroups } from './data/districtGroups';
+import { computeAdjustedSafeSeats } from './utils/computeTruceAdjustment';
+import { stateSafeSeats } from './data/safeSeats';
 import { HoveredState, MatchPair } from './types';
 
 function pairKey(a: string, b: string): string {
@@ -16,6 +18,21 @@ function App() {
   const [hoveredState, setHoveredState] = useState<HoveredState | null>(null);
   const [selectedMatches, setSelectedMatches] = useState<MatchPair[]>([]);
   const topoData = useTopoData();
+
+  const adjustedSafeSeats = useMemo(
+    () => computeAdjustedSafeSeats(selectedMatches),
+    [selectedMatches],
+  );
+
+  const baselineCompetitive = useMemo(
+    () => Object.values(stateSafeSeats).reduce((sum, s) => sum + s.competitiveSeats, 0),
+    [],
+  );
+
+  const competitiveSeatsAdded = useMemo(
+    () => Object.values(adjustedSafeSeats).reduce((sum, s) => sum + s.competitiveSeats, 0) - baselineCompetitive,
+    [adjustedSafeSeats, baselineCompetitive],
+  );
 
   const handleToggleMatch = useCallback((pair: MatchPair) => {
     const pk = pairKey(pair[0], pair[1]);
@@ -82,7 +99,18 @@ function App() {
         </p>
       </section>
 
-      <RatingsBar />
+      <RatingsBar adjustedSafeSeats={adjustedSafeSeats} />
+
+      {selectedMatches.length > 0 && (
+        <div className="clear-matches-row">
+          <button
+            className="clear-matches-btn"
+            onClick={() => setSelectedMatches([])}
+          >
+            Clear all selections
+          </button>
+        </div>
+      )}
 
       {districtGroups.map(group => (
         <section key={group.key} className="match-section">
@@ -114,18 +142,15 @@ function App() {
             The map below shows the match pairs you've selected. Gold arcs connect
             paired states — each arc represents one potential interstate pact.
           </p>
-          {selectedMatches.length > 0 && (
-            <button
-              className="clear-matches-btn"
-              onClick={() => setSelectedMatches([])}
-            >
-              Clear all selections
-            </button>
-          )}
         </div>
         <div className="visualization-full">
           {topoData && (
-            <ResultMap topoData={topoData} selectedMatches={selectedMatches} />
+            <ResultMap
+              topoData={topoData}
+              selectedMatches={selectedMatches}
+              adjustedSafeSeats={adjustedSafeSeats}
+              competitiveSeatsAdded={competitiveSeatsAdded}
+            />
           )}
         </div>
       </section>
@@ -137,6 +162,12 @@ function App() {
           <a href="https://www.brennancenter.org/our-work/analysis-opinion/big-changes-ahead-voting-maps-after-next-census" target="_blank" rel="noopener noreferrer">Brennan Center</a>{' '}
           using Census Bureau Vintage 2025 estimates.{' '}
           Matching criteria: opposite partisan lean (within 5%), similar district count (within 30%).
+        </p>
+        <p>
+          Competitive map alternatives from{' '}
+          <a href="https://davesredistricting.org/" target="_blank" rel="noopener noreferrer">Dave's Redistricting App</a>{' '}
+          (most competitive maps). Compact map data from the{' '}
+          <a href="https://alarm-redist.org/fifty-states/" target="_blank" rel="noopener noreferrer">ALARM Project 50-State Simulations</a>.
         </p>
         <p>
           Built by Declan Fitzsimons.

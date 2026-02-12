@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import * as d3 from 'd3';
 import { StateData, MatchPair } from '../types';
-import { findMatches, isStrongMatch, getSeats } from '../utils/findMatches';
+import { findMatches, isStrongMatch } from '../utils/findMatches';
+import { stateSafeSeats } from '../data/safeSeats';
+import { competitiveMapSafeSeats } from '../data/competitiveMapPVIs';
 
 interface BipartiteMatchGraphProps {
   groupStates: StateData[];
@@ -45,10 +47,27 @@ function formatLean(lean: number): string {
   return `${dir}+${Math.abs(lean).toFixed(0)}%`;
 }
 
-function formatSeats(seats: number): string {
-  if (Math.abs(seats) < 0.05) return '0';
-  const dir = seats > 0 ? 'D' : 'R';
-  return `${dir}+${Math.abs(seats).toFixed(1)}`;
+function getEnactedVsCompetitive(state: StateData): string {
+  const enacted = stateSafeSeats[state.id];
+  const competitive = competitiveMapSafeSeats[state.id];
+  if (!enacted) return '\u2014';
+
+  // Show the state's own party based on partisan lean
+  const showR = state.partisanLean < 0;
+  const party = showR ? 'R' : 'D';
+  const enactedCount = showR
+    ? enacted.safeR + enacted.leanR
+    : enacted.safeD + enacted.leanD;
+
+  if (!competitive) {
+    return `${enactedCount}${party}`;
+  }
+
+  const competitiveCount = showR
+    ? competitive.safeR + competitive.leanR
+    : competitive.safeD + competitive.leanD;
+
+  return `${enactedCount}${party} \u2192 ${competitiveCount}${party}`;
 }
 
 function pairKey(a: string, b: string): string {
@@ -288,8 +307,6 @@ export function BipartiteMatchGraph({
       selectedMatches.some(([a, b]) => a === state.id || b === state.id);
 
     const boxX = align === 'left' ? x - BOX_WIDTH : x;
-    const seats = getSeats(state, 'current');
-
     return (
       <g
         key={state.id}
@@ -373,7 +390,7 @@ export function BipartiteMatchGraph({
               fontSize={9}
               fill={Math.abs(state.partisanLean) > 10 ? 'rgba(255,255,255,0.85)' : '#555'}
             >
-              Seats: {formatSeats(seats)}
+              {getEnactedVsCompetitive(state)}
             </text>
           </>
         )}

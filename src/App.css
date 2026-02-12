@@ -227,6 +227,7 @@ body {
   color: #666;
   text-align: center;
   flex-shrink: 0;
+  transition: width 0.4s ease;
 }
 
 .ratings-bar {
@@ -245,6 +246,7 @@ body {
   font-size: 13px;
   font-weight: 600;
   color: #fff;
+  transition: width 0.4s ease;
 }
 
 .segment-d {
@@ -434,6 +436,19 @@ body {
   margin-bottom: 0.75rem;
 }
 
+.result-map-wrapper {
+  position: relative;
+}
+
+.result-stat-bar {
+  position: absolute;
+  top: 2rem;
+  right: 0;
+  width: 50%;
+  text-align: center;
+  z-index: 1;
+}
+
 .result-map {
   width: 100%;
   height: auto;
@@ -456,6 +471,11 @@ body {
   font-size: 0.95rem;
 }
 
+.clear-matches-row {
+  text-align: center;
+  padding: 0.5rem 1.5rem;
+}
+
 .clear-matches-btn {
   display: inline-block;
   padding: 0.5rem 1.25rem;
@@ -466,7 +486,6 @@ body {
   color: #666;
   cursor: pointer;
   transition: all 0.15s ease;
-  margin-top: 0.25rem;
 }
 
 .clear-matches-btn:hover {
@@ -593,15 +612,18 @@ body {
     padding: 0;
   }
 
-  .hero-stat-bar {
+  .hero-stat-bar,
+  .result-stat-bar {
     top: 0;
   }
 
-  .hero-stat-number {
+  .hero-stat-number,
+  .result-stat-bar .hero-stat-number {
     font-size: 1.4rem;
   }
 
-  .hero-stat-label {
+  .hero-stat-label,
+  .result-stat-bar .hero-stat-label {
     font-size: 0.65rem;
   }
 

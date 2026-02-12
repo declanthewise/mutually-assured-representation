@@ -3,15 +3,17 @@ import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
 import { MatchPair } from '../types';
 import { stateDataById } from '../data/stateData';
-import { stateSafeSeats } from '../data/safeSeats';
+import { SafeSeatCounts } from '../data/safeSeats';
 import { fipsToState } from '../utils/fipsMapping';
 
 interface ResultMapProps {
   topoData: any;
   selectedMatches: MatchPair[];
+  adjustedSafeSeats: Record<string, SafeSeatCounts>;
+  competitiveSeatsAdded: number;
 }
 
-export function ResultMap({ topoData, selectedMatches }: ResultMapProps) {
+export function ResultMap({ topoData, selectedMatches, adjustedSafeSeats, competitiveSeatsAdded }: ResultMapProps) {
   const svgRef = useRef<SVGSVGElement>(null);
 
   // Set of all states that are part of a selected match
@@ -116,7 +118,7 @@ export function ResultMap({ topoData, selectedMatches }: ResultMapProps) {
       .attr('r', (d: any) => {
         const fips = d.id.toString().padStart(2, '0');
         const stateId = fipsToState[fips];
-        const safeCounts = stateSafeSeats[stateId];
+        const safeCounts = adjustedSafeSeats[stateId];
         if (!safeCounts || safeCounts.safeSeats === 0) return 0;
         if (hasMatches && !matchedStateIds.has(stateId)) return 0;
         return safeSeatsRadius(safeCounts.safeSeats);
@@ -189,10 +191,16 @@ export function ResultMap({ topoData, selectedMatches }: ResultMapProps) {
         .attr('stroke-linecap', 'round')
         .attr('opacity', 0.85);
     }
-  }, [topoData, selectedMatches, matchedStateIds, hasMatches]);
+  }, [topoData, selectedMatches, matchedStateIds, hasMatches, adjustedSafeSeats]);
 
   return (
-    <>
+    <div className="result-map-wrapper">
+      {hasMatches && (
+        <div className="result-stat-bar">
+          <div className="hero-stat-label">Competitive Seats Added</div>
+          <div className="hero-stat-number"><span style={{ color: '#4caf50' }}>+{competitiveSeatsAdded}</span></div>
+        </div>
+      )}
       <svg ref={svgRef} className="result-map" />
       {!hasMatches && (
         <p className="result-map-empty">
@@ -204,6 +212,6 @@ export function ResultMap({ topoData, selectedMatches }: ResultMapProps) {
           {selectedMatches.length} {selectedMatches.length === 1 ? 'pact' : 'pacts'} selected
         </p>
       )}
-    </>
+    </div>
   );
 }

@@ -20,11 +20,34 @@ function parsePVI(pviStr: string): number {
   return match[1] === 'R' ? value : -value;
 }
 
+/** Categorize an array of numeric PVI values into safe-seat buckets. */
+export function categorizePVIs(pvis: number[]): SafeSeatCounts {
+  let safeR = 0, safeD = 0, leanR = 0, even = 0, leanD = 0;
+  for (const pvi of pvis) {
+    if (pvi >= SAFE_SEAT_THRESHOLD) {
+      safeR++;
+    } else if (pvi <= -SAFE_SEAT_THRESHOLD) {
+      safeD++;
+    } else if (pvi > 0) {
+      leanR++;
+    } else if (pvi < 0) {
+      leanD++;
+    } else {
+      even++;
+    }
+  }
+  return {
+    safeR, safeD, leanR, even, leanD,
+    competitiveSeats: leanR + even + leanD,
+    safeSeats: safeR + safeD,
+  };
+}
+
 function computeSafeSeats(): Record<string, SafeSeatCounts> {
   const lines = districtPviRaw.trim().split('\n');
   const rows = lines.slice(1); // Skip header
 
-  const agg: Record<string, { safeR: number; safeD: number; leanR: number; even: number; leanD: number }> = {};
+  const statePVIs: Record<string, number[]> = {};
 
   for (const line of rows) {
     // Parse CSV handling quoted fields
@@ -49,34 +72,13 @@ function computeSafeSeats(): Record<string, SafeSeatCounts> {
     const stateId = dist.split('-')[0];
     const pvi = parsePVI(pviStr);
 
-    if (!agg[stateId]) {
-      agg[stateId] = { safeR: 0, safeD: 0, leanR: 0, even: 0, leanD: 0 };
-    }
-
-    if (pvi >= SAFE_SEAT_THRESHOLD) {
-      agg[stateId].safeR++;
-    } else if (pvi <= -SAFE_SEAT_THRESHOLD) {
-      agg[stateId].safeD++;
-    } else if (pvi > 0) {
-      agg[stateId].leanR++;
-    } else if (pvi < 0) {
-      agg[stateId].leanD++;
-    } else {
-      agg[stateId].even++;
-    }
+    if (!statePVIs[stateId]) statePVIs[stateId] = [];
+    statePVIs[stateId].push(pvi);
   }
 
   const result: Record<string, SafeSeatCounts> = {};
-  for (const [stateId, counts] of Object.entries(agg)) {
-    result[stateId] = {
-      safeR: counts.safeR,
-      safeD: counts.safeD,
-      leanR: counts.leanR,
-      even: counts.even,
-      leanD: counts.leanD,
-      competitiveSeats: counts.leanR + counts.even + counts.leanD,
-      safeSeats: counts.safeR + counts.safeD,
-    };
+  for (const [stateId, pvis] of Object.entries(statePVIs)) {
+    result[stateId] = categorizePVIs(pvis);
   }
   return result;
 }
