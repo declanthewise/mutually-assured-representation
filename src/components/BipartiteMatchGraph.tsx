@@ -215,8 +215,6 @@ export function BipartiteMatchGraph({
     const allPositionedStates = [...leftPositions, ...rightPositions];
 
     for (const { state } of allPositionedStates) {
-      if (getDistricts(state) === 1) continue;
-
       const matches = findMatches(state, groupStates);
 
       for (const match of matches) {
@@ -275,8 +273,6 @@ export function BipartiteMatchGraph({
   }, [activeStateId]);
 
   const handleStateClick = (state: StateData, e: React.MouseEvent) => {
-    // Single-district states can't be activated; let the document listener deactivate
-    if (getDistricts(state) === 1) return;
     // Stop propagation so the document listener doesn't also fire
     e.stopPropagation();
 
@@ -298,8 +294,6 @@ export function BipartiteMatchGraph({
 
   const renderStateBox = (pos: PositionedState, x: number, align: 'left' | 'right') => {
     const { state, y } = pos;
-    const districts = getDistricts(state);
-    const isSingleDistrict = districts === 1;
     const isActive = state.id === activeStateId;
     const isMatchTarget = activeStateId && activeMatchIds.has(state.id) && !isActive;
     const isDimmed = activeStateId && !activeMatchIds.has(state.id);
@@ -310,9 +304,9 @@ export function BipartiteMatchGraph({
     return (
       <g
         key={state.id}
-        className={`state-box-group ${isSingleDistrict ? 'single-district' : ''} ${isActive ? 'active' : ''} ${isDimmed ? 'dimmed' : ''}`}
+        className={`state-box-group ${isActive ? 'active' : ''} ${isDimmed ? 'dimmed' : ''}`}
         onClick={(e) => handleStateClick(state, e)}
-        style={{ cursor: isSingleDistrict ? 'default' : 'pointer' }}
+        style={{ cursor: 'pointer' }}
       >
         <rect
           x={boxX}
@@ -327,12 +321,11 @@ export function BipartiteMatchGraph({
           y={y}
           width={BOX_WIDTH}
           height={BOX_HEIGHT}
-          fill={isSingleDistrict ? 'rgba(200, 200, 200, 0.3)' : getPartisanColor(state)}
+          fill={getPartisanColor(state)}
           stroke={
             isActive ? '#000' :
             isSelected ? '#c9a227' :
-            isMatchTarget ? '#666' :
-            isSingleDistrict ? '#ddd' : '#999'
+            isMatchTarget ? '#666' : '#999'
           }
           strokeWidth={isActive ? 2.5 : isSelected ? 2 : 1}
           rx={3}
@@ -356,44 +349,40 @@ export function BipartiteMatchGraph({
           textAnchor="start"
           dominantBaseline="central"
           fontSize={10}
-          fill={isSingleDistrict ? '#999' : Math.abs(state.partisanLean) > 10 ? '#fff' : '#333'}
+          fill={Math.abs(state.partisanLean) > 10 ? '#fff' : '#333'}
           fontWeight={isActive ? 600 : 500}
         >
           {state.name}
         </text>
-        {!isSingleDistrict && (
-          <>
-            <text
-              x={boxX + BOX_WIDTH - 6}
-              y={y + 10}
-              textAnchor="end"
-              dominantBaseline="central"
-              fontSize={9}
-              fill={Math.abs(state.partisanLean) > 10 ? 'rgba(255,255,255,0.85)' : '#555'}
-            >
-              {formatLean(state.partisanLean)}
-            </text>
-            <line
-              x1={boxX + 6}
-              y1={y + 19}
-              x2={boxX + BOX_WIDTH - 6}
-              y2={y + 19}
-              stroke={Math.abs(state.partisanLean) > 10 ? '#fff' : '#666'}
-              strokeOpacity={0.3}
-              strokeWidth={0.5}
-            />
-            <text
-              x={boxX + BOX_WIDTH / 2}
-              y={y + 28}
-              textAnchor="middle"
-              dominantBaseline="central"
-              fontSize={9}
-              fill={Math.abs(state.partisanLean) > 10 ? 'rgba(255,255,255,0.85)' : '#555'}
-            >
-              {getEnactedVsCompetitive(state)}
-            </text>
-          </>
-        )}
+        <text
+          x={boxX + BOX_WIDTH - 6}
+          y={y + 10}
+          textAnchor="end"
+          dominantBaseline="central"
+          fontSize={9}
+          fill={Math.abs(state.partisanLean) > 10 ? 'rgba(255,255,255,0.85)' : '#555'}
+        >
+          {formatLean(state.partisanLean)}
+        </text>
+        <line
+          x1={boxX + 6}
+          y1={y + 19}
+          x2={boxX + BOX_WIDTH - 6}
+          y2={y + 19}
+          stroke={Math.abs(state.partisanLean) > 10 ? '#fff' : '#666'}
+          strokeOpacity={0.3}
+          strokeWidth={0.5}
+        />
+        <text
+          x={boxX + BOX_WIDTH / 2}
+          y={y + 28}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fontSize={9}
+          fill={Math.abs(state.partisanLean) > 10 ? 'rgba(255,255,255,0.85)' : '#555'}
+        >
+          {getEnactedVsCompetitive(state)}
+        </text>
       </g>
     );
   };

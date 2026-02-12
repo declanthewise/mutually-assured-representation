@@ -101,6 +101,22 @@ function App() {
 
       <RatingsBar adjustedSafeSeats={adjustedSafeSeats} />
 
+      {districtGroups.map(group => (
+        <section key={group.key} className="match-section">
+          <div className="article-text">
+            <h2>{group.label} <span className="group-range">({group.range} districts)</span></h2>
+            <p>{group.description}</p>
+          </div>
+          <div className="visualization-wide">
+            <BipartiteMatchGraph
+              groupStates={group.states}
+              selectedMatches={selectedMatches}
+              onToggleMatch={handleToggleMatch}
+            />
+          </div>
+        </section>
+      ))}
+
       {selectedMatches.length > 0 && (
         <div className="clear-matches-row">
           <button
@@ -111,29 +127,6 @@ function App() {
           </button>
         </div>
       )}
-
-      {districtGroups.map(group => (
-        <section key={group.key} className="match-section">
-          <div className="article-text">
-            <h2>{group.label} <span className="group-range">({group.range} districts)</span></h2>
-            <p>{group.description}</p>
-            {group.key === 'single' && (
-              <p className="single-district-list">
-                {group.states.map(s => s.name).join(', ')}, and Rhode Island (loses its 2nd district by 2032).
-              </p>
-            )}
-          </div>
-          {group.key !== 'single' && (
-            <div className="visualization-wide">
-              <BipartiteMatchGraph
-                groupStates={group.states}
-                selectedMatches={selectedMatches}
-                onToggleMatch={handleToggleMatch}
-              />
-            </div>
-          )}
-        </section>
-      ))}
 
       <section className="result-section">
         <div className="article-text">
