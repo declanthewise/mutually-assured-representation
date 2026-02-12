@@ -217,7 +217,7 @@ export function BipartiteMatchGraph({
     for (const { state } of allPositionedStates) {
       if (getDistricts(state) === 1) continue;
 
-      const matches = findMatches(state, groupStates, 'current');
+      const matches = findMatches(state, groupStates);
 
       for (const match of matches) {
         const pk = pairKey(state.id, match.id);
@@ -240,7 +240,7 @@ export function BipartiteMatchGraph({
             toY: toPos.y + BOX_HEIGHT / 2,
             fromX,
             toX,
-            isStrong: isStrongMatch(state, match, 'current'),
+            isStrong: isStrongMatch(state, match),
           });
         }
       }

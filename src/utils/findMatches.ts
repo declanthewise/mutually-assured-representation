@@ -1,122 +1,94 @@
 import { StateData } from '../types';
-
-export type DistrictYear = 'current' | '2032';
-
-// States above this partisan lean threshold can only match with opposite-party states
-const STRONG_PARTISAN_THRESHOLD = 8;
+import { stateSafeSeats, SafeSeatCounts } from '../data/safeSeats';
+import { competitiveMapSafeSeats } from '../data/competitiveMapPVIs';
 
 /**
- * Calculate the seats impact for a state.
- * For current districts: Seats = efficiencyGap * districts
- * For 2032: Seats = -(partisanLean / 100) * districts
- *   (negated because partisanLean uses opposite sign convention: positive = D, negative = R)
+ * Compute the partisan seat balance of a safe-seat breakdown.
+ * Positive = R advantage (more R-leaning seats), Negative = D advantage.
  */
-export function getSeats(state: StateData, districtYear: DistrictYear): number {
-  const districts = districtYear === '2032' ? state.districts2032 : state.districts2022;
-  if (districtYear === '2032') {
-    return -(state.partisanLean / 100) * districts;
-  }
-  return state.efficiencyGap * districts;
+function seatBalance(seats: SafeSeatCounts): number {
+  return (seats.safeR + seats.leanR) - (seats.safeD + seats.leanD);
 }
 
-// Opacity constants - change these to adjust match display
-const STRONG_MATCH_OPACITY = 1.0;
-const WEAK_MATCH_OPACITY = 0.7;
-const STRONG_MATCH_SEATS_THRESHOLD = 0.7;
+/**
+ * Compute the delta between enacted and proposed (DRA competitive) map balance.
+ * Positive = enacted map favors R more than the competitive map would.
+ * Negative = enacted map favors D more than the competitive map would.
+ * Returns null if data is not available.
+ */
+export function getBalanceDelta(stateId: string): number | null {
+  const enacted = stateSafeSeats[stateId];
+  const proposed = competitiveMapSafeSeats[stateId];
+  if (!enacted || !proposed) return null;
+  return seatBalance(enacted) - seatBalance(proposed);
+}
+
+// Match thresholds
+const DELTA_SUM_THRESHOLD = 2;       // Max |delta_A + delta_B| for a match (seats)
+const STRONG_MATCH_THRESHOLD = 1;    // Max |delta_A + delta_B| for a "strong" match (seats)
+const STRONG_PARTISAN_THRESHOLD = 3; // Partisan lean above which opposite-party is required
 
 /**
- * Check if a match is "strong" based on seats impact similarity.
+ * Check if a match is "strong" — the deltas nearly perfectly cancel out.
  */
 export function isStrongMatch(
   state: StateData,
   match: StateData,
-  districtYear: DistrictYear
 ): boolean {
-  const stateSeats = Math.abs(getSeats(state, districtYear));
-  const matchSeats = Math.abs(getSeats(match, districtYear));
-  const seatsDiff = Math.abs(matchSeats - stateSeats);
-  return seatsDiff < STRONG_MATCH_SEATS_THRESHOLD;
-}
-
-/**
- * Get the opacity for displaying a match.
- * Strong matches get full opacity, weak matches get reduced opacity.
- */
-export function getMatchOpacity(
-  state: StateData,
-  match: StateData,
-  districtYear: DistrictYear
-): number {
-  return isStrongMatch(state, match, districtYear) ? STRONG_MATCH_OPACITY : WEAK_MATCH_OPACITY;
+  const stateDelta = getBalanceDelta(state.id);
+  const matchDelta = getBalanceDelta(match.id);
+  if (stateDelta === null || matchDelta === null) return false;
+  return Math.abs(stateDelta + matchDelta) <= STRONG_MATCH_THRESHOLD;
 }
 
 /**
  * Find MAR partners for a given state.
  *
- * Matches states with opposite efficiency gap (current) or partisan lean (2032),
- * and similar district count (within 30%).
- * Returns matches sorted by similarity (best matches first).
- * Opacity-based strength grading communicates match quality in the UI.
+ * Matches states whose enacted-to-competitive-map balance deltas
+ * are nearly equal and opposite: if both states adopt competitive maps,
+ * the net national partisan effect is close to zero.
  */
 export function findMatches(
   state: StateData,
   allStates: StateData[],
-  districtYear: DistrictYear = 'current'
 ): StateData[] {
-  const getDistricts = (s: StateData) =>
-    districtYear === '2032' ? s.districts2032 : s.districts2022;
-
-  const stateSeats = Math.abs(getSeats(state, districtYear));
-  const stateDistricts = getDistricts(state);
+  const stateDelta = getBalanceDelta(state.id);
+  if (stateDelta === null) return [];
+  const stateDistricts = state.districts2022;
 
   return allStates
     .filter(other => {
       if (other.id === state.id) return false;
 
       // Skip single-district states (can't be gerrymandered)
-      const otherDistricts = getDistricts(other);
-      if (otherDistricts === 1) return false;
+      if (other.districts2022 === 1) return false;
 
-      // For current districts: if either state has strong partisan lean (>10%),
-      // they must be opposite parties to match
-      if (districtYear === 'current') {
-        const eitherStronglyPartisan =
-          Math.abs(state.partisanLean) > STRONG_PARTISAN_THRESHOLD ||
-          Math.abs(other.partisanLean) > STRONG_PARTISAN_THRESHOLD;
-        const sameParty = Math.sign(state.partisanLean) === Math.sign(other.partisanLean);
-        if (eitherStronglyPartisan && sameParty) {
-          return false;
-        }
-      }
+      const otherDelta = getBalanceDelta(other.id);
+      if (otherDelta === null) return false;
+
+      // Deltas must be opposite direction (zero-delta states can match either)
+      if (stateDelta !== 0 && otherDelta !== 0 &&
+          Math.sign(stateDelta) === Math.sign(otherDelta)) return false;
+
+      // Strongly partisan states must match with opposite-party states
+      const eitherStronglyPartisan =
+        Math.abs(state.partisanLean) > STRONG_PARTISAN_THRESHOLD ||
+        Math.abs(other.partisanLean) > STRONG_PARTISAN_THRESHOLD;
+      if (eitherStronglyPartisan &&
+          Math.sign(state.partisanLean) === Math.sign(other.partisanLean)) return false;
 
       // Similar district count (within 30%)
-      const minDistricts = Math.min(stateDistricts, otherDistricts);
-      const maxDistricts = Math.max(stateDistricts, otherDistricts);
-      const districtRatio = maxDistricts / minDistricts;
-      if (districtRatio > 1.3) return false;
+      const minDistricts = Math.min(stateDistricts, other.districts2022);
+      const maxDistricts = Math.max(stateDistricts, other.districts2022);
+      if (maxDistricts / minDistricts > 1.3) return false;
 
-      if (districtYear === '2032') {
-        // For 2032: match on opposite partisan lean
-        if (Math.sign(other.partisanLean) === Math.sign(state.partisanLean)) return false;
-        // Partisan lean within 5%
-        const leanDiff = Math.abs(Math.abs(other.partisanLean) - Math.abs(state.partisanLean));
-        if (leanDiff > 5) return false;
-      } else {
-        // For current: match on opposite efficiency gap
-        if (Math.sign(other.efficiencyGap) === Math.sign(state.efficiencyGap)) return false;
-        // Efficiency gap within 10%
-        const egDiff = Math.abs(Math.abs(other.efficiencyGap) - Math.abs(state.efficiencyGap));
-        if (egDiff > 0.10) return false;
-      }
-
-      return true;
+      // Deltas must nearly cancel out
+      return Math.abs(stateDelta + otherDelta) <= DELTA_SUM_THRESHOLD;
     })
     .sort((a, b) => {
-      // Sort by how close the seats impact is to the selected state
-      const aSeats = Math.abs(getSeats(a, districtYear));
-      const bSeats = Math.abs(getSeats(b, districtYear));
-      const aDiff = Math.abs(aSeats - stateSeats);
-      const bDiff = Math.abs(bSeats - stateSeats);
-      return aDiff - bDiff;
+      // Sort by how close the delta sum is to zero (best matches first)
+      const aDelta = getBalanceDelta(a.id)!;
+      const bDelta = getBalanceDelta(b.id)!;
+      return Math.abs(stateDelta + aDelta) - Math.abs(stateDelta + bDelta);
     });
 }
