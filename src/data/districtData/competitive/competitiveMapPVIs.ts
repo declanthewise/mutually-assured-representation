@@ -1,5 +1,5 @@
 import draCsvRaw from './draCompetitiveMaps.csv?raw';
-import { categorizePVIs, SafeSeatCounts } from './safeSeats';
+import { categorizePVIs, SafeSeatCounts } from '../safeSeats';
 
 /** Per-district PVI values from DRA most-competitive plans. */
 export const competitiveMapDistrictPVIs: Record<string, number[]> = {};

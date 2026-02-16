@@ -1,10 +1,10 @@
-import { SafeSeatCounts, stateSafeSeats } from '../data/safeSeats';
-import { competitiveMapSafeSeats } from '../data/competitiveMapPVIs';
+import { SafeSeatCounts, stateSafeSeats } from '../data/districtData/safeSeats';
+import { alternateMapSafeSeats } from '../data/districtData/alternateMapPVIs';
 import { MatchPair } from '../types';
 
 /**
  * Compute adjusted SafeSeatCounts by replacing matched states' enacted
- * seat counts with DRA competitive-map seat counts.
+ * seat counts with alternate-map seat counts.
  *
  * Unmatched states keep their enacted SafeSeatCounts.
  */
@@ -16,11 +16,11 @@ export function computeAdjustedSafeSeats(
 
   for (const [stateA, stateB] of selectedMatches) {
     // Replace each matched state with its competitive-map data (if available)
-    if (competitiveMapSafeSeats[stateA]) {
-      result[stateA] = competitiveMapSafeSeats[stateA];
+    if (alternateMapSafeSeats[stateA]) {
+      result[stateA] = alternateMapSafeSeats[stateA];
     }
-    if (competitiveMapSafeSeats[stateB]) {
-      result[stateB] = competitiveMapSafeSeats[stateB];
+    if (alternateMapSafeSeats[stateB]) {
+      result[stateB] = alternateMapSafeSeats[stateB];
     }
   }
 

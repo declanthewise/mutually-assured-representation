@@ -1,6 +1,6 @@
 import * as d3 from 'd3';
 import { HoveredState } from '../types';
-import { stateSafeSeats } from '../data/safeSeats';
+import { stateSafeSeats } from '../data/districtData/safeSeats';
 
 const leanColorScale = d3.scaleLinear<string>()
   .domain([-20, 0, 20])

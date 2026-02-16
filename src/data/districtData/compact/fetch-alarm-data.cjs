@@ -123,7 +123,7 @@ function processState(rows) {
 }
 
 async function main() {
-  const outputPath = path.join(__dirname, '..', 'src', 'data', 'alarmCompactMaps.csv');
+  const outputPath = path.join(__dirname, 'alarmCompactMaps.csv');
 
   const fileIds = await fetchFileIds();
   const states = Object.keys(fileIds).sort();

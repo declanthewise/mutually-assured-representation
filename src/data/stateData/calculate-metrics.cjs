@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Read the raw data TSV (from PlanScore GitHub)
-const tsvPath = path.join(__dirname, '..', 'planscore-raw-data.tsv');
+const tsvPath = path.join(__dirname, '..', 'districtData', 'enacted', 'planscore-2024-raw.tsv');
 const tsvContent = fs.readFileSync(tsvPath, 'utf-8');
 
 const lines = tsvContent.split('\n');

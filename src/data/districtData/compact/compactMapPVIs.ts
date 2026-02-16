@@ -1,5 +1,5 @@
 import alarmCsvRaw from './alarmCompactMaps.csv?raw';
-import { categorizePVIs, SafeSeatCounts } from './safeSeats';
+import { categorizePVIs, SafeSeatCounts } from '../safeSeats';
 
 /** Per-district PVI values from ALARM median-compactness plans. */
 export const compactMapDistrictPVIs: Record<string, number[]> = {};

@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import * as d3 from 'd3';
 import { StateData, MatchPair } from '../types';
 import { findMatches, isStrongMatch } from '../utils/findMatches';
-import { stateSafeSeats } from '../data/safeSeats';
-import { competitiveMapSafeSeats } from '../data/competitiveMapPVIs';
+import { stateSafeSeats } from '../data/districtData/safeSeats';
+import { alternateMapSafeSeats } from '../data/districtData/alternateMapPVIs';
 
 interface BipartiteMatchGraphProps {
   groupStates: StateData[];
@@ -47,9 +47,9 @@ function formatLean(lean: number): string {
   return `${dir}+${Math.abs(lean).toFixed(0)}%`;
 }
 
-function getEnactedVsCompetitive(state: StateData): string {
+function getEnactedVsAlternate(state: StateData): string {
   const enacted = stateSafeSeats[state.id];
-  const competitive = competitiveMapSafeSeats[state.id];
+  const alternate = alternateMapSafeSeats[state.id];
   if (!enacted) return '\u2014';
 
   // Show the state's own party based on partisan lean
@@ -59,15 +59,15 @@ function getEnactedVsCompetitive(state: StateData): string {
     ? enacted.safeR + enacted.leanR
     : enacted.safeD + enacted.leanD;
 
-  if (!competitive) {
+  if (!alternate) {
     return `${enactedCount}${party}`;
   }
 
-  const competitiveCount = showR
-    ? competitive.safeR + competitive.leanR
-    : competitive.safeD + competitive.leanD;
+  const alternateCount = showR
+    ? alternate.safeR + alternate.leanR
+    : alternate.safeD + alternate.leanD;
 
-  return `${enactedCount}${party} \u2192 ${competitiveCount}${party}`;
+  return `${enactedCount}${party} \u2192 ${alternateCount}${party}`;
 }
 
 function pairKey(a: string, b: string): string {
@@ -381,7 +381,7 @@ export function BipartiteMatchGraph({
           fontSize={9}
           fill={Math.abs(state.partisanLean) > 10 ? 'rgba(255,255,255,0.85)' : '#555'}
         >
-          {getEnactedVsCompetitive(state)}
+          {getEnactedVsAlternate(state)}
         </text>
       </g>
     );

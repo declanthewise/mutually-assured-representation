@@ -13,23 +13,34 @@ Interactive visualization tool to identify US states with equal and opposite ger
 
 ```
 src/
-├── App.tsx              # Root component, manages state and layout
-├── App.css              # All styles
-├── main.tsx             # Entry point
+├── App.tsx                  # Root component, manages state and layout
+├── App.css                  # All styles
+├── main.tsx                 # Entry point
 ├── components/
-│   ├── USMap.tsx        # D3-based interactive US map
-│   ├── MatchPanel.tsx   # Sidebar showing MAR partners
-│   ├── StateTable.tsx   # Sortable data table view
-│   ├── StateTooltip.tsx # Hover tooltip on map
-│   └── Legend.tsx       # Efficiency gap color legend
+│   ├── HeroMap.tsx          # D3-based interactive US map (main view)
+│   ├── ResultMap.tsx        # Map showing truce results
+│   ├── BipartiteMatchGraph.tsx  # Match graph visualization
+│   ├── RatingsBar.tsx       # Seat count bar chart
+│   ├── StateTooltip.tsx     # Hover tooltip on map
+│   └── Legend.tsx           # Efficiency gap color legend
 ├── data/
-│   └── stateData.ts     # All 50 states' metrics
+│   ├── stateData/           # State-level data
+│   │   ├── stateData.ts     # All 50 states' metrics
+│   │   ├── stateData.csv    # Raw state data
+│   │   ├── districtGroups.ts    # Groups states by district count
+│   │   └── csv-to-statedata.cjs # Script: CSV → stateData.ts
+│   └── districtData/        # District-level PVI data
+│       ├── safeSeats.ts     # Shared types + safe-seat categorization
+│       ├── alternateMapPVIs.ts  # Indirection: swap active alternate map here
+│       ├── enacted/         # Current enacted maps
+│       ├── compact/         # ALARM compact maps
+│       ├── competitive/     # DRA most-competitive maps
+│       └── proportional/    # DRA most-proportional maps [ACTIVE alternate]
 ├── types/
-│   └── index.ts         # TypeScript interfaces
+│   └── index.ts             # TypeScript interfaces
 └── utils/
-    └── findMatches.ts   # MAR matching algorithm
-scripts/
-└── calculate-metrics.cjs  # Verify efficiency gap & partisan lean calculations
+    ├── findMatches.ts       # MAR matching algorithm
+    └── computeTruceAdjustment.ts  # Truce seat adjustment
 ```
 
 ## Key Concepts
@@ -46,6 +57,13 @@ npm run build    # Type-check and build for production
 npm run preview  # Preview production build
 ```
 
-## Data Source
+## Data Sources
 
-Raw election data from [PlanScore](https://github.com/PlanScore/National-EG-Map). The `planscore-raw-data.tsv` file contains district-level results used to calculate efficiency gap and partisan lean.
+Each `districtData/` subfolder contains its data CSV, loader `.ts`, processing script, and raw inputs (if any). Scripts live alongside the data they produce.
+
+- **Enacted**: PlanScore district-level results (`planscore-raw-data.tsv`) → `districtPVI.csv`
+- **Compact**: ALARM Project 50-State Simulations → `alarmCompactMaps.csv` (via `fetch-alarm-data.cjs`)
+- **Competitive**: DRA most-competitive maps → `draCompetitiveMaps.csv` (via `consolidate-dra-competitive.cjs`)
+- **Proportional**: DRA most-proportional maps → `draProportionalMaps.csv` (via `consolidate-dra-proportional.cjs`)
+
+To switch the active alternate map, change one import line in `src/data/districtData/alternateMapPVIs.ts`.

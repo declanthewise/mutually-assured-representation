@@ -2,8 +2,8 @@ import { useEffect, useRef, useMemo } from 'react';
 import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
 import { HoveredState } from '../types';
-import { stateDataById } from '../data/stateData';
-import { stateSafeSeats } from '../data/safeSeats';
+import { stateDataById } from '../data/stateData/stateData';
+import { stateSafeSeats } from '../data/districtData/safeSeats';
 import { fipsToState } from '../utils/fipsMapping';
 
 interface HeroMapProps {

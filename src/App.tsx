@@ -5,9 +5,9 @@ import { BipartiteMatchGraph } from './components/BipartiteMatchGraph';
 import { RatingsBar } from './components/RatingsBar';
 import { StateTooltip } from './components/StateTooltip';
 import { useTopoData } from './hooks/useTopoData';
-import { districtGroups } from './data/districtGroups';
+import { stateGroups } from './data/stateData/stateGroups';
 import { computeAdjustedSafeSeats } from './utils/computeTruceAdjustment';
-import { stateSafeSeats } from './data/safeSeats';
+import { stateSafeSeats } from './data/districtData/safeSeats';
 import { HoveredState, MatchPair } from './types';
 
 function pairKey(a: string, b: string): string {
@@ -101,7 +101,7 @@ function App() {
 
       <RatingsBar adjustedSafeSeats={adjustedSafeSeats} />
 
-      {districtGroups.map(group => (
+      {stateGroups.map(group => (
         <section key={group.key} className="match-section">
           <div className="article-text">
             <h2>{group.label} <span className="group-range">({group.range} districts)</span></h2>
@@ -157,9 +157,9 @@ function App() {
           Matching criteria: opposite partisan lean (within 5%), similar district count (within 30%).
         </p>
         <p>
-          Competitive map alternatives from{' '}
+          Proportional map alternatives from{' '}
           <a href="https://davesredistricting.org/" target="_blank" rel="noopener noreferrer">Dave's Redistricting App</a>{' '}
-          (most competitive maps). Compact map data from the{' '}
+          (most proportional maps). Compact map data from the{' '}
           <a href="https://alarm-redist.org/fifty-states/" target="_blank" rel="noopener noreferrer">ALARM Project 50-State Simulations</a>.
         </p>
         <p>

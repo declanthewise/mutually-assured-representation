@@ -1,8 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const stateDataCsvPath = path.join(__dirname, '..', 'src', 'data', 'stateData.csv');
-const tsPath = path.join(__dirname, '..', 'src', 'data', 'stateData.ts');
+const stateDataCsvPath = path.join(__dirname, 'stateData.csv');
+const tsPath = path.join(__dirname, 'stateData.ts');
 
 // --- Read state data CSV ---
 
@@ -36,7 +36,7 @@ const entries = stateRows.map(row => {
   }`;
 });
 
-const ts = `import { StateData } from '../types';
+const ts = `import { StateData } from '../../types';
 
 // Efficiency gap calculated from PlanScore 2024 raw data (https://planscore.org)
 // See scripts/calculate-metrics.cjs for calculation details

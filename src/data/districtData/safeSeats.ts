@@ -1,4 +1,4 @@
-import districtPviRaw from './districtPVI.csv?raw';
+import districtPviRaw from './enacted/districtPVI.csv?raw';
 
 export const SAFE_SEAT_THRESHOLD = 8;
 

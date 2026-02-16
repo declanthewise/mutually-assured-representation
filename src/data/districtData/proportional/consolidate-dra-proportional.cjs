@@ -1,15 +1,15 @@
 /**
- * Consolidate individual DRA "most competitive" CSV files into a single
- * draCompetitiveMaps.csv with the same state,district,pvi format used
+ * Consolidate individual DRA "most proportional" CSV files into a single
+ * draProportionalMaps.csv with the same state,district,pvi format used
  * by the ALARM compact maps CSV.
  *
- * Usage: node scripts/consolidate-dra-data.cjs
+ * Usage: node src/data/districtData/proportional/consolidate-dra-proportional.cjs
  */
 const fs = require('fs');
 const path = require('path');
 
-const INPUT_DIR = path.join(__dirname, '..', 'src', 'data', 'DRAmostcompetitives');
-const OUTPUT_PATH = path.join(__dirname, '..', 'src', 'data', 'draCompetitiveMaps.csv');
+const INPUT_DIR = path.join(__dirname, 'raw');
+const OUTPUT_PATH = path.join(__dirname, 'draProportionalMaps.csv');
 
 // Expected district counts (2022 apportionment) for all multi-district states
 const EXPECTED_DISTRICTS = {
@@ -26,7 +26,7 @@ const files = fs.readdirSync(INPUT_DIR).filter(f => f.endsWith('.csv')).sort();
 let errors = 0;
 
 for (const file of files) {
-  const stateId = file.replace('mostcompetitive.csv', '');
+  const stateId = file.replace('mostproportional.csv', '');
   const expectedDistricts = EXPECTED_DISTRICTS[stateId];
 
   if (!expectedDistricts) {

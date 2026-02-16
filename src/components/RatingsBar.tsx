@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
-import { SafeSeatCounts } from '../data/safeSeats';
+import { SafeSeatCounts } from '../data/districtData/safeSeats';
 
 function AnimatedNumber({ value }: { value: number }) {
   const [display, setDisplay] = useState(value);

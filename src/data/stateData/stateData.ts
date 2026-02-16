@@ -1,4 +1,4 @@
-import { StateData } from '../types';
+import { StateData } from '../../types';
 
 // Efficiency gap calculated from PlanScore 2024 raw data (https://planscore.org)
 // See scripts/calculate-metrics.cjs for calculation details

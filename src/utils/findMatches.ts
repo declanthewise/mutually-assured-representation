@@ -1,6 +1,6 @@
 import { StateData } from '../types';
-import { stateSafeSeats, SafeSeatCounts } from '../data/safeSeats';
-import { competitiveMapSafeSeats } from '../data/competitiveMapPVIs';
+import { stateSafeSeats, SafeSeatCounts } from '../data/districtData/safeSeats';
+import { alternateMapSafeSeats } from '../data/districtData/alternateMapPVIs';
 
 /**
  * Compute the partisan seat balance of a safe-seat breakdown.
@@ -11,14 +11,14 @@ function seatBalance(seats: SafeSeatCounts): number {
 }
 
 /**
- * Compute the delta between enacted and proposed (DRA competitive) map balance.
- * Positive = enacted map favors R more than the competitive map would.
- * Negative = enacted map favors D more than the competitive map would.
+ * Compute the delta between enacted and alternate (DRA) map balance.
+ * Positive = enacted map favors R more than the alternate map would.
+ * Negative = enacted map favors D more than the alternate map would.
  * Returns null if data is not available.
  */
 export function getBalanceDelta(stateId: string): number | null {
   const enacted = stateSafeSeats[stateId];
-  const proposed = competitiveMapSafeSeats[stateId];
+  const proposed = alternateMapSafeSeats[stateId];
   if (!enacted || !proposed) return null;
   return seatBalance(enacted) - seatBalance(proposed);
 }
@@ -44,8 +44,8 @@ export function isStrongMatch(
 /**
  * Find MAR partners for a given state.
  *
- * Matches states whose enacted-to-competitive-map balance deltas
- * are nearly equal and opposite: if both states adopt competitive maps,
+ * Matches states whose enacted-to-alternate-map balance deltas
+ * are nearly equal and opposite: if both states adopt alternate maps,
  * the net national partisan effect is close to zero.
  */
 export function findMatches(

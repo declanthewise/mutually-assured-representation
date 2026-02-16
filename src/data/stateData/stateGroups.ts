@@ -1,7 +1,7 @@
-import { StateData } from '../types';
+import { StateData } from '../../types';
 import { stateData } from './stateData';
 
-export interface DistrictGroup {
+export interface StateGroup {
   key: string;
   label: string;
   description: string;
@@ -12,7 +12,7 @@ export interface DistrictGroup {
 const bigStates = stateData.filter(s => s.districts2022 >= 24);
 const restStates = stateData.filter(s => s.districts2022 < 24);
 
-export const districtGroups: DistrictGroup[] = [
+export const stateGroups: StateGroup[] = [
   {
     key: 'big',
     label: 'The Big Four',
