@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import * as d3 from 'd3';
 import { StateData, MatchPair } from '../types';
-import { findMatches, isStrongMatch } from '../utils/findMatches';
+import { findMatches, getMinoritySeatGain } from '../utils/findMatches';
 import { stateSafeSeats } from '../data/districtData/safeSeats';
+import { alternateMapSafeSeats } from '../data/districtData/alternateMapLeans';
 import type { SafeSeatCounts } from '../data/districtData/safeSeats';
 
 interface BipartiteMatchGraphProps {
@@ -33,7 +34,6 @@ interface MatchLine {
   toY: number;
   fromX: number;
   toX: number;
-  isStrong: boolean;
 }
 
 const BOX_WIDTH = 110;
@@ -71,72 +71,116 @@ const CATEGORY_COLORS = {
   safeR: '#c93135',
 };
 
-function renderSeatSquares(
-  counts: SafeSeatCounts,
+const EDGE_PAD = 4;
+
+function gw(count: number, maxRows: number): number {
+  return Math.ceil(count / maxRows) * SQUARE_PITCH - SQUARE_GAP;
+}
+
+/**
+ * Render merged enacted + alternate seat squares within a single group.
+ * For each category, the group size is max(enacted, alt).
+ * - Enacted squares: solid fill
+ * - Extra alt squares (alt > enacted): white fill, colored border (appended)
+ * - Lost enacted squares (enacted > alt): solid fill with white X overlay
+ */
+function renderMergedSeatSquares(
+  enacted: SafeSeatCounts,
+  alt: SafeSeatCounts,
   boxX: number,
   y: number,
   maxRows: number,
   boxHeight: number,
 ): JSX.Element {
-  const colors = CATEGORY_COLORS;
   const squaresBottom = y + boxHeight - 2;
-  const edgePad = 4;
-  const squares: JSX.Element[] = [];
+  const elements: JSX.Element[] = [];
 
-  const addGroup = (count: number, color: string, startX: number, key: string) => {
-    for (let i = 0; i < count; i++) {
+  const renderGroup = (
+    enCount: number,
+    altCount: number,
+    color: string,
+    startX: number,
+    key: string,
+  ) => {
+    const total = Math.max(enCount, altCount);
+    for (let i = 0; i < total; i++) {
       const col = Math.floor(i / maxRows);
       const rowFromBottom = i % maxRows;
-      squares.push(
-        <rect
-          key={`${key}-${i}`}
-          x={startX + col * SQUARE_PITCH}
-          y={squaresBottom - SQUARE_SIZE - rowFromBottom * SQUARE_PITCH}
-          width={SQUARE_SIZE}
-          height={SQUARE_SIZE}
-          fill={color}
-        />,
-      );
+      const sx = startX + col * SQUARE_PITCH;
+      const sy = squaresBottom - SQUARE_SIZE - rowFromBottom * SQUARE_PITCH;
+
+      if (i < enCount) {
+        // Enacted square (solid)
+        elements.push(
+          <rect key={`${key}-${i}`} x={sx} y={sy}
+            width={SQUARE_SIZE} height={SQUARE_SIZE} fill={color} />,
+        );
+        // X mark if this enacted seat is lost in the alt map
+        if (i >= altCount) {
+          const pad = 0.5;
+          elements.push(
+            <line key={`${key}-x1-${i}`}
+              x1={sx + pad} y1={sy + pad}
+              x2={sx + SQUARE_SIZE - pad} y2={sy + SQUARE_SIZE - pad}
+              stroke="white" strokeWidth={1} />,
+            <line key={`${key}-x2-${i}`}
+              x1={sx + SQUARE_SIZE - pad} y1={sy + pad}
+              x2={sx + pad} y2={sy + SQUARE_SIZE - pad}
+              stroke="white" strokeWidth={1} />,
+          );
+        }
+      } else {
+        // Extra alt square (inverted: white fill, colored border)
+        elements.push(
+          <rect key={`${key}-${i}`} x={sx} y={sy}
+            width={SQUARE_SIZE} height={SQUARE_SIZE}
+            fill="white" stroke={color} strokeWidth={0.75} />,
+        );
+      }
     }
   };
 
-  const groupWidth = (count: number) =>
-    Math.ceil(count / maxRows) * SQUARE_PITCH - SQUARE_GAP;
+  // Use max counts for positioning so groups have room for both maps
+  const maxSafeD = Math.max(enacted.safeD, alt.safeD);
+  const maxLeanD = Math.max(enacted.leanD, alt.leanD);
+  const maxEven = Math.max(enacted.even, alt.even);
+  const maxLeanR = Math.max(enacted.leanR, alt.leanR);
+  const maxSafeR = Math.max(enacted.safeR, alt.safeR);
 
   // Left: safeD then leanD
-  let leftX = boxX + edgePad;
-  if (counts.safeD > 0) {
-    addGroup(counts.safeD, colors.safeD, leftX, 'sd');
-    leftX += groupWidth(counts.safeD) + CATEGORY_GAP;
+  let leftX = boxX + EDGE_PAD;
+  if (maxSafeD > 0) {
+    renderGroup(enacted.safeD, alt.safeD, CATEGORY_COLORS.safeD, leftX, 'sd');
+    leftX += gw(maxSafeD, maxRows) + CATEGORY_GAP;
   }
   let leanDRight = leftX;
-  if (counts.leanD > 0) {
-    addGroup(counts.leanD, colors.leanD, leftX, 'ld');
-    leanDRight = leftX + groupWidth(counts.leanD);
+  if (maxLeanD > 0) {
+    renderGroup(enacted.leanD, alt.leanD, CATEGORY_COLORS.leanD, leftX, 'ld');
+    leanDRight = leftX + gw(maxLeanD, maxRows);
   }
 
   // Right: safeR then leanR (from the right edge inward)
-  let rightX = boxX + BOX_WIDTH - edgePad;
-  if (counts.safeR > 0) {
-    rightX -= groupWidth(counts.safeR);
-    addGroup(counts.safeR, colors.safeR, rightX, 'sr');
+  let rightX = boxX + BOX_WIDTH - EDGE_PAD;
+  if (maxSafeR > 0) {
+    rightX -= gw(maxSafeR, maxRows);
+    renderGroup(enacted.safeR, alt.safeR, CATEGORY_COLORS.safeR, rightX, 'sr');
     rightX -= CATEGORY_GAP;
   }
   let leanRLeft = rightX;
-  if (counts.leanR > 0) {
-    rightX -= groupWidth(counts.leanR);
-    addGroup(counts.leanR, colors.leanR, rightX, 'lr');
+  if (maxLeanR > 0) {
+    rightX -= gw(maxLeanR, maxRows);
+    renderGroup(enacted.leanR, alt.leanR, CATEGORY_COLORS.leanR, rightX, 'lr');
     leanRLeft = rightX;
   }
 
   // Even: centered between leanD right edge and leanR left edge
-  if (counts.even > 0) {
-    const w = groupWidth(counts.even);
+  if (maxEven > 0) {
+    const w = gw(maxEven, maxRows);
     const midpoint = (leanDRight + leanRLeft) / 2;
-    addGroup(counts.even, colors.even, midpoint - w / 2, 'ev');
+    renderGroup(enacted.even, alt.even, CATEGORY_COLORS.even, midpoint - w / 2, 'ev');
   }
 
-  return <g>{squares}</g>;
+  return <g>{elements}</g>;
 }
 
 function pairKey(a: string, b: string): string {
@@ -315,7 +359,6 @@ export function BipartiteMatchGraph({
             toY: toPos.y + toPos.boxHeight / 2,
             fromX,
             toX,
-            isStrong: isStrongMatch(state, match),
           });
         }
       }
@@ -484,20 +527,43 @@ export function BipartiteMatchGraph({
           );
         })()}
 
-        {stateSafeSeats[state.id] &&
-          renderSeatSquares(
+        {stateSafeSeats[state.id] && alternateMapSafeSeats[state.id] &&
+          renderMergedSeatSquares(
             stateSafeSeats[state.id],
+            alternateMapSafeSeats[state.id],
             boxX,
             y,
             getMaxRows(getDistricts(state)),
             boxHeight,
           )}
+
+        {/* Minority-party seats gained by switching to proportional map */}
+        {(() => {
+          const gain = getMinoritySeatGain(state);
+          if (gain === null) return null;
+          const label = (gain >= 0 ? '+' : '') + gain;
+          const isLeft = align === 'left';
+          const labelX = isLeft ? boxX + BOX_WIDTH + 4 : boxX - 4;
+          const anchor = isLeft ? 'start' : 'end';
+          return (
+            <text
+              x={labelX}
+              y={y + boxHeight / 2}
+              textAnchor={anchor}
+              dominantBaseline="central"
+              fontSize={8}
+              fill="#999"
+            >
+              {label}
+            </text>
+          );
+        })()}
       </g>
     );
   };
 
   const renderMatchLine = (line: MatchLine, index: number) => {
-    const { fromState, toState, fromY, toY, fromX, toX, isStrong } = line;
+    const { fromState, toState, fromY, toY, fromX, toX } = line;
 
     const isRelatedLine = !activeStateId ||
       fromState.id === activeStateId ||
@@ -514,9 +580,9 @@ export function BipartiteMatchGraph({
         d={`M ${fromX} ${fromY} C ${controlX} ${fromY}, ${controlX} ${toY}, ${toX} ${toY}`}
         fill="none"
         stroke={isPairSelected ? '#c9a227' : '#ccc'}
-        strokeWidth={isPairSelected ? 3 : isStrong ? 2 : 1.5}
+        strokeWidth={isPairSelected ? 3 : 1.5}
         strokeOpacity={isPairSelected ? 1 : isRelatedLine ? 0.7 : 0.15}
-        className={`match-line ${isStrong ? 'strong' : 'weak'} ${!isRelatedLine && !isPairSelected ? 'dimmed' : ''}`}
+        className={`match-line ${!isRelatedLine && !isPairSelected ? 'dimmed' : ''}`}
       />
     );
   };

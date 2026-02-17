@@ -137,9 +137,6 @@ function App() {
               selectedMatches={selectedMatches}
               onToggleMatch={handleToggleMatch}
             />
-            {group.footnote && (
-              <p className="graph-footnote">{group.footnote}</p>
-            )}
           </div>
         </section>
       ))}
@@ -152,6 +149,14 @@ function App() {
           >
             Clear all selections
           </button>
+        </div>
+      )}
+
+      {stateGroups.some(g => g.footnote) && (
+        <div className="visualization-wide">
+          <p className="graph-footnote">
+            {stateGroups.find(g => g.footnote)!.footnote}
+          </p>
         </div>
       )}
 

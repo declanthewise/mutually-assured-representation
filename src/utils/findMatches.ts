@@ -1,94 +1,106 @@
 import { StateData } from '../types';
-import { stateSafeSeats, SafeSeatCounts } from '../data/districtData/safeSeats';
+import { stateSafeSeats } from '../data/districtData/safeSeats';
 import { alternateMapSafeSeats } from '../data/districtData/alternateMapLeans';
 
 /**
- * Compute the partisan seat balance of a safe-seat breakdown.
- * Positive = R advantage (more R-leaning seats), Negative = D advantage.
+ * Compute the number of majority-party safe+lean seats lost by switching
+ * to the alternate (proportional) map. This counts seats that move away
+ * from the majority party — whether they become even, lean-minority, or
+ * safe-minority.
+ *
+ * Positive = majority party loses seats (good for the minority).
+ * "Majority party" = same as the state's partisan lean:
+ *   D-leaning state → majority is D,  R-leaning state → majority is R.
+ *
+ * Returns null if data is unavailable.
  */
-function seatBalance(seats: SafeSeatCounts): number {
-  return (seats.safeR + seats.leanR) - (seats.safeD + seats.leanD);
-}
+export function getMinoritySeatGain(state: StateData): number | null {
+  const enacted = stateSafeSeats[state.id];
+  const alt = alternateMapSafeSeats[state.id];
+  if (!enacted || !alt) return null;
 
-/**
- * Compute the delta between enacted and alternate (DRA) map balance.
- * Positive = enacted map favors R more than the alternate map would.
- * Negative = enacted map favors D more than the alternate map would.
- * Returns null if data is not available.
- */
-export function getBalanceDelta(stateId: string): number | null {
-  const enacted = stateSafeSeats[stateId];
-  const proposed = alternateMapSafeSeats[stateId];
-  if (!enacted || !proposed) return null;
-  return seatBalance(enacted) - seatBalance(proposed);
+  const stateLeansD = state.partisanLean > 0;
+  const enactedMajority = stateLeansD
+    ? enacted.safeD + enacted.leanD
+    : enacted.safeR + enacted.leanR;
+  const altMajority = stateLeansD
+    ? alt.safeD + alt.leanD
+    : alt.safeR + alt.leanR;
+
+  return enactedMajority - altMajority;
 }
 
 // Match thresholds
-const DELTA_SUM_THRESHOLD = 2;       // Max |delta_A + delta_B| for a match (seats)
-const STRONG_MATCH_THRESHOLD = 1;    // Max |delta_A + delta_B| for a "strong" match (seats)
 const STRONG_PARTISAN_THRESHOLD = 3; // Partisan lean above which opposite-party is required
-
-/**
- * Check if a match is "strong" — the deltas nearly perfectly cancel out.
- */
-export function isStrongMatch(
-  state: StateData,
-  match: StateData,
-): boolean {
-  const stateDelta = getBalanceDelta(state.id);
-  const matchDelta = getBalanceDelta(match.id);
-  if (stateDelta === null || matchDelta === null) return false;
-  return Math.abs(stateDelta + matchDelta) <= STRONG_MATCH_THRESHOLD;
-}
+const BIG_FOUR = new Set(['CA', 'TX', 'FL', 'NY']);
 
 /**
  * Find MAR partners for a given state.
  *
- * Matches states whose enacted-to-alternate-map balance deltas
- * are nearly equal and opposite: if both states adopt alternate maps,
- * the net national partisan effect is close to zero.
+ * Uses minority-party seat gain as the matching metric.
+ * Matching tiers (by |gainA - gainB|):
+ *   1. Exact (== 0): show all, sorted by closest district count.
+ *   2. Otherwise: show only the single closest match.
+ *
+ * Big-four states (CA, TX, FL, NY) can only match with each other.
  */
 export function findMatches(
   state: StateData,
   allStates: StateData[],
 ): StateData[] {
-  const stateDelta = getBalanceDelta(state.id);
-  if (stateDelta === null) return [];
-  const stateDistricts = state.districts2022;
+  const stateGain = getMinoritySeatGain(state);
+  if (stateGain === null) return [];
 
-  return allStates
-    .filter(other => {
-      if (other.id === state.id) return false;
+  const isBigFour = BIG_FOUR.has(state.id);
 
-      // Skip single-district states (can't be gerrymandered)
-      if (other.districts2022 === 1) return false;
+  // Build candidate list with basic directional / partisan filters
+  const candidates: { other: StateData; otherGain: number }[] = [];
 
-      const otherDelta = getBalanceDelta(other.id);
-      if (otherDelta === null) return false;
+  for (const other of allStates) {
+    if (other.id === state.id) continue;
+    if (other.districts2022 === 1) continue;
 
-      // Deltas must be opposite direction (zero-delta states can match either)
-      if (stateDelta !== 0 && otherDelta !== 0 &&
-          Math.sign(stateDelta) === Math.sign(otherDelta)) return false;
+    // Big-four restriction
+    if (isBigFour && !BIG_FOUR.has(other.id)) continue;
+    if (!isBigFour && BIG_FOUR.has(other.id)) continue;
 
-      // Strongly partisan states must match with opposite-party states
-      const eitherStronglyPartisan =
-        Math.abs(state.partisanLean) > STRONG_PARTISAN_THRESHOLD ||
-        Math.abs(other.partisanLean) > STRONG_PARTISAN_THRESHOLD;
-      if (eitherStronglyPartisan &&
-          Math.sign(state.partisanLean) === Math.sign(other.partisanLean)) return false;
+    const otherGain = getMinoritySeatGain(other);
+    if (otherGain === null) continue;
 
-      // Similar district count (within 30%)
-      const minDistricts = Math.min(stateDistricts, other.districts2022);
-      const maxDistricts = Math.max(stateDistricts, other.districts2022);
-      if (maxDistricts / minDistricts > 1.3) return false;
+    // Strongly partisan states must match with opposite-party states
+    const eitherStronglyPartisan =
+      Math.abs(state.partisanLean) > STRONG_PARTISAN_THRESHOLD ||
+      Math.abs(other.partisanLean) > STRONG_PARTISAN_THRESHOLD;
+    if (eitherStronglyPartisan &&
+        Math.sign(state.partisanLean) === Math.sign(other.partisanLean)) continue;
 
-      // Deltas must nearly cancel out
-      return Math.abs(stateDelta + otherDelta) <= DELTA_SUM_THRESHOLD;
-    })
-    .sort((a, b) => {
-      // Sort by how close the delta sum is to zero (best matches first)
-      const aDelta = getBalanceDelta(a.id)!;
-      const bDelta = getBalanceDelta(b.id)!;
-      return Math.abs(stateDelta + aDelta) - Math.abs(stateDelta + bDelta);
-    });
+    candidates.push({ other, otherGain });
+  }
+
+  if (candidates.length === 0) return [];
+
+  // Sort helper: closest district count to state
+  const byDistrictCloseness = (a: { other: StateData }, b: { other: StateData }) =>
+    Math.abs(a.other.districts2022 - state.districts2022) -
+    Math.abs(b.other.districts2022 - state.districts2022);
+
+  // Tier 1: exact matches (|gainA - gainB| == 0), closest district count only (ties kept)
+  const exact = candidates.filter(c => Math.abs(stateGain - c.otherGain) === 0);
+  if (exact.length > 0) {
+    exact.sort(byDistrictCloseness);
+    const bestDist = Math.abs(exact[0].other.districts2022 - state.districts2022);
+    return exact
+      .filter(c => Math.abs(c.other.districts2022 - state.districts2022) === bestDist)
+      .map(c => c.other);
+  }
+
+  // Tier 2: single closest match by |gainA - gainB|, then district count
+  candidates.sort((a, b) => {
+    const aDiff = Math.abs(stateGain - a.otherGain);
+    const bDiff = Math.abs(stateGain - b.otherGain);
+    if (aDiff !== bDiff) return aDiff - bDiff;
+    return byDistrictCloseness(a, b);
+  });
+
+  return [candidates[0].other];
 }
