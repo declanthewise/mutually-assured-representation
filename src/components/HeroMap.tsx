@@ -156,7 +156,7 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
       </div>
       <svg ref={svgRef} className="hero-map" />
       <p className="hero-map-caption">
-        States colored by partisan lean (Cook PVI). Circles sized by number of uncompetitive House seats (|PVI| &ge; 8).
+        States colored by partisan lean (Cook PVI). Circles sized by number of uncompetitive House seats (|lean| &ge; 8).
       </p>
     </>
   );

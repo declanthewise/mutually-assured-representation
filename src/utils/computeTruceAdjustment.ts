@@ -1,5 +1,5 @@
 import { SafeSeatCounts, stateSafeSeats } from '../data/districtData/safeSeats';
-import { alternateMapSafeSeats } from '../data/districtData/alternateMapPVIs';
+import { alternateMapSafeSeats } from '../data/districtData/alternateMapLeans';
 import { MatchPair } from '../types';
 
 /**

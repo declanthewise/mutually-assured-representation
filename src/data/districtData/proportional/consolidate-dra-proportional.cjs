@@ -1,6 +1,6 @@
 /**
  * Consolidate individual DRA "most proportional" CSV files into a single
- * draProportionalMaps.csv with the same state,district,pvi format used
+ * draProportionalMaps.csv with the same state,district,lean format used
  * by the ALARM compact maps CSV.
  *
  * Usage: node src/data/districtData/proportional/consolidate-dra-proportional.cjs
@@ -21,7 +21,7 @@ const EXPECTED_DISTRICTS = {
   VA: 11, WA: 10, WV: 2, WI: 8,
 };
 
-const csvLines = ['state,district,pvi'];
+const csvLines = ['state,district,lean'];
 const files = fs.readdirSync(INPUT_DIR).filter(f => f.endsWith('.csv')).sort();
 let errors = 0;
 
@@ -58,9 +58,9 @@ for (const file of files) {
 
     const dem = parseFloat(parts[3]);
     const rep = parseFloat(parts[4]);
-    const pvi = Math.round((rep - dem) / (rep + dem) * 100);
+    const lean = Math.round((rep - dem) / (rep + dem) * 100);
 
-    csvLines.push(`${stateId},${id},${pvi}`);
+    csvLines.push(`${stateId},${id},${lean}`);
     districtCount++;
   }
 

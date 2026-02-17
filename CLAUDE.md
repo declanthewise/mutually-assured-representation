@@ -29,9 +29,9 @@ src/
 │   │   ├── stateData.csv    # Raw state data
 │   │   ├── districtGroups.ts    # Groups states by district count
 │   │   └── csv-to-statedata.cjs # Script: CSV → stateData.ts
-│   └── districtData/        # District-level PVI data
+│   └── districtData/        # District-level lean data
 │       ├── safeSeats.ts     # Shared types + safe-seat categorization
-│       ├── alternateMapPVIs.ts  # Indirection: swap active alternate map here
+│       ├── alternateMapLeans.ts  # Indirection: swap active alternate map here
 │       ├── enacted/         # Current enacted maps
 │       ├── compact/         # ALARM compact maps
 │       ├── competitive/     # DRA most-competitive maps
@@ -66,4 +66,4 @@ Each `districtData/` subfolder contains its data CSV, loader `.ts`, processing s
 - **Competitive**: DRA most-competitive maps → `draCompetitiveMaps.csv` (via `consolidate-dra-competitive.cjs`)
 - **Proportional**: DRA most-proportional maps → `draProportionalMaps.csv` (via `consolidate-dra-proportional.cjs`)
 
-To switch the active alternate map, change one import line in `src/data/districtData/alternateMapPVIs.ts`.
+To switch the active alternate map, change one import line in `src/data/districtData/alternateMapLeans.ts`.

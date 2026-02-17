@@ -99,9 +99,23 @@ function App() {
         </p>
       </section>
 
+      <section className="match-section">
+        <div className="article-text">
+          <h2>{stateGroups[0].label} <span className="group-range">({stateGroups[0].range} districts)</span></h2>
+          <p>{stateGroups[0].description}</p>
+        </div>
+        <div className="visualization-wide">
+          <BipartiteMatchGraph
+            groupStates={stateGroups[0].states}
+            selectedMatches={selectedMatches}
+            onToggleMatch={handleToggleMatch}
+          />
+        </div>
+      </section>
+
       <RatingsBar adjustedSafeSeats={adjustedSafeSeats} />
 
-      {stateGroups.map(group => (
+      {stateGroups.slice(1).map(group => (
         <section key={group.key} className="match-section">
           <div className="article-text">
             <h2>{group.label} <span className="group-range">({group.range} districts)</span></h2>
@@ -113,6 +127,9 @@ function App() {
               selectedMatches={selectedMatches}
               onToggleMatch={handleToggleMatch}
             />
+            {group.footnote && (
+              <p className="graph-footnote">{group.footnote}</p>
+            )}
           </div>
         </section>
       ))}

@@ -12,25 +12,25 @@ export interface SafeSeatCounts {
   safeSeats: number;
 }
 
-function parsePVI(pviStr: string): number {
-  if (pviStr === 'EVEN') return 0;
-  const match = pviStr.match(/([RD])\+(\d+)/);
+function parseLeanString(leanStr: string): number {
+  if (leanStr === 'EVEN') return 0;
+  const match = leanStr.match(/([RD])\+(\d+)/);
   if (!match) return 0;
   const value = parseInt(match[2]);
   return match[1] === 'R' ? value : -value;
 }
 
-/** Categorize an array of numeric PVI values into safe-seat buckets. */
-export function categorizePVIs(pvis: number[]): SafeSeatCounts {
+/** Categorize an array of numeric lean values into safe-seat buckets. */
+export function categorizeLeans(leans: number[]): SafeSeatCounts {
   let safeR = 0, safeD = 0, leanR = 0, even = 0, leanD = 0;
-  for (const pvi of pvis) {
-    if (pvi >= SAFE_SEAT_THRESHOLD) {
+  for (const lean of leans) {
+    if (lean >= SAFE_SEAT_THRESHOLD) {
       safeR++;
-    } else if (pvi <= -SAFE_SEAT_THRESHOLD) {
+    } else if (lean <= -SAFE_SEAT_THRESHOLD) {
       safeD++;
-    } else if (pvi > 0) {
+    } else if (lean > 0) {
       leanR++;
-    } else if (pvi < 0) {
+    } else if (lean < 0) {
       leanD++;
     } else {
       even++;
@@ -47,7 +47,7 @@ function computeSafeSeats(): Record<string, SafeSeatCounts> {
   const lines = districtPviRaw.trim().split('\n');
   const rows = lines.slice(1); // Skip header
 
-  const statePVIs: Record<string, number[]> = {};
+  const stateLeans: Record<string, number[]> = {};
 
   for (const line of rows) {
     // Parse CSV handling quoted fields
@@ -68,17 +68,17 @@ function computeSafeSeats(): Record<string, SafeSeatCounts> {
     parts.push(current);
 
     const dist = parts[0]; // e.g., "AL-01"
-    const pviStr = parts[4]; // e.g., "R+27"
+    const leanStr = parts[4]; // e.g., "R+27"
     const stateId = dist.split('-')[0];
-    const pvi = parsePVI(pviStr);
+    const lean = parseLeanString(leanStr);
 
-    if (!statePVIs[stateId]) statePVIs[stateId] = [];
-    statePVIs[stateId].push(pvi);
+    if (!stateLeans[stateId]) stateLeans[stateId] = [];
+    stateLeans[stateId].push(lean);
   }
 
   const result: Record<string, SafeSeatCounts> = {};
-  for (const [stateId, pvis] of Object.entries(statePVIs)) {
-    result[stateId] = categorizePVIs(pvis);
+  for (const [stateId, leans] of Object.entries(stateLeans)) {
+    result[stateId] = categorizeLeans(leans);
   }
   return result;
 }

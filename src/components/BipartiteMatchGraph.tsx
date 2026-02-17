@@ -3,7 +3,7 @@ import * as d3 from 'd3';
 import { StateData, MatchPair } from '../types';
 import { findMatches, isStrongMatch } from '../utils/findMatches';
 import { stateSafeSeats } from '../data/districtData/safeSeats';
-import { alternateMapSafeSeats } from '../data/districtData/alternateMapPVIs';
+import type { SafeSeatCounts } from '../data/districtData/safeSeats';
 
 interface BipartiteMatchGraphProps {
   groupStates: StateData[];
@@ -23,6 +23,7 @@ function getPartisanColor(state: StateData): string {
 interface PositionedState {
   state: StateData;
   y: number;
+  boxHeight: number;
 }
 
 interface MatchLine {
@@ -36,10 +37,24 @@ interface MatchLine {
 }
 
 const BOX_WIDTH = 110;
-const BOX_HEIGHT = 36;
+const HEADER_HEIGHT = 19;
+const SQUARE_SIZE = 5;
+const SQUARE_GAP = 0.5;
+const SQUARE_PITCH = SQUARE_SIZE + SQUARE_GAP;
+const CATEGORY_GAP = 5;
 const INNER_GAP = 3;
 const LEFT_X = 145;
 const RIGHT_X = 235;
+
+function getMaxRows(districts: number): number {
+  return Math.max(2, Math.round(Math.sqrt(districts * 0.5)));
+}
+
+function getBoxHeight(districts: number): number {
+  const maxRows = getMaxRows(districts);
+  const squaresHeight = maxRows * SQUARE_PITCH - SQUARE_GAP;
+  return HEADER_HEIGHT + squaresHeight + 4;
+}
 
 function formatLean(lean: number): string {
   if (lean === 0) return 'EVEN';
@@ -47,27 +62,81 @@ function formatLean(lean: number): string {
   return `${dir}+${Math.abs(lean).toFixed(0)}%`;
 }
 
-function getEnactedVsAlternate(state: StateData): string {
-  const enacted = stateSafeSeats[state.id];
-  const alternate = alternateMapSafeSeats[state.id];
-  if (!enacted) return '\u2014';
+// Match ratings bar colors exactly
+const CATEGORY_COLORS = {
+  safeD: '#2e6da4',
+  leanD: '#6a9dc9',
+  even: '#d0d0d0',
+  leanR: '#d97a7c',
+  safeR: '#c93135',
+};
 
-  // Show the state's own party based on partisan lean
-  const showR = state.partisanLean < 0;
-  const party = showR ? 'R' : 'D';
-  const enactedCount = showR
-    ? enacted.safeR + enacted.leanR
-    : enacted.safeD + enacted.leanD;
+function renderSeatSquares(
+  counts: SafeSeatCounts,
+  boxX: number,
+  y: number,
+  maxRows: number,
+  boxHeight: number,
+): JSX.Element {
+  const colors = CATEGORY_COLORS;
+  const squaresBottom = y + boxHeight - 2;
+  const edgePad = 4;
+  const squares: JSX.Element[] = [];
 
-  if (!alternate) {
-    return `${enactedCount}${party}`;
+  const addGroup = (count: number, color: string, startX: number, key: string) => {
+    for (let i = 0; i < count; i++) {
+      const col = Math.floor(i / maxRows);
+      const rowFromBottom = i % maxRows;
+      squares.push(
+        <rect
+          key={`${key}-${i}`}
+          x={startX + col * SQUARE_PITCH}
+          y={squaresBottom - SQUARE_SIZE - rowFromBottom * SQUARE_PITCH}
+          width={SQUARE_SIZE}
+          height={SQUARE_SIZE}
+          fill={color}
+        />,
+      );
+    }
+  };
+
+  const groupWidth = (count: number) =>
+    Math.ceil(count / maxRows) * SQUARE_PITCH - SQUARE_GAP;
+
+  // Left: safeD then leanD
+  let leftX = boxX + edgePad;
+  if (counts.safeD > 0) {
+    addGroup(counts.safeD, colors.safeD, leftX, 'sd');
+    leftX += groupWidth(counts.safeD) + CATEGORY_GAP;
+  }
+  let leanDRight = leftX;
+  if (counts.leanD > 0) {
+    addGroup(counts.leanD, colors.leanD, leftX, 'ld');
+    leanDRight = leftX + groupWidth(counts.leanD);
   }
 
-  const alternateCount = showR
-    ? alternate.safeR + alternate.leanR
-    : alternate.safeD + alternate.leanD;
+  // Right: safeR then leanR (from the right edge inward)
+  let rightX = boxX + BOX_WIDTH - edgePad;
+  if (counts.safeR > 0) {
+    rightX -= groupWidth(counts.safeR);
+    addGroup(counts.safeR, colors.safeR, rightX, 'sr');
+    rightX -= CATEGORY_GAP;
+  }
+  let leanRLeft = rightX;
+  if (counts.leanR > 0) {
+    rightX -= groupWidth(counts.leanR);
+    addGroup(counts.leanR, colors.leanR, rightX, 'lr');
+    leanRLeft = rightX;
+  }
 
-  return `${enactedCount}${party} \u2192 ${alternateCount}${party}`;
+  // Even: centered between leanD right edge and leanR left edge
+  if (counts.even > 0) {
+    const w = groupWidth(counts.even);
+    const midpoint = (leanDRight + leanRLeft) / 2;
+    addGroup(counts.even, colors.even, midpoint - w / 2, 'ev');
+  }
+
+  return <g>{squares}</g>;
 }
 
 function pairKey(a: string, b: string): string {
@@ -150,13 +219,20 @@ export function BipartiteMatchGraph({
     const bottomPadding = 8;
     const groupGap = 8;
 
+    // Per-group box height based on district count
+    const boxHeightMap = new Map<number, number>();
+    for (const d of uniqueDistrictCounts) {
+      boxHeightMap.set(d, getBoxHeight(d));
+    }
+
     // Calculate start Y and allocated height for each district count group
     const districtStartY = new Map<number, number>();
     const districtAllocatedHeight = new Map<number, number>();
     let currentY = topPadding;
     for (const d of uniqueDistrictCounts) {
       const maxStates = maxStatesPerDistrict.get(d) ?? 1;
-      const allocatedHeight = maxStates * BOX_HEIGHT + (maxStates - 1) * INNER_GAP;
+      const bh = boxHeightMap.get(d)!;
+      const allocatedHeight = maxStates * bh + (maxStates - 1) * INNER_GAP;
       districtStartY.set(d, currentY);
       districtAllocatedHeight.set(d, allocatedHeight);
       currentY += allocatedHeight + groupGap;
@@ -175,11 +251,12 @@ export function BipartiteMatchGraph({
       for (const [districts, statesInGroup] of byDistricts) {
         const startY = districtStartY.get(districts)!;
         const allocatedHeight = districtAllocatedHeight.get(districts)!;
+        const bh = boxHeightMap.get(districts)!;
         const n = statesInGroup.length;
-        const groupHeight = n * BOX_HEIGHT + (n - 1) * INNER_GAP;
+        const groupHeight = n * bh + (n - 1) * INNER_GAP;
         const offset = (allocatedHeight - groupHeight) / 2;
         statesInGroup.forEach((state, i) => {
-          positions.push({ state, y: startY + offset + i * (BOX_HEIGHT + INNER_GAP) });
+          positions.push({ state, y: startY + offset + i * (bh + INNER_GAP), boxHeight: bh });
         });
       }
 
@@ -234,8 +311,8 @@ export function BipartiteMatchGraph({
           lines.push({
             fromState: state,
             toState: match,
-            fromY: fromPos.y + BOX_HEIGHT / 2,
-            toY: toPos.y + BOX_HEIGHT / 2,
+            fromY: fromPos.y + fromPos.boxHeight / 2,
+            toY: toPos.y + toPos.boxHeight / 2,
             fromX,
             toX,
             isStrong: isStrongMatch(state, match),
@@ -293,12 +370,15 @@ export function BipartiteMatchGraph({
   };
 
   const renderStateBox = (pos: PositionedState, x: number, align: 'left' | 'right') => {
-    const { state, y } = pos;
+    const { state, y, boxHeight } = pos;
     const isActive = state.id === activeStateId;
     const isMatchTarget = activeStateId && activeMatchIds.has(state.id) && !isActive;
     const isDimmed = activeStateId && !activeMatchIds.has(state.id);
     const isSelected = selectedPairKeys.has(pairKey(activeStateId ?? '', state.id)) ||
       selectedMatches.some(([a, b]) => a === state.id || b === state.id);
+    const partisanColor = getPartisanColor(state);
+    const dark = Math.abs(state.partisanLean) > 10;
+    const textColor = dark ? '#fff' : '#333';
 
     const boxX = align === 'left' ? x - BOX_WIDTH : x;
     return (
@@ -308,20 +388,39 @@ export function BipartiteMatchGraph({
         onClick={(e) => handleStateClick(state, e)}
         style={{ cursor: 'pointer' }}
       >
+        {/* Base: partisan-colored box with rounded corners */}
         <rect
           x={boxX}
           y={y}
           width={BOX_WIDTH}
-          height={BOX_HEIGHT}
-          fill="white"
+          height={boxHeight}
+          fill={partisanColor}
           rx={3}
         />
+        {/* White lower section for squares */}
+        <rect
+          x={boxX}
+          y={y + HEADER_HEIGHT}
+          width={BOX_WIDTH}
+          height={boxHeight - HEADER_HEIGHT}
+          fill="white"
+        />
+        {/* Divider line spanning full width */}
+        <line
+          x1={boxX}
+          y1={y + HEADER_HEIGHT}
+          x2={boxX + BOX_WIDTH}
+          y2={y + HEADER_HEIGHT}
+          stroke={dark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.15)'}
+          strokeWidth={0.5}
+        />
+        {/* Border on top */}
         <rect
           x={boxX}
           y={y}
           width={BOX_WIDTH}
-          height={BOX_HEIGHT}
-          fill={getPartisanColor(state)}
+          height={boxHeight}
+          fill="none"
           stroke={
             isActive ? '#000' :
             isSelected ? '#c9a227' :
@@ -335,7 +434,7 @@ export function BipartiteMatchGraph({
             x={boxX - 2}
             y={y - 2}
             width={BOX_WIDTH + 4}
-            height={BOX_HEIGHT + 4}
+            height={boxHeight + 4}
             fill="none"
             stroke="#c9a227"
             strokeWidth={2}
@@ -349,7 +448,7 @@ export function BipartiteMatchGraph({
           textAnchor="start"
           dominantBaseline="central"
           fontSize={10}
-          fill={Math.abs(state.partisanLean) > 10 ? '#fff' : '#333'}
+          fill={textColor}
           fontWeight={isActive ? 600 : 500}
         >
           {state.name}
@@ -359,30 +458,20 @@ export function BipartiteMatchGraph({
           y={y + 10}
           textAnchor="end"
           dominantBaseline="central"
-          fontSize={9}
-          fill={Math.abs(state.partisanLean) > 10 ? 'rgba(255,255,255,0.85)' : '#555'}
+          fontSize={10}
+          fill={textColor}
+          fontWeight={isActive ? 600 : 500}
         >
           {formatLean(state.partisanLean)}
         </text>
-        <line
-          x1={boxX + 6}
-          y1={y + 19}
-          x2={boxX + BOX_WIDTH - 6}
-          y2={y + 19}
-          stroke={Math.abs(state.partisanLean) > 10 ? '#fff' : '#666'}
-          strokeOpacity={0.3}
-          strokeWidth={0.5}
-        />
-        <text
-          x={boxX + BOX_WIDTH / 2}
-          y={y + 28}
-          textAnchor="middle"
-          dominantBaseline="central"
-          fontSize={9}
-          fill={Math.abs(state.partisanLean) > 10 ? 'rgba(255,255,255,0.85)' : '#555'}
-        >
-          {getEnactedVsAlternate(state)}
-        </text>
+        {stateSafeSeats[state.id] &&
+          renderSeatSquares(
+            stateSafeSeats[state.id],
+            boxX,
+            y,
+            getMaxRows(getDistricts(state)),
+            boxHeight,
+          )}
       </g>
     );
   };
@@ -419,9 +508,9 @@ export function BipartiteMatchGraph({
       const existing = groups.get(d);
       if (existing) {
         existing.minY = Math.min(existing.minY, pos.y);
-        existing.maxY = Math.max(existing.maxY, pos.y + BOX_HEIGHT);
+        existing.maxY = Math.max(existing.maxY, pos.y + pos.boxHeight);
       } else {
-        groups.set(d, { minY: pos.y, maxY: pos.y + BOX_HEIGHT });
+        groups.set(d, { minY: pos.y, maxY: pos.y + pos.boxHeight });
       }
     }
     return Array.from(groups.entries()).map(([districts, { minY, maxY }]) => ({
@@ -437,9 +526,9 @@ export function BipartiteMatchGraph({
       const existing = groups.get(d);
       if (existing) {
         existing.minY = Math.min(existing.minY, pos.y);
-        existing.maxY = Math.max(existing.maxY, pos.y + BOX_HEIGHT);
+        existing.maxY = Math.max(existing.maxY, pos.y + pos.boxHeight);
       } else {
-        groups.set(d, { minY: pos.y, maxY: pos.y + BOX_HEIGHT });
+        groups.set(d, { minY: pos.y, maxY: pos.y + pos.boxHeight });
       }
     }
     return Array.from(groups.entries()).map(([districts, { minY, maxY }]) => ({

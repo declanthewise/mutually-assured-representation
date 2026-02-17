@@ -9,7 +9,7 @@ import { StateData } from '../../types';
 // Partisan lean: 2025 Cook PVI (75/25 weighted average of 2020+2024, relative to national average)
 //   Positive = D lean, Negative = R lean
 //
-// Safe/competitive seats: Computed at runtime in safeSeats.ts from district-level PVI data
+// Safe/competitive seats: Computed at runtime in safeSeats.ts from district-level lean data
 //
 // 2032 projections based on Brennan Center projections using Census Bureau's Vintage 2025 estimates
 //

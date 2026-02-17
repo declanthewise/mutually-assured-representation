@@ -108,18 +108,18 @@ function processState(rows) {
   const medianIndex = Math.floor(planCompactness.length / 2);
   const medianPlan = planCompactness[medianIndex];
 
-  // Extract per-district e_dvs and convert to PVI
-  const districtPVIs = [];
+  // Extract per-district e_dvs and convert to partisan lean
+  const districtLeans = [];
   for (const d of medianPlan.districts) {
     const district = parseInt(d.district);
     const eDvs = parseFloat(d.e_dvs);
-    // pvi = (0.5 - e_dvs) * 100: positive = R lean, negative = D lean
-    const pvi = Math.round((0.5 - eDvs) * 100);
-    districtPVIs.push({ district, pvi });
+    // lean = (0.5 - e_dvs) * 100: positive = R lean, negative = D lean
+    const lean = Math.round((0.5 - eDvs) * 100);
+    districtLeans.push({ district, lean });
   }
 
-  districtPVIs.sort((a, b) => a.district - b.district);
-  return { draw: medianPlan.draw, meanCompactness: medianPlan.meanCompactness, districts: districtPVIs };
+  districtLeans.sort((a, b) => a.district - b.district);
+  return { draw: medianPlan.draw, meanCompactness: medianPlan.meanCompactness, districts: districtLeans };
 }
 
 async function main() {
@@ -141,7 +141,7 @@ async function main() {
       if (result) {
         console.log(`  ${state}: plan ${result.draw}, compactness ${result.meanCompactness.toFixed(4)}, ${result.districts.length} districts`);
         for (const d of result.districts) {
-          results.push({ state, district: d.district, pvi: d.pvi });
+          results.push({ state, district: d.district, lean: d.lean });
         }
       } else {
         console.log(`  ${state}: no simulated plans found`);
@@ -152,9 +152,9 @@ async function main() {
   }
 
   // Write CSV
-  const csvLines = ['state,district,pvi'];
+  const csvLines = ['state,district,lean'];
   for (const r of results) {
-    csvLines.push(`${r.state},${r.district},${r.pvi}`);
+    csvLines.push(`${r.state},${r.district},${r.lean}`);
   }
 
   fs.writeFileSync(outputPath, csvLines.join('\n') + '\n');

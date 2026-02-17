@@ -1,6 +1,6 @@
 import { StateData } from '../types';
 import { stateSafeSeats, SafeSeatCounts } from '../data/districtData/safeSeats';
-import { alternateMapSafeSeats } from '../data/districtData/alternateMapPVIs';
+import { alternateMapSafeSeats } from '../data/districtData/alternateMapLeans';
 
 /**
  * Compute the partisan seat balance of a safe-seat breakdown.

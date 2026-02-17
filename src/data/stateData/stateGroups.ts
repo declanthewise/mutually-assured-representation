@@ -7,10 +7,11 @@ export interface StateGroup {
   description: string;
   range: string;
   states: StateData[];
+  footnote?: string;
 }
 
 const bigStates = stateData.filter(s => s.districts2022 >= 24);
-const restStates = stateData.filter(s => s.districts2022 < 24);
+const restStates = stateData.filter(s => s.districts2022 >= 2 && s.districts2022 < 24);
 
 export const stateGroups: StateGroup[] = [
   {
@@ -23,8 +24,9 @@ export const stateGroups: StateGroup[] = [
   {
     key: 'midSmall',
     label: 'Mid & Small States',
-    description: 'States with 2 to 23 districts. This is where most actionable matches live. Single-district states are shown but cannot be gerrymandered.',
-    range: '1–23',
+    description: 'States with 2 to 23 districts. This is where most actionable matches live.',
+    range: '2–23',
     states: restStates,
+    footnote: 'Note: Single-district states Alaska, Delaware, North Dakota, South Dakota, Vermont and Wyoming are omitted as they cannot be gerrymandered.',
   },
 ];
