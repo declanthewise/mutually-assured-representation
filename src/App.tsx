@@ -113,6 +113,16 @@ function App() {
         </div>
       </section>
 
+      <section className="article-body">
+        <p>
+          The bar below tracks the national House seat balance as you build
+          your pact map. Each match you select swaps gerrymandered safe seats
+          for competitive ones — seats where voters, not mapmakers, decide the
+          outcome. The balance between parties stays the same; only the number
+          of truly contested races changes.
+        </p>
+      </section>
+
       <RatingsBar adjustedSafeSeats={adjustedSafeSeats} />
 
       {stateGroups.slice(1).map(group => (

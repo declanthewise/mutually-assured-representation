@@ -378,7 +378,9 @@ export function BipartiteMatchGraph({
       selectedMatches.some(([a, b]) => a === state.id || b === state.id);
     const partisanColor = getPartisanColor(state);
     const dark = Math.abs(state.partisanLean) > 10;
-    const textColor = dark ? '#fff' : '#333';
+    const leanTextColor = dark ? '#fff' : '#333';
+    const borderWidth = isActive ? 3 : isSelected ? 2.5 : 2;
+    const dividerPad = 6;
 
     const boxX = align === 'left' ? x - BOX_WIDTH : x;
     return (
@@ -388,33 +390,16 @@ export function BipartiteMatchGraph({
         onClick={(e) => handleStateClick(state, e)}
         style={{ cursor: 'pointer' }}
       >
-        {/* Base: partisan-colored box with rounded corners */}
+        {/* White fill box */}
         <rect
           x={boxX}
           y={y}
           width={BOX_WIDTH}
           height={boxHeight}
-          fill={partisanColor}
+          fill="white"
           rx={3}
         />
-        {/* White lower section for squares */}
-        <rect
-          x={boxX}
-          y={y + HEADER_HEIGHT}
-          width={BOX_WIDTH}
-          height={boxHeight - HEADER_HEIGHT}
-          fill="white"
-        />
-        {/* Divider line spanning full width */}
-        <line
-          x1={boxX}
-          y1={y + HEADER_HEIGHT}
-          x2={boxX + BOX_WIDTH}
-          y2={y + HEADER_HEIGHT}
-          stroke={dark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.15)'}
-          strokeWidth={0.5}
-        />
-        {/* Border on top */}
+        {/* Thick partisan-colored border */}
         <rect
           x={boxX}
           y={y}
@@ -424,9 +409,9 @@ export function BipartiteMatchGraph({
           stroke={
             isActive ? '#000' :
             isSelected ? '#c9a227' :
-            isMatchTarget ? '#666' : '#999'
+            isMatchTarget ? '#666' : partisanColor
           }
-          strokeWidth={isActive ? 2.5 : isSelected ? 2 : 1}
+          strokeWidth={borderWidth}
           rx={3}
         />
         {isSelected && (
@@ -442,28 +427,63 @@ export function BipartiteMatchGraph({
             opacity={0.6}
           />
         )}
-        <text
-          x={boxX + 6}
-          y={y + 10}
-          textAnchor="start"
-          dominantBaseline="central"
-          fontSize={10}
-          fill={textColor}
-          fontWeight={isActive ? 600 : 500}
-        >
-          {state.name}
-        </text>
-        <text
-          x={boxX + BOX_WIDTH - 6}
-          y={y + 10}
-          textAnchor="end"
-          dominantBaseline="central"
-          fontSize={10}
-          fill={textColor}
-          fontWeight={isActive ? 600 : 500}
-        >
-          {formatLean(state.partisanLean)}
-        </text>
+        {/* Divider line (inset from edges) */}
+        <line
+          x1={boxX + dividerPad}
+          y1={y + HEADER_HEIGHT}
+          x2={boxX + BOX_WIDTH - dividerPad}
+          y2={y + HEADER_HEIGHT}
+          stroke="rgba(0,0,0,0.15)"
+          strokeWidth={0.5}
+        />
+        {/* Lean badge and state name — flipped for left (D) vs right (R) */}
+        {(() => {
+          const leanText = formatLean(state.partisanLean);
+          const badgeW = leanText.length * 5.5 + 8;
+          const badgeH = 13;
+          const badgeY = y + 10 - badgeH / 2;
+          const isLeft = align === 'left';
+          // Left column: badge on left, name on right
+          // Right column: name on left, badge on right
+          const badgeX = isLeft ? boxX + 5 : boxX + BOX_WIDTH - 5 - badgeW;
+          const nameX = isLeft ? boxX + BOX_WIDTH - 6 : boxX + 6;
+          const nameAnchor = isLeft ? 'end' : 'start';
+          return (
+            <>
+              <rect
+                x={badgeX}
+                y={badgeY}
+                width={badgeW}
+                height={badgeH}
+                fill={partisanColor}
+                rx={2.5}
+              />
+              <text
+                x={badgeX + badgeW / 2}
+                y={y + 10}
+                textAnchor="middle"
+                dominantBaseline="central"
+                fontSize={9}
+                fill={leanTextColor}
+                fontWeight={600}
+              >
+                {leanText}
+              </text>
+              <text
+                x={nameX}
+                y={y + 10}
+                textAnchor={nameAnchor}
+                dominantBaseline="central"
+                fontSize={10}
+                fill="#333"
+                fontWeight={isActive ? 600 : 500}
+              >
+                {state.name}
+              </text>
+            </>
+          );
+        })()}
+
         {stateSafeSeats[state.id] &&
           renderSeatSquares(
             stateSafeSeats[state.id],
