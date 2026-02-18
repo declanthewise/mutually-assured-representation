@@ -46,12 +46,16 @@ const INNER_GAP = 3;
 const LEFT_X = 145;
 const RIGHT_X = 235;
 
-function getMaxRows(districts: number): number {
-  return Math.max(2, Math.round(Math.sqrt(districts * 0.5)));
+/** Max columns for a group of n squares such that cols <= rows (not wider than tall). */
+function getGroupCols(n: number): number {
+  if (n <= 0) return 0;
+  let cols = Math.ceil(Math.sqrt(n));
+  if (cols > Math.ceil(n / cols)) cols--;
+  return Math.max(1, cols);
 }
 
-function getBoxHeight(districts: number): number {
-  const maxRows = getMaxRows(districts);
+/** Compute box height from a known max-rows value. */
+function boxHeightFromRows(maxRows: number): number {
   const squaresHeight = maxRows * SQUARE_PITCH - SQUARE_GAP;
   return HEADER_HEIGHT + squaresHeight + 4;
 }
@@ -72,75 +76,82 @@ const CATEGORY_COLORS = {
 };
 
 const EDGE_PAD = 4;
-
-function gw(count: number, maxRows: number): number {
-  return Math.ceil(count / maxRows) * SQUARE_PITCH - SQUARE_GAP;
-}
+const STAGGER_MS = 40;
 
 /**
- * Render merged enacted + alternate seat squares within a single group.
- * For each category, the group size is max(enacted, alt).
- * - Enacted squares: solid fill
- * - Extra alt squares (alt > enacted): white fill, colored border (appended)
- * - Lost enacted squares (enacted > alt): solid fill with white X overlay
+ * Render seat squares with fixed group positions (based on max of enacted/alt)
+ * and animated opacity transitions when switching between maps.
  */
-function renderMergedSeatSquares(
+function renderSeatSquares(
   enacted: SafeSeatCounts,
   alt: SafeSeatCounts,
+  showAlt: boolean,
   boxX: number,
   y: number,
-  maxRows: number,
   boxHeight: number,
 ): JSX.Element {
   const squaresBottom = y + boxHeight - 2;
-  const elements: JSX.Element[] = [];
+  const squares: JSX.Element[] = [];
 
-  const renderGroup = (
+  const addGroup = (
     enCount: number,
     altCount: number,
     color: string,
     startX: number,
     key: string,
   ) => {
+    const activeCount = showAlt ? altCount : enCount;
     const total = Math.max(enCount, altCount);
-    for (let i = 0; i < total; i++) {
-      const col = Math.floor(i / maxRows);
-      const rowFromBottom = i % maxRows;
-      const sx = startX + col * SQUARE_PITCH;
-      const sy = squaresBottom - SQUARE_SIZE - rowFromBottom * SQUARE_PITCH;
+    const shared = Math.min(enCount, altCount);
+    const cols = getGroupCols(total);
 
-      if (i < enCount) {
-        // Enacted square (solid)
-        elements.push(
-          <rect key={`${key}-${i}`} x={sx} y={sy}
-            width={SQUARE_SIZE} height={SQUARE_SIZE} fill={color} />,
-        );
-        // X mark if this enacted seat is lost in the alt map
-        if (i >= altCount) {
-          const pad = 0.5;
-          elements.push(
-            <line key={`${key}-x1-${i}`}
-              x1={sx + pad} y1={sy + pad}
-              x2={sx + SQUARE_SIZE - pad} y2={sy + SQUARE_SIZE - pad}
-              stroke="white" strokeWidth={1} />,
-            <line key={`${key}-x2-${i}`}
-              x1={sx + SQUARE_SIZE - pad} y1={sy + pad}
-              x2={sx + pad} y2={sy + SQUARE_SIZE - pad}
-              stroke="white" strokeWidth={1} />,
-          );
-        }
-      } else {
-        // Extra alt square (inverted: white fill, colored border)
-        elements.push(
-          <rect key={`${key}-${i}`} x={sx} y={sy}
-            width={SQUARE_SIZE} height={SQUARE_SIZE}
-            fill="white" stroke={color} strokeWidth={0.75} />,
+    for (let i = 0; i < total; i++) {
+      const rowFromBottom = Math.floor(i / cols);
+      const col = i % cols;
+      const visible = i < activeCount;
+      // Appearing: bottom rows first (low i → small delay)
+      // Disappearing: top rows first (high i → small delay)
+      const delay = i >= shared
+        ? (visible ? (i - shared) : (total - 1 - i)) * STAGGER_MS
+        : 0;
+
+      const isAdded = showAlt && i >= enCount && i < altCount;
+
+      const sqX = startX + col * SQUARE_PITCH;
+      const sqY = squaresBottom - SQUARE_SIZE - rowFromBottom * SQUARE_PITCH;
+
+      squares.push(
+        <rect
+          key={`${key}-${i}`}
+          x={sqX}
+          y={sqY}
+          width={SQUARE_SIZE}
+          height={SQUARE_SIZE}
+          fill={color}
+          opacity={visible ? 1 : 0}
+          style={{ transition: `opacity 0.15s ease ${delay}ms` }}
+        />,
+      );
+      if (isAdded) {
+        squares.push(
+          <circle
+            key={`${key}-${i}-dot`}
+            cx={sqX + SQUARE_SIZE / 2}
+            cy={sqY + SQUARE_SIZE / 2}
+            r={1.3}
+            fill="#c9a227"
+            opacity={visible ? 1 : 0}
+            style={{ transition: `opacity 0.15s ease ${delay}ms` }}
+          />,
         );
       }
     }
   };
 
-  // Use max counts for positioning so groups have room for both maps
+  const groupWidth = (count: number) =>
+    getGroupCols(count) * SQUARE_PITCH - SQUARE_GAP;
+
+  // Use max counts for fixed group positioning
   const maxSafeD = Math.max(enacted.safeD, alt.safeD);
   const maxLeanD = Math.max(enacted.leanD, alt.leanD);
   const maxEven = Math.max(enacted.even, alt.even);
@@ -150,37 +161,37 @@ function renderMergedSeatSquares(
   // Left: safeD then leanD
   let leftX = boxX + EDGE_PAD;
   if (maxSafeD > 0) {
-    renderGroup(enacted.safeD, alt.safeD, CATEGORY_COLORS.safeD, leftX, 'sd');
-    leftX += gw(maxSafeD, maxRows) + CATEGORY_GAP;
+    addGroup(enacted.safeD, alt.safeD, CATEGORY_COLORS.safeD, leftX, 'sd');
+    leftX += groupWidth(maxSafeD) + CATEGORY_GAP;
   }
   let leanDRight = leftX;
   if (maxLeanD > 0) {
-    renderGroup(enacted.leanD, alt.leanD, CATEGORY_COLORS.leanD, leftX, 'ld');
-    leanDRight = leftX + gw(maxLeanD, maxRows);
+    addGroup(enacted.leanD, alt.leanD, CATEGORY_COLORS.leanD, leftX, 'ld');
+    leanDRight = leftX + groupWidth(maxLeanD);
   }
 
   // Right: safeR then leanR (from the right edge inward)
   let rightX = boxX + BOX_WIDTH - EDGE_PAD;
   if (maxSafeR > 0) {
-    rightX -= gw(maxSafeR, maxRows);
-    renderGroup(enacted.safeR, alt.safeR, CATEGORY_COLORS.safeR, rightX, 'sr');
+    rightX -= groupWidth(maxSafeR);
+    addGroup(enacted.safeR, alt.safeR, CATEGORY_COLORS.safeR, rightX, 'sr');
     rightX -= CATEGORY_GAP;
   }
   let leanRLeft = rightX;
   if (maxLeanR > 0) {
-    rightX -= gw(maxLeanR, maxRows);
-    renderGroup(enacted.leanR, alt.leanR, CATEGORY_COLORS.leanR, rightX, 'lr');
+    rightX -= groupWidth(maxLeanR);
+    addGroup(enacted.leanR, alt.leanR, CATEGORY_COLORS.leanR, rightX, 'lr');
     leanRLeft = rightX;
   }
 
   // Even: centered between leanD right edge and leanR left edge
   if (maxEven > 0) {
-    const w = gw(maxEven, maxRows);
+    const w = groupWidth(maxEven);
     const midpoint = (leanDRight + leanRLeft) / 2;
-    renderGroup(enacted.even, alt.even, CATEGORY_COLORS.even, midpoint - w / 2, 'ev');
+    addGroup(enacted.even, alt.even, CATEGORY_COLORS.even, midpoint - w / 2, 'ev');
   }
 
-  return <g>{elements}</g>;
+  return <g>{squares}</g>;
 }
 
 function pairKey(a: string, b: string): string {
@@ -263,10 +274,28 @@ export function BipartiteMatchGraph({
     const bottomPadding = 8;
     const groupGap = 8;
 
-    // Per-group box height based on district count
+    // Per-group box height based on actual largest category across all states
     const boxHeightMap = new Map<number, number>();
     for (const d of uniqueDistrictCounts) {
-      boxHeightMap.set(d, getBoxHeight(d));
+      let maxRows = 2;
+      for (const state of groupStates) {
+        if (getDistricts(state) !== d) continue;
+        const enacted = stateSafeSeats[state.id];
+        const alt = alternateMapSafeSeats[state.id] || enacted;
+        if (!enacted) continue;
+        const maxGroup = Math.max(
+          Math.max(enacted.safeD, alt.safeD),
+          Math.max(enacted.leanD, alt.leanD),
+          Math.max(enacted.even, alt.even),
+          Math.max(enacted.leanR, alt.leanR),
+          Math.max(enacted.safeR, alt.safeR),
+        );
+        if (maxGroup > 0) {
+          const cols = getGroupCols(maxGroup);
+          maxRows = Math.max(maxRows, Math.ceil(maxGroup / cols));
+        }
+      }
+      boxHeightMap.set(d, boxHeightFromRows(maxRows));
     }
 
     // Calculate start Y and allocated height for each district count group
@@ -312,7 +341,7 @@ export function BipartiteMatchGraph({
       rightPositions: calculatePositions(rightColumn),
       totalHeight,
     };
-  }, [leftColumn, rightColumn, uniqueDistrictCounts, maxStatesPerDistrict]);
+  }, [leftColumn, rightColumn, uniqueDistrictCounts, maxStatesPerDistrict, groupStates]);
 
   const positionMap = useMemo(() => {
     const map = new Map<string, PositionedState>();
@@ -527,15 +556,13 @@ export function BipartiteMatchGraph({
           );
         })()}
 
-        {stateSafeSeats[state.id] && alternateMapSafeSeats[state.id] &&
-          renderMergedSeatSquares(
-            stateSafeSeats[state.id],
-            alternateMapSafeSeats[state.id],
-            boxX,
-            y,
-            getMaxRows(getDistricts(state)),
-            boxHeight,
-          )}
+        {(() => {
+          const enacted = stateSafeSeats[state.id];
+          if (!enacted) return null;
+          const alt = alternateMapSafeSeats[state.id] || enacted;
+          const showAlt = !!(isActive || isMatchTarget || isSelected);
+          return renderSeatSquares(enacted, alt, showAlt, boxX, y, boxHeight);
+        })()}
 
         {/* Minority-party seats gained by switching to proportional map */}
         {(() => {

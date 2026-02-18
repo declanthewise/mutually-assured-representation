@@ -214,7 +214,7 @@ body {
   max-width: 980px;
   margin: 0 auto;
   position: relative;
-  padding-bottom: 14px;
+  padding: 0 1.5rem 14px;
 }
 
 .ratings-bar-labels {
@@ -223,55 +223,39 @@ body {
   margin-bottom: 0.25rem;
 }
 
-.ratings-bar-labels span {
+.ratings-bar-labels > span {
   font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #666;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   flex-shrink: 0;
   transition: width 0.4s ease;
 }
 
-.ratings-bar {
-  display: flex;
-  width: 100%;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.ratings-bar-segment {
-  height: 28px;
-  display: flex;
+.ratings-badge {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  white-space: nowrap;
-  font-size: 13px;
-  font-weight: 600;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 5px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
   color: #fff;
-  transition: width 0.4s ease;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  text-transform: none;
+  letter-spacing: 0;
 }
 
-.segment-d {
-  background: #2e6da4;
-}
-
-.segment-lean-d {
-  background: #6a9dc9;
-}
-
-.segment-even {
-  background: #d0d0d0;
+.ratings-badge-even {
   color: #444;
-}
-
-.segment-lean-r {
-  background: #d97a7c;
-}
-
-.segment-r {
-  background: #c93135;
 }
 
 .ratings-bar-majority {
@@ -653,13 +637,16 @@ body {
     padding: 0.5rem 0.75rem;
   }
 
-  .ratings-bar-labels span {
+  .ratings-bar-labels > span {
     font-size: 0.6rem;
   }
 
-  .ratings-bar-segment {
-    font-size: 11px;
-    height: 24px;
+  .ratings-badge {
+    min-width: 20px;
+    height: 20px;
+    font-size: 9px;
+    padding: 0 4px;
+    border-radius: 10px;
   }
 }
 
