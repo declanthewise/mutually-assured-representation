@@ -1,9 +1,10 @@
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
 import { HoveredState } from '../types';
 import { stateDataById } from '../data/stateData/stateData';
 import { stateSafeSeats } from '../data/districtData/safeSeats';
+import { computeSeatMisallocation, computeNationalSeatMisallocation } from '../utils/computeSeatMisallocation';
 import { fipsToState } from '../utils/fipsMapping';
 
 interface HeroMapProps {
@@ -15,8 +16,8 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const onHoverStateRef = useRef(onHoverState);
 
-  const totalSafeSeats = useMemo(
-    () => Object.values(stateSafeSeats).reduce((sum, s) => sum + s.safeSeats, 0),
+  const totalNationalSeatMisallocation = useMemo(
+    () => computeNationalSeatMisallocation(stateSafeSeats),
     []
   );
 
@@ -24,7 +25,7 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
     onHoverStateRef.current = onHoverState;
   }, [onHoverState]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!svgRef.current || !topoData) return;
 
     const svg = d3.select(svgRef.current);
@@ -91,59 +92,42 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
       .attr('d', path)
       .attr('pointer-events', 'none');
 
-    // Circles sized by nominal number of safe seats
-    const maxSafeSeats = 32;
-    const maxRadius = 35;
-    const safeSeatsRadius = d3.scaleSqrt()
-      .domain([0, maxSafeSeats])
+    // Icons sized by seat misallocation magnitude
+    const maxMisallocation = 12;
+    const maxRadius = 70;
+    const misallocationRadius = d3.scaleSqrt()
+      .domain([0, maxMisallocation])
       .range([0, maxRadius]);
 
+    const featuresYSorted = [...(states as any).features].sort(
+      (a: any, b: any) => path.centroid(a)[1] - path.centroid(b)[1]
+    );
+
     svg.append('g')
-      .attr('class', 'safe-seat-circles')
-      .selectAll('circle')
-      .data((states as any).features)
-      .join('circle')
-      .attr('cx', (d: any) => path.centroid(d)[0])
-      .attr('cy', (d: any) => path.centroid(d)[1])
-      .attr('r', (d: any) => {
+      .attr('class', 'safe-seat-icons')
+      .selectAll('image')
+      .data(featuresYSorted)
+      .join('image')
+      .attr('href', '/mushroom-cloud.png')
+      .attr('pointer-events', 'none')
+      .each(function(d: any) {
         const fips = d.id.toString().padStart(2, '0');
         const stateId = fipsToState[fips];
         const safeCounts = stateSafeSeats[stateId];
-        if (!safeCounts || safeCounts.safeSeats === 0) return 0;
-        return safeSeatsRadius(safeCounts.safeSeats);
-      })
-      .attr('fill', '#e8a832')
-      .attr('fill-opacity', 0.75)
-      .attr('stroke', '#c98a1a')
-      .attr('stroke-width', 0.5)
-      .attr('pointer-events', 'none');
+        const stateData = stateDataById[stateId];
+        const centroid = path.centroid(d);
 
-    // State abbreviation labels (drawn after circles so they render on top)
-    svg.append('g')
-      .attr('class', 'labels')
-      .selectAll('text')
-      .data((states as any).features)
-      .join('text')
-      .attr('x', (d: any) => path.centroid(d)[0])
-      .attr('y', (d: any) => path.centroid(d)[1])
-      .attr('text-anchor', 'middle')
-      .attr('dominant-baseline', 'middle')
-      .attr('font-size', '10px')
-      .attr('font-weight', '600')
-      .attr('fill', (d: any) => {
-        const fips = d.id.toString().padStart(2, '0');
-        const stateId = fipsToState[fips];
-        const data = stateDataById[stateId];
-        if (!data) return '#666';
-        return Math.abs(data.partisanLean) > 10 ? '#fff' : '#333';
-      })
-      .attr('pointer-events', 'none')
-      .text((d: any) => {
-        const fips = d.id.toString().padStart(2, '0');
-        const stateId = fipsToState[fips];
-        const data = stateDataById[stateId];
-        if (!data) return '';
-        return data.id;
+        let diameter = 0;
+        if (safeCounts && stateData) {
+          const misallocation = Math.abs(computeSeatMisallocation(stateData, safeCounts));
+          diameter = misallocation > 0 ? misallocationRadius(misallocation) * 2 : 0;
+        }
+
+        d3.select(this)
+          .attr('x', centroid[0] - diameter / 2)
+          .attr('y', centroid[1] - diameter / 2)
+          .attr('width', diameter)
+          .attr('height', diameter);
       });
 
   }, [topoData]);
@@ -151,12 +135,12 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
   return (
     <>
       <div className="hero-stat-bar">
-        <div className="hero-stat-label">Uncompetitive House Seats</div>
-        <div className="hero-stat-number"><span style={{ color: '#e8a832' }}>{totalSafeSeats}</span><span className="hero-stat-total">/435</span></div>
+        <div className="hero-stat-label">Total Seat Misallocation</div>
+        <div className="hero-stat-number"><span style={{ color: '#e8a832' }}>{totalNationalSeatMisallocation}</span><span className="hero-stat-total"> seats</span></div>
       </div>
       <svg ref={svgRef} className="hero-map" />
       <p className="hero-map-caption">
-        States colored by partisan lean (Cook PVI). Circles sized by number of uncompetitive House seats (|lean| &ge; 8).
+        <strong>Note:</strong> States colored by partisan lean (Cook PVI). Icons sized by seat misallocation — how many seats the enacted map over- or under-allocates to the minority party relative to each state's Cook PVI proportional ideal.
       </p>
     </>
   );

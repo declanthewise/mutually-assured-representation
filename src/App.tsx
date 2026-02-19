@@ -8,6 +8,7 @@ import { useTopoData } from './hooks/useTopoData';
 import { stateGroups } from './data/stateData/stateGroups';
 import { computeAdjustedSafeSeats } from './utils/computeTruceAdjustment';
 import { stateSafeSeats } from './data/districtData/safeSeats';
+import { computeNationalSeatMisallocation } from './utils/computeSeatMisallocation';
 import { HoveredState, MatchPair } from './types';
 
 function pairKey(a: string, b: string): string {
@@ -24,14 +25,14 @@ function App() {
     [selectedMatches],
   );
 
-  const baselineCompetitive = useMemo(
-    () => Object.values(stateSafeSeats).reduce((sum, s) => sum + s.competitiveSeats, 0),
+  const baselineNationalSeatMisallocation = useMemo(
+    () => computeNationalSeatMisallocation(stateSafeSeats),
     [],
   );
 
-  const competitiveSeatsAdded = useMemo(
-    () => Object.values(adjustedSafeSeats).reduce((sum, s) => sum + s.competitiveSeats, 0) - baselineCompetitive,
-    [adjustedSafeSeats, baselineCompetitive],
+  const nationalSeatMisallocationReduced = useMemo(
+    () => baselineNationalSeatMisallocation - computeNationalSeatMisallocation(adjustedSafeSeats),
+    [adjustedSafeSeats, baselineNationalSeatMisallocation],
   );
 
   const handleToggleMatch = useCallback((pair: MatchPair) => {
@@ -53,7 +54,7 @@ function App() {
     <article className="article">
       <header className="article-header">
         <h1>
-          <span className="headline-kicker">How to Stop Gerrymandering:</span>
+          <span className="headline-kicker">How to End Gerrymandering:</span>
           <span className="headline-title">Mutually Assured Representation</span>
         </h1>
         <p className="article-subtitle">
@@ -62,9 +63,7 @@ function App() {
       </header>
 
       <section className="hero-section">
-        {topoData && (
-          <HeroMap topoData={topoData} onHoverState={setHoveredState} />
-        )}
+        <HeroMap topoData={topoData} onHoverState={setHoveredState} />
       </section>
 
       <section className="article-body">
@@ -116,10 +115,10 @@ function App() {
       <section className="article-body">
         <p>
           The bar below tracks the national House seat balance as you build
-          your pact map. Each match you select swaps gerrymandered safe seats
-          for competitive ones — seats where voters, not mapmakers, decide the
-          outcome. The balance between parties stays the same; only the number
-          of truly contested races changes.
+          your pact map. Each match you select replaces gerrymandered maps with
+          proportional ones — reducing the number of seats misallocated away
+          from what each state's vote share warrants. The balance between
+          parties stays the same; only seat misallocation changes.
         </p>
       </section>
 
@@ -169,14 +168,12 @@ function App() {
           </p>
         </div>
         <div className="visualization-full">
-          {topoData && (
-            <ResultMap
-              topoData={topoData}
-              selectedMatches={selectedMatches}
-              adjustedSafeSeats={adjustedSafeSeats}
-              competitiveSeatsAdded={competitiveSeatsAdded}
-            />
-          )}
+          <ResultMap
+            topoData={topoData}
+            selectedMatches={selectedMatches}
+            adjustedSafeSeats={adjustedSafeSeats}
+            nationalSeatMisallocationReduced={nationalSeatMisallocationReduced}
+          />
         </div>
       </section>
 

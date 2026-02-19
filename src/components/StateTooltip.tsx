@@ -1,6 +1,7 @@
 import * as d3 from 'd3';
 import { HoveredState } from '../types';
 import { stateSafeSeats } from '../data/districtData/safeSeats';
+import { computeSeatMisallocation } from '../utils/computeSeatMisallocation';
 
 const leanColorScale = d3.scaleLinear<string>()
   .domain([-20, 0, 20])
@@ -16,15 +17,15 @@ function formatLean(lean: number): string {
   return lean > 0 ? `D+${lean}%` : `R+${Math.abs(lean)}%`;
 }
 
-const safeColorScale = d3.scaleLinear<string>()
-  .domain([0, 50, 100])
-  .range(['#2ca25f', '#999', '#e8a832'])
-  .clamp(true);
+function misallocationColor(absMisallocation: number): string {
+  return absMisallocation === 0 ? '#2ca25f' : '#e8a832';
+}
 
 export function StateTooltip({ hoveredState }: StateTooltipProps) {
   const { state, x, y } = hoveredState;
   const safeCounts = stateSafeSeats[state.id];
-  const safeSeats = safeCounts?.safeSeats ?? 0;
+  const misallocation = safeCounts ? computeSeatMisallocation(state, safeCounts) : 0;
+  const absMisallocation = Math.abs(misallocation);
 
   const tooltipWidth = 180;
   const left = Math.min(x + 15, window.innerWidth - tooltipWidth - 8);
@@ -45,10 +46,11 @@ export function StateTooltip({ hoveredState }: StateTooltipProps) {
       </div>
       <div className="tooltip-metric">
         <span className="tooltip-value">
-          <span style={{ color: safeColorScale((safeSeats / state.districts2022) * 100), fontWeight: 700 }}>{safeSeats}</span>
-          {' '}/{' '}{state.districts2022}
+          <span style={{ color: misallocationColor(absMisallocation), fontWeight: 700 }}>
+            {absMisallocation}
+          </span>
         </span>
-        <span className="tooltip-label">uncompetitive</span>
+        <span className="tooltip-label">{absMisallocation === 1 ? 'seat misallocated' : 'seats misallocated'}</span>
       </div>
     </div>
   );
