@@ -1,11 +1,10 @@
 import { useState, useCallback, useMemo } from 'react';
 import { HeroMap } from './components/HeroMap';
 import { ResultMap } from './components/ResultMap';
-import { BipartiteMatchGraph } from './components/BipartiteMatchGraph';
+import { BipartiteMatchGraph, bigFourStates, midSmallStates, midSmallFootnote } from './components/BipartiteMatchGraph';
 import { RatingsBar } from './components/RatingsBar';
 import { StateTooltip } from './components/StateTooltip';
 import { useTopoData } from './hooks/useTopoData';
-import { stateGroups } from './data/stateData/stateGroups';
 import { computeAdjustedSafeSeats } from './utils/computeTruceAdjustment';
 import { stateSafeSeats } from './data/districtData/safeSeats';
 import { computeNationalSeatMisallocation } from './utils/computeSeatMisallocation';
@@ -98,19 +97,13 @@ function App() {
         </p>
       </section>
 
-      <section className="match-section">
-        <div className="article-text">
-          <h2>{stateGroups[0].label} <span className="group-range">({stateGroups[0].range} districts)</span></h2>
-          <p>{stateGroups[0].description}</p>
-        </div>
-        <div className="visualization-wide">
-          <BipartiteMatchGraph
-            groupStates={stateGroups[0].states}
-            selectedMatches={selectedMatches}
-            onToggleMatch={handleToggleMatch}
-          />
-        </div>
-      </section>
+      <div className="visualization-wide">
+        <BipartiteMatchGraph
+          groupStates={bigFourStates}
+          selectedMatches={selectedMatches}
+          onToggleMatch={handleToggleMatch}
+        />
+      </div>
 
       <section className="article-body">
         <p>
@@ -124,21 +117,14 @@ function App() {
 
       <RatingsBar adjustedSafeSeats={adjustedSafeSeats} />
 
-      {stateGroups.slice(1).map(group => (
-        <section key={group.key} className="match-section">
-          <div className="article-text">
-            <h2>{group.label} <span className="group-range">({group.range} districts)</span></h2>
-            <p>{group.description}</p>
-          </div>
-          <div className="visualization-wide">
-            <BipartiteMatchGraph
-              groupStates={group.states}
-              selectedMatches={selectedMatches}
-              onToggleMatch={handleToggleMatch}
-            />
-          </div>
-        </section>
-      ))}
+      <div className="visualization-wide">
+        <BipartiteMatchGraph
+          groupStates={midSmallStates}
+          selectedMatches={selectedMatches}
+          onToggleMatch={handleToggleMatch}
+          footnote={midSmallFootnote}
+        />
+      </div>
 
       {selectedMatches.length > 0 && (
         <div className="clear-matches-row">
@@ -151,15 +137,7 @@ function App() {
         </div>
       )}
 
-      {stateGroups.some(g => g.footnote) && (
-        <div className="visualization-wide">
-          <p className="graph-footnote">
-            {stateGroups.find(g => g.footnote)!.footnote}
-          </p>
-        </div>
-      )}
-
-      <section className="result-section">
+<section className="result-section">
         <div className="article-text">
           <h2>Your De-escalation Map</h2>
           <p>

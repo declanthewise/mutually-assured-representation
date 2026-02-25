@@ -5,11 +5,17 @@ import { findMatches, getMinoritySeatGain } from '../utils/findMatches';
 import { stateSafeSeats } from '../data/districtData/safeSeats';
 import { alternateMapSafeSeats } from '../data/districtData/alternateMapLeans';
 import type { SafeSeatCounts } from '../data/districtData/safeSeats';
+import { stateData } from '../data/stateData/stateData';
+
+export const bigFourStates = stateData.filter(s => s.districts2022 >= 24);
+export const midSmallStates = stateData.filter(s => s.districts2022 >= 2 && s.districts2022 < 24);
+export const midSmallFootnote = 'Note: Single-district states Alaska, Delaware, North Dakota, South Dakota, Vermont and Wyoming are omitted as they cannot be gerrymandered.';
 
 interface BipartiteMatchGraphProps {
   groupStates: StateData[];
   selectedMatches: MatchPair[];
   onToggleMatch: (pair: MatchPair) => void;
+  footnote?: string;
 }
 
 const leanColorScale = d3.scaleLinear<string>()
@@ -138,8 +144,8 @@ function renderSeatSquares(
             key={`${key}-${i}-dot`}
             cx={sqX + SQUARE_SIZE / 2}
             cy={sqY + SQUARE_SIZE / 2}
-            r={1.3}
-            fill="#c9a227"
+            r={1}
+            fill="white"
             opacity={visible ? 1 : 0}
             style={{ transition: `opacity 0.15s ease ${delay}ms` }}
           />,
@@ -202,6 +208,7 @@ export function BipartiteMatchGraph({
   groupStates,
   selectedMatches,
   onToggleMatch,
+  footnote,
 }: BipartiteMatchGraphProps) {
   const [activeStateId, setActiveStateId] = useState<string | null>(null);
 
@@ -699,6 +706,7 @@ export function BipartiteMatchGraph({
           {rightPositions.map(pos => renderStateBox(pos, RIGHT_X, 'right'))}
         </g>
       </svg>
+      {footnote && <p className="graph-footnote">{footnote}</p>}
     </div>
   );
 }

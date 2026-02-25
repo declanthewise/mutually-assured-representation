@@ -135,12 +135,12 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
   return (
     <>
       <div className="hero-stat-bar">
-        <div className="hero-stat-label">Total Seat Misallocation</div>
-        <div className="hero-stat-number"><span style={{ color: '#e8a832' }}>{totalNationalSeatMisallocation}</span><span className="hero-stat-total"> seats</span></div>
+        <div className="hero-stat-label">Total Gerrymandered Seats</div>
+        <div className="hero-stat-number"><span style={{ color: '#e8a832' }}>{totalNationalSeatMisallocation}</span><span style={{ color: '#000' }}>/435</span></div>
       </div>
       <svg ref={svgRef} className="hero-map" />
       <p className="hero-map-caption">
-        <strong>Note:</strong> States colored by partisan lean (Cook PVI). Icons sized by seat misallocation — how many seats the enacted map over- or under-allocates to the minority party relative to each state's Cook PVI proportional ideal.
+        Note: States colored by partisan lean (Cook PVI). Icons sized by seat misallocation — how many seats the enacted map over- or under-allocates to the minority party relative to each state's Cook PVI proportional ideal.
       </p>
     </>
   );
