@@ -157,20 +157,8 @@ function App() {
 
       <footer className="article-footer">
         <p>
-          Data: <a href="https://en.wikipedia.org/wiki/Cook_Partisan_Voting_Index" target="_blank" rel="noopener noreferrer">Cook PVI</a> for partisan lean.{' '}
-          2032 district projections from{' '}
-          <a href="https://www.brennancenter.org/our-work/analysis-opinion/big-changes-ahead-voting-maps-after-next-census" target="_blank" rel="noopener noreferrer">Brennan Center</a>{' '}
-          using Census Bureau Vintage 2025 estimates.{' '}
-          Matching criteria: opposite partisan lean (within 5%), similar district count (within 30%).
-        </p>
-        <p>
-          Proportional map alternatives from{' '}
-          <a href="https://davesredistricting.org/" target="_blank" rel="noopener noreferrer">Dave's Redistricting App</a>{' '}
-          (most proportional maps). Compact map data from the{' '}
-          <a href="https://alarm-redist.org/fifty-states/" target="_blank" rel="noopener noreferrer">ALARM Project 50-State Simulations</a>.
-        </p>
-        <p>
-          Built by Declan Fitzsimons.
+          By Declan Fitzsimons. Data: <a href="https://en.wikipedia.org/wiki/Cook_Partisan_Voting_Index" target="_blank" rel="noopener noreferrer">Cook PVI</a> for 2025 partisan leans.{' '}
+          <a href="https://davesredistricting.org/" target="_blank" rel="noopener noreferrer">Dave's Redistricting App</a> for 2022 proportional districts.
         </p>
       </footer>
 
