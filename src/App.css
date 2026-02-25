@@ -638,11 +638,19 @@ body {
   }
 
   .ratings-bar-wrapper {
-    padding: 0.5rem 0.75rem;
+    padding: 0.5rem 0;
+  }
+
+  .ratings-bar-container {
+    padding: 0 0.4rem 14px;
   }
 
   .ratings-bar-labels > span {
     font-size: 0.6rem;
+  }
+
+  .ratings-label-text {
+    display: none;
   }
 
   .ratings-badge {

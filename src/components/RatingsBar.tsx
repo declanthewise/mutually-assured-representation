@@ -30,11 +30,13 @@ function AnimatedNumber({ value }: { value: number }) {
 const TOTAL_SEATS = 435;
 const MAJORITY = 218;
 
-const ROWS = 3;
 const SQ = 5;
 const SQ_GAP = 1.2;
 const SQ_PITCH = SQ + SQ_GAP;
-const COLS = Math.ceil(TOTAL_SEATS / ROWS);
+
+function getRows() {
+  return window.innerWidth < 640 ? 5 : 3;
+}
 
 const COLORS = {
   safeD: '#2e6da4',
@@ -49,6 +51,14 @@ interface RatingsBarProps {
 }
 
 export function RatingsBar({ adjustedSafeSeats }: RatingsBarProps) {
+  const [rows, setRows] = useState(getRows);
+  useEffect(() => {
+    const onResize = () => setRows(getRows());
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  const cols = Math.ceil(TOTAL_SEATS / rows);
+
   const totals = useMemo(() => {
     let safeD = 0;
     let leanD = 0;
@@ -92,13 +102,13 @@ export function RatingsBar({ adjustedSafeSeats }: RatingsBarProps) {
     return data;
   }, [totals, baseTotals]);
 
-  const viewWidth = COLS * SQ_PITCH - SQ_GAP;
-  const viewHeight = ROWS * SQ_PITCH - SQ_GAP;
+  const viewWidth = cols * SQ_PITCH - SQ_GAP;
+  const viewHeight = rows * SQ_PITCH - SQ_GAP;
 
   // 218th square (0-indexed: 217)
   const majIdx = MAJORITY - 1;
-  const majCol = Math.floor(majIdx / ROWS);
-  const majRow = majIdx % ROWS;
+  const majCol = Math.floor(majIdx / rows);
+  const majRow = majIdx % rows;
   const majSqX = majCol * SQ_PITCH;
   const majSqY = majRow * SQ_PITCH;
   const majCornerX = majSqX + SQ; // bottom-right corner
@@ -115,13 +125,13 @@ export function RatingsBar({ adjustedSafeSeats }: RatingsBarProps) {
       <div className="ratings-bar-container">
         <div className="ratings-bar-labels">
           <span style={{ width: `${pctD}%` }}>
-            Safe D
+            <span className="ratings-label-text">Safe D</span>
             <span className="ratings-badge" style={{ background: COLORS.safeD }}>
               <AnimatedNumber value={totals.safeD} />
             </span>
           </span>
           <span style={{ width: `${pctLeanD}%` }}>
-            Lean D
+            <span className="ratings-label-text">Lean D</span>
             <span className="ratings-badge" style={{ background: COLORS.leanD }}>
               <AnimatedNumber value={totals.leanD} />
             </span>
@@ -135,13 +145,13 @@ export function RatingsBar({ adjustedSafeSeats }: RatingsBarProps) {
             <span className="ratings-badge" style={{ background: COLORS.leanR }}>
               <AnimatedNumber value={totals.leanR} />
             </span>
-            Lean R
+            <span className="ratings-label-text">Lean R</span>
           </span>
           <span style={{ width: `${pctR}%` }}>
             <span className="ratings-badge" style={{ background: COLORS.safeR }}>
               <AnimatedNumber value={totals.safeR} />
             </span>
-            Safe R
+            <span className="ratings-label-text">Safe R</span>
           </span>
         </div>
         <svg
@@ -150,8 +160,8 @@ export function RatingsBar({ adjustedSafeSeats }: RatingsBarProps) {
           style={{ display: 'block', overflow: 'visible' }}
         >
           {seatData.map(({ color, isGold }, i) => {
-            const col = Math.floor(i / ROWS);
-            const row = i % ROWS;
+            const col = Math.floor(i / rows);
+            const row = i % rows;
             const x = col * SQ_PITCH;
             const y = row * SQ_PITCH;
             return (
