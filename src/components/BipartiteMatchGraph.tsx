@@ -3,8 +3,6 @@ import * as d3 from 'd3';
 import { StateData, MatchPair } from '../types';
 import { findMatches, getMinoritySeatGain } from '../utils/findMatches';
 import { stateSafeSeats } from '../data/districtData/safeSeats';
-import { alternateMapSafeSeats } from '../data/districtData/alternateMapLeans';
-import type { SafeSeatCounts } from '../data/districtData/safeSeats';
 import { stateData } from '../data/stateData/stateData';
 
 export const bigFourStates = stateData.filter(s => s.districts2022 >= 24);
@@ -21,6 +19,11 @@ interface BipartiteMatchGraphProps {
 const leanColorScale = d3.scaleLinear<string>()
   .domain([-20, 0, 20])
   .range(['#c93135', '#f0f0f0', '#2e6da4'])
+  .clamp(true);
+
+const greenGoldScale = d3.scaleLinear<string>()
+  .domain([0, 1])
+  .range(['#4caf50', '#e8a832'])
   .clamp(true);
 
 function getPartisanColor(state: StateData): string {
@@ -44,27 +47,10 @@ interface MatchLine {
 
 const BOX_WIDTH = 110;
 const HEADER_HEIGHT = 19;
-const SQUARE_SIZE = 5;
-const SQUARE_GAP = 0.5;
-const SQUARE_PITCH = SQUARE_SIZE + SQUARE_GAP;
-const CATEGORY_GAP = 5;
+const BOX_HEIGHT = 54;
 const INNER_GAP = 3;
 const LEFT_X = 145;
 const RIGHT_X = 235;
-
-/** Max columns for a group of n squares such that cols <= rows (not wider than tall). */
-function getGroupCols(n: number): number {
-  if (n <= 0) return 0;
-  let cols = Math.ceil(Math.sqrt(n));
-  if (cols > Math.ceil(n / cols)) cols--;
-  return Math.max(1, cols);
-}
-
-/** Compute box height from a known max-rows value. */
-function boxHeightFromRows(maxRows: number): number {
-  const squaresHeight = maxRows * SQUARE_PITCH - SQUARE_GAP;
-  return HEADER_HEIGHT + squaresHeight + 4;
-}
 
 function formatLean(lean: number): string {
   if (lean === 0) return 'EVEN';
@@ -72,133 +58,6 @@ function formatLean(lean: number): string {
   return `${dir}+${Math.abs(lean).toFixed(0)}%`;
 }
 
-// Match ratings bar colors exactly
-const CATEGORY_COLORS = {
-  safeD: '#2e6da4',
-  leanD: '#6a9dc9',
-  even: '#d0d0d0',
-  leanR: '#d97a7c',
-  safeR: '#c93135',
-};
-
-const EDGE_PAD = 4;
-const STAGGER_MS = 40;
-
-/**
- * Render seat squares with fixed group positions (based on max of enacted/alt)
- * and animated opacity transitions when switching between maps.
- */
-function renderSeatSquares(
-  enacted: SafeSeatCounts,
-  alt: SafeSeatCounts,
-  showAlt: boolean,
-  boxX: number,
-  y: number,
-  boxHeight: number,
-): JSX.Element {
-  const squaresBottom = y + boxHeight - 2;
-  const squares: JSX.Element[] = [];
-
-  const addGroup = (
-    enCount: number,
-    altCount: number,
-    color: string,
-    startX: number,
-    key: string,
-  ) => {
-    const activeCount = showAlt ? altCount : enCount;
-    const total = Math.max(enCount, altCount);
-    const shared = Math.min(enCount, altCount);
-    const cols = getGroupCols(total);
-
-    for (let i = 0; i < total; i++) {
-      const rowFromBottom = Math.floor(i / cols);
-      const col = i % cols;
-      const visible = i < activeCount;
-      // Appearing: bottom rows first (low i → small delay)
-      // Disappearing: top rows first (high i → small delay)
-      const delay = i >= shared
-        ? (visible ? (i - shared) : (total - 1 - i)) * STAGGER_MS
-        : 0;
-
-      const isAdded = showAlt && i >= enCount && i < altCount;
-
-      const sqX = startX + col * SQUARE_PITCH;
-      const sqY = squaresBottom - SQUARE_SIZE - rowFromBottom * SQUARE_PITCH;
-
-      squares.push(
-        <rect
-          key={`${key}-${i}`}
-          x={sqX}
-          y={sqY}
-          width={SQUARE_SIZE}
-          height={SQUARE_SIZE}
-          fill={color}
-          opacity={visible ? 1 : 0}
-          style={{ transition: `opacity 0.15s ease ${delay}ms` }}
-        />,
-      );
-      if (isAdded) {
-        squares.push(
-          <circle
-            key={`${key}-${i}-dot`}
-            cx={sqX + SQUARE_SIZE / 2}
-            cy={sqY + SQUARE_SIZE / 2}
-            r={1}
-            fill="white"
-            opacity={visible ? 1 : 0}
-            style={{ transition: `opacity 0.15s ease ${delay}ms` }}
-          />,
-        );
-      }
-    }
-  };
-
-  const groupWidth = (count: number) =>
-    getGroupCols(count) * SQUARE_PITCH - SQUARE_GAP;
-
-  // Use max counts for fixed group positioning
-  const maxSafeD = Math.max(enacted.safeD, alt.safeD);
-  const maxLeanD = Math.max(enacted.leanD, alt.leanD);
-  const maxEven = Math.max(enacted.even, alt.even);
-  const maxLeanR = Math.max(enacted.leanR, alt.leanR);
-  const maxSafeR = Math.max(enacted.safeR, alt.safeR);
-
-  // Left: safeD then leanD
-  let leftX = boxX + EDGE_PAD;
-  if (maxSafeD > 0) {
-    addGroup(enacted.safeD, alt.safeD, CATEGORY_COLORS.safeD, leftX, 'sd');
-    leftX += groupWidth(maxSafeD) + CATEGORY_GAP;
-  }
-  let leanDRight = leftX;
-  if (maxLeanD > 0) {
-    addGroup(enacted.leanD, alt.leanD, CATEGORY_COLORS.leanD, leftX, 'ld');
-    leanDRight = leftX + groupWidth(maxLeanD);
-  }
-
-  // Right: safeR then leanR (from the right edge inward)
-  let rightX = boxX + BOX_WIDTH - EDGE_PAD;
-  if (maxSafeR > 0) {
-    rightX -= groupWidth(maxSafeR);
-    addGroup(enacted.safeR, alt.safeR, CATEGORY_COLORS.safeR, rightX, 'sr');
-    rightX -= CATEGORY_GAP;
-  }
-  let leanRLeft = rightX;
-  if (maxLeanR > 0) {
-    rightX -= groupWidth(maxLeanR);
-    addGroup(enacted.leanR, alt.leanR, CATEGORY_COLORS.leanR, rightX, 'lr');
-    leanRLeft = rightX;
-  }
-
-  // Even: centered between leanD right edge and leanR left edge
-  if (maxEven > 0) {
-    const w = groupWidth(maxEven);
-    const midpoint = (leanDRight + leanRLeft) / 2;
-    addGroup(enacted.even, alt.even, CATEGORY_COLORS.even, midpoint - w / 2, 'ev');
-  }
-
-  return <g>{squares}</g>;
-}
 
 function pairKey(a: string, b: string): string {
   return [a, b].sort().join('-');
@@ -281,29 +140,8 @@ export function BipartiteMatchGraph({
     const bottomPadding = 8;
     const groupGap = 8;
 
-    // Per-group box height based on actual largest category across all states
-    const boxHeightMap = new Map<number, number>();
-    for (const d of uniqueDistrictCounts) {
-      let maxRows = 2;
-      for (const state of groupStates) {
-        if (getDistricts(state) !== d) continue;
-        const enacted = stateSafeSeats[state.id];
-        const alt = alternateMapSafeSeats[state.id] || enacted;
-        if (!enacted) continue;
-        const maxGroup = Math.max(
-          Math.max(enacted.safeD, alt.safeD),
-          Math.max(enacted.leanD, alt.leanD),
-          Math.max(enacted.even, alt.even),
-          Math.max(enacted.leanR, alt.leanR),
-          Math.max(enacted.safeR, alt.safeR),
-        );
-        if (maxGroup > 0) {
-          const cols = getGroupCols(maxGroup);
-          maxRows = Math.max(maxRows, Math.ceil(maxGroup / cols));
-        }
-      }
-      boxHeightMap.set(d, boxHeightFromRows(maxRows));
-    }
+    // Every box is the same fixed height
+    const boxHeightMap = new Map(uniqueDistrictCounts.map(d => [d, BOX_HEIGHT]));
 
     // Calculate start Y and allocated height for each district count group
     const districtStartY = new Map<number, number>();
@@ -348,7 +186,7 @@ export function BipartiteMatchGraph({
       rightPositions: calculatePositions(rightColumn),
       totalHeight,
     };
-  }, [leftColumn, rightColumn, uniqueDistrictCounts, maxStatesPerDistrict, groupStates]);
+  }, [leftColumn, rightColumn, uniqueDistrictCounts, maxStatesPerDistrict]);
 
   const positionMap = useMemo(() => {
     const map = new Map<string, PositionedState>();
@@ -522,11 +360,11 @@ export function BipartiteMatchGraph({
           const badgeH = 13;
           const badgeY = y + 10 - badgeH / 2;
           const isLeft = align === 'left';
-          // Left column: badge on left, name on right
-          // Right column: name on left, badge on right
-          const badgeX = isLeft ? boxX + 5 : boxX + BOX_WIDTH - 5 - badgeW;
-          const nameX = isLeft ? boxX + BOX_WIDTH - 6 : boxX + 6;
-          const nameAnchor = isLeft ? 'end' : 'start';
+          // Left column: name on left, badge on right
+          // Right column: badge on left, name on right
+          const badgeX = isLeft ? boxX + BOX_WIDTH - 5 - badgeW : boxX + 5;
+          const nameX = isLeft ? boxX + 6 : boxX + BOX_WIDTH - 6;
+          const nameAnchor = isLeft ? 'start' : 'end';
           return (
             <>
               <rect
@@ -566,30 +404,22 @@ export function BipartiteMatchGraph({
         {(() => {
           const enacted = stateSafeSeats[state.id];
           if (!enacted) return null;
-          const alt = alternateMapSafeSeats[state.id] || enacted;
-          const showAlt = !!(isActive || isMatchTarget || isSelected);
-          return renderSeatSquares(enacted, alt, showAlt, boxX, y, boxHeight);
-        })()}
-
-        {/* Minority-party seats gained by switching to proportional map */}
-        {(() => {
-          const gain = getMinoritySeatGain(state);
-          if (gain === null) return null;
-          const label = (gain >= 0 ? '+' : '') + gain;
-          const isLeft = align === 'left';
-          const labelX = isLeft ? boxX + BOX_WIDTH + 4 : boxX - 4;
-          const anchor = isLeft ? 'start' : 'end';
+          const gerrymanderedSeats = Math.max(0, getMinoritySeatGain(state) ?? 0);
+          const safeSeats = enacted.safeSeats;
+          const statX = boxX + 6;
+          const gerrymanderedColor = greenGoldScale(gerrymanderedSeats / 5);
+          const safeSeatsColor = greenGoldScale(safeSeats / state.districts2022);
           return (
-            <text
-              x={labelX}
-              y={y + boxHeight / 2}
-              textAnchor={anchor}
-              dominantBaseline="central"
-              fontSize={8}
-              fill="#999"
-            >
-              {label}
-            </text>
+            <>
+              <text x={statX} y={y + HEADER_HEIGHT + 11} textAnchor="start" dominantBaseline="central" fontSize={9} fontWeight={600}>
+                <tspan fill={gerrymanderedColor} fontWeight={700} fontSize={11}>{gerrymanderedSeats}</tspan>
+                <tspan fill="#666" letterSpacing="0.5"> GERRYMANDERED &</tspan>
+              </text>
+              <text x={statX} y={y + HEADER_HEIGHT + 24} textAnchor="start" dominantBaseline="central" fontSize={9} fontWeight={600}>
+                <tspan fill={safeSeatsColor} fontWeight={700} fontSize={11}>{safeSeats}</tspan>
+                <tspan fill="#666" letterSpacing="0.5"> SAFE SEATS</tspan>
+              </text>
+            </>
           );
         })()}
       </g>

@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
-import { SafeSeatCounts, stateSafeSeats } from '../data/districtData/safeSeats';
+import type { SafeSeatCounts } from '../data/districtData/safeSeats';
 
 function AnimatedNumber({ value }: { value: number }) {
   const [display, setDisplay] = useState(value);
@@ -30,41 +30,13 @@ function AnimatedNumber({ value }: { value: number }) {
 const TOTAL_SEATS = 435;
 const MAJORITY = 218;
 
-const SQ = 5;
-const SQ_GAP = 1.2;
-const SQ_PITCH = SQ + SQ_GAP;
-
-function getRows() {
-  return window.innerWidth < 640 ? 5 : 3;
-}
-
-const COLORS = {
-  safeD: '#2e6da4',
-  leanD: '#6a9dc9',
-  even: '#d0d0d0',
-  leanR: '#d97a7c',
-  safeR: '#c93135',
-};
-
 interface RatingsBarProps {
   adjustedSafeSeats: Record<string, SafeSeatCounts>;
 }
 
 export function RatingsBar({ adjustedSafeSeats }: RatingsBarProps) {
-  const [rows, setRows] = useState(getRows);
-  useEffect(() => {
-    const onResize = () => setRows(getRows());
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
-  const cols = Math.ceil(TOTAL_SEATS / rows);
-
   const totals = useMemo(() => {
-    let safeD = 0;
-    let leanD = 0;
-    let even = 0;
-    let leanR = 0;
-    let safeR = 0;
+    let safeD = 0, leanD = 0, even = 0, leanR = 0, safeR = 0;
     for (const counts of Object.values(adjustedSafeSeats)) {
       safeD += counts.safeD;
       leanD += counts.leanD;
@@ -75,50 +47,13 @@ export function RatingsBar({ adjustedSafeSeats }: RatingsBarProps) {
     return { safeD, leanD, even, leanR, safeR };
   }, [adjustedSafeSeats]);
 
-  const baseTotals = useMemo(() => {
-    let safeD = 0, leanD = 0, even = 0, leanR = 0, safeR = 0;
-    for (const counts of Object.values(stateSafeSeats)) {
-      safeD += counts.safeD;
-      leanD += counts.leanD;
-      even += counts.even;
-      leanR += counts.leanR;
-      safeR += counts.safeR;
-    }
-    return { safeD, leanD, even, leanR, safeR };
-  }, []);
-
-  const seatData = useMemo(() => {
-    const data: { color: string; isGold: boolean }[] = [];
-    const addCategory = (count: number, baseline: number, color: string) => {
-      for (let i = 0; i < count; i++) {
-        data.push({ color, isGold: i >= baseline });
-      }
-    };
-    addCategory(totals.safeD, baseTotals.safeD, COLORS.safeD);
-    addCategory(totals.leanD, baseTotals.leanD, COLORS.leanD);
-    addCategory(totals.even, baseTotals.even, COLORS.even);
-    addCategory(totals.leanR, baseTotals.leanR, COLORS.leanR);
-    addCategory(totals.safeR, baseTotals.safeR, COLORS.safeR);
-    return data;
-  }, [totals, baseTotals]);
-
-  const viewWidth = cols * SQ_PITCH - SQ_GAP;
-  const viewHeight = rows * SQ_PITCH - SQ_GAP;
-
-  // 218th square (0-indexed: 217)
-  const majIdx = MAJORITY - 1;
-  const majCol = Math.floor(majIdx / rows);
-  const majRow = majIdx % rows;
-  const majSqX = majCol * SQ_PITCH;
-  const majSqY = majRow * SQ_PITCH;
-  const majCornerX = majSqX + SQ; // bottom-right corner
-  const majorityLeftPct = (majCornerX / viewWidth) * 100;
-
   const pctD = (totals.safeD / TOTAL_SEATS) * 100;
   const pctLeanD = (totals.leanD / TOTAL_SEATS) * 100;
   const pctEven = (totals.even / TOTAL_SEATS) * 100;
   const pctLeanR = (totals.leanR / TOTAL_SEATS) * 100;
   const pctR = (totals.safeR / TOTAL_SEATS) * 100;
+
+  const majorityLeftPct = (MAJORITY / TOTAL_SEATS) * 100;
 
   return (
     <div className="ratings-bar-wrapper">
@@ -126,87 +61,35 @@ export function RatingsBar({ adjustedSafeSeats }: RatingsBarProps) {
         <div className="ratings-bar-labels">
           <span style={{ width: `${pctD}%` }}>
             <span className="ratings-label-text">Safe D</span>
-            <span className="ratings-badge" style={{ background: COLORS.safeD }}>
-              <AnimatedNumber value={totals.safeD} />
-            </span>
           </span>
           <span style={{ width: `${pctLeanD}%` }}>
             <span className="ratings-label-text">Lean D</span>
-            <span className="ratings-badge" style={{ background: COLORS.leanD }}>
-              <AnimatedNumber value={totals.leanD} />
-            </span>
           </span>
-          <span style={{ width: `${pctEven}%` }}>
-            <span className="ratings-badge ratings-badge-even" style={{ background: COLORS.even }}>
-              <AnimatedNumber value={totals.even} />
-            </span>
-          </span>
+          <span style={{ width: `${pctEven}%` }} />
           <span style={{ width: `${pctLeanR}%` }}>
-            <span className="ratings-badge" style={{ background: COLORS.leanR }}>
-              <AnimatedNumber value={totals.leanR} />
-            </span>
             <span className="ratings-label-text">Lean R</span>
           </span>
           <span style={{ width: `${pctR}%` }}>
-            <span className="ratings-badge" style={{ background: COLORS.safeR }}>
-              <AnimatedNumber value={totals.safeR} />
-            </span>
             <span className="ratings-label-text">Safe R</span>
           </span>
         </div>
-        <svg
-          viewBox={`0 0 ${viewWidth} ${viewHeight}`}
-          width="100%"
-          style={{ display: 'block', overflow: 'visible' }}
-        >
-          {seatData.map(({ color, isGold }, i) => {
-            const col = Math.floor(i / rows);
-            const row = i % rows;
-            const x = col * SQ_PITCH;
-            const y = row * SQ_PITCH;
-            return (
-              <g key={i}>
-                <rect
-                  x={x}
-                  y={y}
-                  width={SQ}
-                  height={SQ}
-                  fill={color}
-                  rx={0.5}
-                  style={{ transition: 'fill 0.4s ease' }}
-                />
-                {isGold && (
-                  <circle
-                    cx={x + SQ / 2}
-                    cy={y + SQ / 2}
-                    r={1.3}
-                    fill="#c9a227"
-                  />
-                )}
-              </g>
-            );
-          })}
-          {/* Black border on the majority square */}
-          <rect
-            x={majSqX}
-            y={majSqY}
-            width={SQ}
-            height={SQ}
-            fill="none"
-            stroke="#111"
-            strokeWidth={0.8}
-            rx={0.5}
-          />
-          {/* Line from bottom-right corner of majority square down */}
-          <line
-            x1={majCornerX}
-            y1={majSqY + SQ}
-            x2={majCornerX}
-            y2={viewHeight + 6}
-            stroke="#111"
-            strokeWidth={0.8}
-          />
-        </svg>
+        <div className="ratings-bar">
+          <div className="ratings-bar-segment segment-d" style={{ width: `${pctD}%` }}>
+            <AnimatedNumber value={totals.safeD} />
+          </div>
+          <div className="ratings-bar-segment segment-lean-d" style={{ width: `${pctLeanD}%` }}>
+            <AnimatedNumber value={totals.leanD} />
+          </div>
+          <div className="ratings-bar-segment segment-even" style={{ width: `${pctEven}%` }}>
+            <AnimatedNumber value={totals.even} />
+          </div>
+          <div className="ratings-bar-segment segment-lean-r" style={{ width: `${pctLeanR}%` }}>
+            <AnimatedNumber value={totals.leanR} />
+          </div>
+          <div className="ratings-bar-segment segment-r" style={{ width: `${pctR}%` }}>
+            <AnimatedNumber value={totals.safeR} />
+          </div>
+        </div>
         <div
           className="ratings-bar-majority"
           style={{ left: `${majorityLeftPct}%` }}
