@@ -1,9 +1,36 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { StateData, MatchPair } from '../types';
 import { findMatches, getMinoritySeatGain } from '../utils/findMatches';
 import { stateSafeSeats } from '../data/districtData/safeSeats';
+import { alternateMapSafeSeats } from '../data/districtData/alternateMapLeans';
 import { stateData } from '../data/stateData/stateData';
+
+function AnimatedCount({ value }: { value: number }) {
+  const [display, setDisplay] = useState(value);
+  const prev = useRef(value);
+
+  useEffect(() => {
+    const from = prev.current;
+    const to = value;
+    prev.current = value;
+    if (from === to) return;
+
+    const duration = 400;
+    const start = performance.now();
+    let raf: number;
+
+    const tick = (now: number) => {
+      const t = Math.min((now - start) / duration, 1);
+      setDisplay(Math.round(from + (to - from) * t));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value]);
+
+  return <>{display}</>;
+}
 
 export const bigFourStates = stateData.filter(s => s.districts2022 >= 24);
 export const midSmallStates = stateData.filter(s => s.districts2022 >= 2 && s.districts2022 < 24);
@@ -404,19 +431,21 @@ export function BipartiteMatchGraph({
         {(() => {
           const enacted = stateSafeSeats[state.id];
           if (!enacted) return null;
-          const gerrymanderedSeats = Math.max(0, getMinoritySeatGain(state) ?? 0);
-          const safeSeats = enacted.safeSeats;
+          const alt = alternateMapSafeSeats[state.id] || enacted;
+          const matched = isSelected;
+          const gerrymanderedSeats = matched ? 0 : Math.max(0, getMinoritySeatGain(state) ?? 0);
+          const safeSeats = matched ? alt.safeSeats : enacted.safeSeats;
           const statX = boxX + 6;
           const gerrymanderedColor = greenGoldScale(gerrymanderedSeats / 5);
           const safeSeatsColor = greenGoldScale(safeSeats / state.districts2022);
           return (
             <>
               <text x={statX} y={y + HEADER_HEIGHT + 11} textAnchor="start" dominantBaseline="central" fontSize={9} fontWeight={600}>
-                <tspan fill={gerrymanderedColor} fontWeight={700} fontSize={11}>{gerrymanderedSeats}</tspan>
+                <tspan fill={gerrymanderedColor} fontWeight={700} fontSize={11}><AnimatedCount value={gerrymanderedSeats} /></tspan>
                 <tspan fill="#666" letterSpacing="0.5"> GERRYMANDERED &</tspan>
               </text>
               <text x={statX} y={y + HEADER_HEIGHT + 24} textAnchor="start" dominantBaseline="central" fontSize={9} fontWeight={600}>
-                <tspan fill={safeSeatsColor} fontWeight={700} fontSize={11}>{safeSeats}</tspan>
+                <tspan fill={safeSeatsColor} fontWeight={700} fontSize={11}><AnimatedCount value={safeSeats} /></tspan>
                 <tspan fill="#666" letterSpacing="0.5"> SAFE SEATS</tspan>
               </text>
             </>
