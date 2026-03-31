@@ -1,34 +1,46 @@
-import * as d3 from 'd3';
 import { HoveredState } from '../types';
 import { stateSafeSeats } from '../data/districtData/safeSeats';
-import { computeSeatMisallocation } from '../utils/computeSeatMisallocation';
+import { computeRepresentationGap } from '../utils/computeRepresentationGap';
 
-const leanColorScale = d3.scaleLinear<string>()
-  .domain([-20, 0, 20])
-  .range(['#c93135', '#888', '#2e6da4'])
-  .clamp(true);
+const PARTY_COLORS = { R: '#c93135', D: '#2e6da4' };
 
 interface StateTooltipProps {
   hoveredState: HoveredState;
 }
 
-function formatLean(lean: number): string {
-  if (lean === 0) return 'Even';
-  return lean > 0 ? `D+${lean}%` : `R+${Math.abs(lean)}%`;
-}
-
-function misallocationColor(absMisallocation: number): string {
-  return absMisallocation === 0 ? '#2ca25f' : '#e8a832';
+function repGapColor(absGap: number): string {
+  return absGap === 0 ? '#2ca25f' : '#e8a832';
 }
 
 export function StateTooltip({ hoveredState }: StateTooltipProps) {
   const { state, x, y } = hoveredState;
   const safeCounts = stateSafeSeats[state.id];
-  const misallocation = safeCounts ? computeSeatMisallocation(state, safeCounts) : 0;
-  const absMisallocation = Math.abs(misallocation);
+  const gap = safeCounts ? computeRepresentationGap(state, safeCounts) : 0;
+  const absGap = Math.abs(gap);
 
-  const tooltipWidth = 180;
+  const tooltipWidth = 220;
   const left = Math.min(x + 15, window.innerWidth - tooltipWidth - 8);
+
+  let content: React.ReactNode;
+  if (absGap === 0) {
+    content = <>{state.name} is<br />represented <span style={{ color: '#2ca25f', fontWeight: 700 }}>proportionally</span></>;
+  } else {
+    const seats = absGap === 1 ? 'seat' : 'seats';
+    const minorityOverRep = (gap > 0 && state.partisanLean > 0) || (gap < 0 && state.partisanLean < 0);
+    const partyName = minorityOverRep
+      ? (gap > 0 ? 'Republicans' : 'Democrats')
+      : (gap > 0 ? 'Democrats' : 'Republicans');
+    const partyColor = partyName === 'Republicans' ? PARTY_COLORS.R : PARTY_COLORS.D;
+    const verb = minorityOverRep ? 'over-represented' : 'under-represented';
+
+    content = (
+      <>
+        {state.name} <span style={{ color: partyColor, fontWeight: 700 }}>{partyName}</span> are
+        <br />{verb} by{' '}
+        <span style={{ color: repGapColor(absGap), fontWeight: 700 }}>{absGap}</span> {seats}
+      </>
+    );
+  }
 
   return (
     <div
@@ -38,20 +50,7 @@ export function StateTooltip({ hoveredState }: StateTooltipProps) {
         top: y + 15,
       }}
     >
-      <div className="tooltip-header">
-        <span className="tooltip-name">{state.name}</span>
-        <span style={{ color: leanColorScale(state.partisanLean), fontWeight: 700 }}>
-          {formatLean(state.partisanLean)}
-        </span>
-      </div>
-      <div className="tooltip-metric">
-        <span className="tooltip-value">
-          <span style={{ color: misallocationColor(absMisallocation), fontWeight: 700 }}>
-            {absMisallocation}
-          </span>
-        </span>
-        <span className="tooltip-label">{absMisallocation === 1 ? 'seat misallocated' : 'seats misallocated'}</span>
-      </div>
+      <span className="tooltip-name">{content}</span>
     </div>
   );
 }

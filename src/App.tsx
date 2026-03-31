@@ -7,7 +7,7 @@ import { StateTooltip } from './components/StateTooltip';
 import { useTopoData } from './hooks/useTopoData';
 import { computeAdjustedSafeSeats } from './utils/computeTruceAdjustment';
 import { stateSafeSeats } from './data/districtData/safeSeats';
-import { computeNationalSeatMisallocation } from './utils/computeSeatMisallocation';
+import { computeNationalRepresentationGap } from './utils/computeRepresentationGap';
 import { HoveredState, MatchPair } from './types';
 
 function pairKey(a: string, b: string): string {
@@ -24,14 +24,14 @@ function App() {
     [selectedMatches],
   );
 
-  const baselineNationalSeatMisallocation = useMemo(
-    () => computeNationalSeatMisallocation(stateSafeSeats),
+  const baselineNationalRepresentationGap = useMemo(
+    () => computeNationalRepresentationGap(stateSafeSeats),
     [],
   );
 
-  const nationalSeatMisallocationReduced = useMemo(
-    () => baselineNationalSeatMisallocation - computeNationalSeatMisallocation(adjustedSafeSeats),
-    [adjustedSafeSeats, baselineNationalSeatMisallocation],
+  const nationalRepresentationGapReduced = useMemo(
+    () => baselineNationalRepresentationGap - computeNationalRepresentationGap(adjustedSafeSeats),
+    [adjustedSafeSeats, baselineNationalRepresentationGap],
   );
 
   const handleToggleMatch = useCallback((pair: MatchPair) => {
@@ -109,9 +109,9 @@ function App() {
         <p>
           The bar below tracks the national House seat balance as you build
           your pact map. Each match you select replaces gerrymandered maps with
-          proportional ones — reducing the number of seats misallocated away
-          from what each state's vote share warrants. The balance between
-          parties stays the same; only seat misallocation changes.
+          proportional ones — closing the representation gap between what
+          each state's vote share warrants and how seats are actually allocated.
+          The balance between parties stays the same; only the representation gap changes.
         </p>
       </section>
 
@@ -150,7 +150,7 @@ function App() {
             topoData={topoData}
             selectedMatches={selectedMatches}
             adjustedSafeSeats={adjustedSafeSeats}
-            nationalSeatMisallocationReduced={nationalSeatMisallocationReduced}
+            nationalRepresentationGapReduced={nationalRepresentationGapReduced}
           />
         </div>
       </section>

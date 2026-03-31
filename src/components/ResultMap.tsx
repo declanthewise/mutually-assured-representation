@@ -4,17 +4,17 @@ import * as topojson from 'topojson-client';
 import { MatchPair } from '../types';
 import { stateDataById } from '../data/stateData/stateData';
 import { SafeSeatCounts } from '../data/districtData/safeSeats';
-import { computeSeatMisallocation } from '../utils/computeSeatMisallocation';
+import { computeRepresentationGap } from '../utils/computeRepresentationGap';
 import { fipsToState } from '../utils/fipsMapping';
 
 interface ResultMapProps {
   topoData: any;
   selectedMatches: MatchPair[];
   adjustedSafeSeats: Record<string, SafeSeatCounts>;
-  nationalSeatMisallocationReduced: number;
+  nationalRepresentationGapReduced: number;
 }
 
-export function ResultMap({ topoData, selectedMatches, adjustedSafeSeats, nationalSeatMisallocationReduced }: ResultMapProps) {
+export function ResultMap({ topoData, selectedMatches, adjustedSafeSeats, nationalRepresentationGapReduced }: ResultMapProps) {
   const svgRef = useRef<SVGSVGElement>(null);
 
   // Set of all states that are part of a selected match
@@ -102,11 +102,11 @@ export function ResultMap({ topoData, selectedMatches, adjustedSafeSeats, nation
       .attr('d', path)
       .attr('pointer-events', 'none');
 
-    // Icons sized by seat misallocation magnitude
-    const maxMisallocation = 12;
+    // Icons sized by representation gap magnitude
+    const maxRepGap = 12;
     const maxRadius = 70;
-    const misallocationRadius = d3.scaleSqrt()
-      .domain([0, maxMisallocation])
+    const repGapRadius = d3.scaleSqrt()
+      .domain([0, maxRepGap])
       .range([0, maxRadius]);
 
     const featuresYSorted = [...(states as any).features].sort(
@@ -129,8 +129,8 @@ export function ResultMap({ topoData, selectedMatches, adjustedSafeSeats, nation
 
         let diameter = 0;
         if (safeCounts && stateData && !(hasMatches && !matchedStateIds.has(stateId))) {
-          const misallocation = Math.abs(computeSeatMisallocation(stateData, safeCounts));
-          diameter = misallocation > 0 ? misallocationRadius(misallocation) * 2 : 0;
+          const repGap = Math.abs(computeRepresentationGap(stateData, safeCounts));
+          diameter = repGap > 0 ? repGapRadius(repGap) * 2 : 0;
         }
 
         d3.select(this)
@@ -173,7 +173,7 @@ export function ResultMap({ topoData, selectedMatches, adjustedSafeSeats, nation
       {hasMatches && (
         <div className="result-stat-bar">
           <div className="hero-stat-label">Seats Re-allocated</div>
-          <div className="hero-stat-number"><span style={{ color: '#4caf50' }}>{nationalSeatMisallocationReduced}</span></div>
+          <div className="hero-stat-number"><span style={{ color: '#4caf50' }}>{nationalRepresentationGapReduced}</span></div>
         </div>
       )}
       <svg ref={svgRef} className="result-map" />

@@ -34,7 +34,7 @@ function AnimatedCount({ value }: { value: number }) {
 
 export const bigFourStates = stateData.filter(s => s.districts2022 >= 24);
 export const midSmallStates = stateData.filter(s => s.districts2022 >= 2 && s.districts2022 < 24);
-export const midSmallFootnote = 'Note: Single-district states Alaska, Delaware, North Dakota, South Dakota, Vermont and Wyoming are omitted as they cannot be gerrymandered.';
+export const midSmallFootnote = 'Note: Single-district states Alaska, Delaware, North Dakota, South Dakota, Vermont and Wyoming are omitted as they have no representation gap.';
 
 interface BipartiteMatchGraphProps {
   groupStates: StateData[];
@@ -433,16 +433,16 @@ export function BipartiteMatchGraph({
           if (!enacted) return null;
           const alt = alternateMapSafeSeats[state.id] || enacted;
           const matched = isSelected;
-          const gerrymanderedSeats = matched ? 0 : Math.max(0, getMinoritySeatGain(state) ?? 0);
+          const repGapSeats = matched ? 0 : Math.max(0, getMinoritySeatGain(state) ?? 0);
           const safeSeats = matched ? alt.safeSeats : enacted.safeSeats;
           const statX = boxX + 6;
-          const gerrymanderedColor = greenGoldScale(gerrymanderedSeats / 5);
+          const repGapColor = greenGoldScale(repGapSeats / 5);
           const safeSeatsColor = greenGoldScale(safeSeats / state.districts2022);
           return (
             <>
               <text x={statX} y={y + HEADER_HEIGHT + 11} textAnchor="start" dominantBaseline="central" fontSize={9} fontWeight={600}>
-                <tspan fill={gerrymanderedColor} fontWeight={700} fontSize={11}><AnimatedCount value={gerrymanderedSeats} /></tspan>
-                <tspan fill="#666" letterSpacing="0.5"> GERRYMANDERED &</tspan>
+                <tspan fill={repGapColor} fontWeight={700} fontSize={11}><AnimatedCount value={repGapSeats} /></tspan>
+                <tspan fill="#666" letterSpacing="0.5"> REP. GAP &</tspan>
               </text>
               <text x={statX} y={y + HEADER_HEIGHT + 24} textAnchor="start" dominantBaseline="central" fontSize={9} fontWeight={600}>
                 <tspan fill={safeSeatsColor} fontWeight={700} fontSize={11}><AnimatedCount value={safeSeats} /></tspan>

@@ -4,7 +4,7 @@ import * as topojson from 'topojson-client';
 import { HoveredState } from '../types';
 import { stateDataById } from '../data/stateData/stateData';
 import { stateSafeSeats } from '../data/districtData/safeSeats';
-import { computeSeatMisallocation, computeNationalSeatMisallocation } from '../utils/computeSeatMisallocation';
+import { computeRepresentationGap, computeNationalRepresentationGap } from '../utils/computeRepresentationGap';
 import { fipsToState } from '../utils/fipsMapping';
 
 interface HeroMapProps {
@@ -16,8 +16,8 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const onHoverStateRef = useRef(onHoverState);
 
-  const totalNationalSeatMisallocation = useMemo(
-    () => computeNationalSeatMisallocation(stateSafeSeats),
+  const totalNationalRepresentationGap = useMemo(
+    () => computeNationalRepresentationGap(stateSafeSeats),
     []
   );
 
@@ -92,11 +92,11 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
       .attr('d', path)
       .attr('pointer-events', 'none');
 
-    // Icons sized by seat misallocation magnitude
-    const maxMisallocation = 12;
+    // Icons sized by representation gap magnitude
+    const maxRepGap = 12;
     const maxRadius = 70;
-    const misallocationRadius = d3.scaleSqrt()
-      .domain([0, maxMisallocation])
+    const repGapRadius = d3.scaleSqrt()
+      .domain([0, maxRepGap])
       .range([0, maxRadius]);
 
     const featuresYSorted = [...(states as any).features].sort(
@@ -119,8 +119,8 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
 
         let diameter = 0;
         if (safeCounts && stateData) {
-          const misallocation = Math.abs(computeSeatMisallocation(stateData, safeCounts));
-          diameter = misallocation > 0 ? misallocationRadius(misallocation) * 2 : 0;
+          const repGap = Math.abs(computeRepresentationGap(stateData, safeCounts));
+          diameter = repGap > 0 ? repGapRadius(repGap) * 2 : 0;
         }
 
         d3.select(this)
@@ -135,12 +135,12 @@ export function HeroMap({ topoData, onHoverState }: HeroMapProps) {
   return (
     <>
       <div className="hero-stat-bar">
-        <div className="hero-stat-label">Total Gerrymandered Seats</div>
-        <div className="hero-stat-number"><span style={{ color: '#e8a832' }}>{totalNationalSeatMisallocation}</span><span style={{ color: '#000' }}>/435</span></div>
+        <div className="hero-stat-label">National Representation Gap</div>
+        <div className="hero-stat-number"><span style={{ color: '#e8a832' }}>{totalNationalRepresentationGap}</span><span style={{ color: '#000' }}>/435</span></div>
       </div>
       <svg ref={svgRef} className="hero-map" />
       <p className="hero-map-caption">
-        Note: States colored by partisan lean (Cook PVI). Icons sized by seat misallocation — how many seats the enacted map over- or under-allocates to the minority party relative to each state's Cook PVI proportional ideal.
+        Note: States colored by partisan lean (Cook PVI). Icons sized by representation gap — how many seats the enacted map over- or under-allocates to the minority party relative to each state's Cook PVI proportional ideal.
       </p>
     </>
   );
