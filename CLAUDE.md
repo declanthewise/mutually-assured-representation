@@ -17,12 +17,11 @@ src/
 ├── App.css                  # All styles
 ├── main.tsx                 # Entry point
 ├── components/
-│   ├── HeroMap.tsx          # D3-based interactive US map (main view)
-│   ├── ResultMap.tsx        # Map showing truce results
-│   ├── BipartiteMatchGraph.tsx  # Match graph visualization
-│   ├── RatingsBar.tsx       # Seat count bar chart
+│   ├── HeroMap.tsx          # D3-based interactive US map — clouds, pact badges and arcs
+│   ├── BipartiteMatchGraph.tsx  # Two re-sorting columns of state boxes
+│   ├── RatingsBar.tsx       # Seat count bar chart (sticky, above the map)
 │   ├── StateTooltip.tsx     # Hover tooltip on map
-│   └── Legend.tsx           # Efficiency gap color legend
+│   └── AnimatedCount.tsx    # Shared count-up number
 ├── data/
 │   ├── stateData/           # State-level data
 │   │   ├── stateData.ts     # All 50 states' metrics
@@ -39,15 +38,18 @@ src/
 ├── types/
 │   └── index.ts             # TypeScript interfaces
 └── utils/
-    ├── findMatches.ts       # MAR matching algorithm
-    └── computeTruceAdjustment.ts  # Truce seat adjustment
+    ├── minoritySeatGain.ts  # Seats the alternate map returns to the minority party
+    ├── computeRepresentationGap.ts # Per-state and national representation gap
+    └── computeTruceAdjustment.ts   # Truce seat adjustment
 ```
 
 ## Key Concepts
 
 - **Efficiency Gap**: Measures wasted votes. Positive = R advantage, negative = D advantage.
 - **Partisan Lean**: State's overall partisan lean from presidential vote share.
-- **MAR Matching**: States match if they have opposite efficiency gaps, similar district counts (±25%), and similar seats impact (±1 seat).
+- **Representation Gap**: Seats the enacted map denies the minority party, versus the alternate map.
+- **MAR Matching**: The user pairs states manually. Clicking a state re-ranks the opposite
+  column by closest representation gap, breaking ties on closest delegation size.
 
 ## Commands
 

@@ -1,43 +1,18 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import * as d3 from 'd3';
 import { StateData, MatchPair } from '../types';
-import { findMatches, getMinoritySeatGain } from '../utils/findMatches';
+import { getMinoritySeatGain } from '../utils/minoritySeatGain';
 import { stateSafeSeats } from '../data/districtData/safeSeats';
 import { alternateMapSafeSeats } from '../data/districtData/alternateMapLeans';
 import { stateData } from '../data/stateData/stateData';
+import { AnimatedCount } from './AnimatedCount';
 
-function AnimatedCount({ value }: { value: number }) {
-  const [display, setDisplay] = useState(value);
-  const prev = useRef(value);
-
-  useEffect(() => {
-    const from = prev.current;
-    const to = value;
-    prev.current = value;
-    if (from === to) return;
-
-    const duration = 400;
-    const start = performance.now();
-    let raf: number;
-
-    const tick = (now: number) => {
-      const t = Math.min((now - start) / duration, 1);
-      setDisplay(Math.round(from + (to - from) * t));
-      if (t < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [value]);
-
-  return <>{display}</>;
-}
-
-export const bigFourStates = stateData.filter(s => s.districts2022 >= 24);
-export const midSmallStates = stateData.filter(s => s.districts2022 >= 2 && s.districts2022 < 24);
-export const midSmallFootnote = 'Note: Single-district states Alaska, Delaware, North Dakota, South Dakota, Vermont and Wyoming are omitted as they have no representation gap.';
+/** Single-district states have no map to draw, so they never enter a pact. */
+export const matchableStates = stateData.filter(s => s.districts2022 >= 2);
+export const matchFootnote =
+  'Note: Single-district states Alaska, Delaware, North Dakota, South Dakota, Vermont and Wyoming are omitted as they have no representation gap.';
 
 interface BipartiteMatchGraphProps {
-  groupStates: StateData[];
   selectedMatches: MatchPair[];
   onToggleMatch: (pair: MatchPair) => void;
   footnote?: string;
@@ -53,31 +28,24 @@ const greenGoldScale = d3.scaleLinear<string>()
   .range(['#4caf50', '#e8a832'])
   .clamp(true);
 
-function getPartisanColor(state: StateData): string {
-  return leanColorScale(state.partisanLean);
-}
-
-interface PositionedState {
-  state: StateData;
-  y: number;
-  boxHeight: number;
-}
-
-interface MatchLine {
-  fromState: StateData;
-  toState: StateData;
-  fromY: number;
-  toY: number;
-  fromX: number;
-  toX: number;
-}
-
-const BOX_WIDTH = 110;
+const BOX_W = 116;
+const BOX_H = 54;
+const ROW_GAP = 6;
+const ROW_H = BOX_H + ROW_GAP;
 const HEADER_HEIGHT = 19;
-const BOX_HEIGHT = 54;
-const INNER_GAP = 3;
-const LEFT_X = 145;
-const RIGHT_X = 235;
+
+const LEFT_BOX_X = 20;
+const COL_GAP = 28;
+const RIGHT_BOX_X = LEFT_BOX_X + BOX_W + COL_GAP;
+const VIEW_W = RIGHT_BOX_X + BOX_W + LEFT_BOX_X;
+
+const COLUMN_LABEL_Y = 12;
+const TOP_PAD = 26;
+const BOTTOM_PAD = 10;
+
+const MATCH_GOLD = '#c9a227';
+
+type Column = 'left' | 'right';
 
 function formatLean(lean: number): string {
   if (lean === 0) return 'EVEN';
@@ -85,202 +53,92 @@ function formatLean(lean: number): string {
   return `${dir}+${Math.abs(lean).toFixed(0)}%`;
 }
 
+/** Seats the enacted map denies the minority party — the number shown on each box. */
+function repGapOf(state: StateData): number {
+  return Math.max(0, getMinoritySeatGain(state) ?? 0);
+}
 
-function pairKey(a: string, b: string): string {
-  return [a, b].sort().join('-');
+function bySize(a: StateData, b: StateData): number {
+  return b.districts2022 - a.districts2022 || a.name.localeCompare(b.name);
+}
+
+/** Closest representation gap first; ties broken by closest delegation size. */
+function byClosenessTo(target: StateData) {
+  const targetGap = repGapOf(target);
+  return (a: StateData, b: StateData): number => {
+    const gapDiff = Math.abs(repGapOf(a) - targetGap) - Math.abs(repGapOf(b) - targetGap);
+    if (gapDiff !== 0) return gapDiff;
+    const sizeDiff =
+      Math.abs(a.districts2022 - target.districts2022) -
+      Math.abs(b.districts2022 - target.districts2022);
+    if (sizeDiff !== 0) return sizeDiff;
+    return bySize(a, b);
+  };
 }
 
 export function BipartiteMatchGraph({
-  groupStates,
   selectedMatches,
   onToggleMatch,
   footnote,
 }: BipartiteMatchGraphProps) {
   const [activeStateId, setActiveStateId] = useState<string | null>(null);
 
-  const getDistricts = (state: StateData) => state.districts2022;
-
-  // Selected pair keys for quick lookup
-  const selectedPairKeys = useMemo(() => {
-    const keys = new Set<string>();
+  /** stateId → the state it is currently paired with */
+  const partnerById = useMemo(() => {
+    const map = new Map<string, StateData>();
+    const byId = new Map(matchableStates.map(s => [s.id, s]));
     for (const [a, b] of selectedMatches) {
-      keys.add(pairKey(a, b));
+      const stateA = byId.get(a);
+      const stateB = byId.get(b);
+      if (stateA && stateB) {
+        map.set(a, stateB);
+        map.set(b, stateA);
+      }
     }
-    return keys;
+    return map;
   }, [selectedMatches]);
 
-  // Split states into D-leaning (left) and R-leaning (right) columns
-  const { leftColumn, rightColumn } = useMemo(() => {
+  // D-leaning states on the left, R-leaning (and even) on the right
+  const { leftStates, rightStates, columnOf } = useMemo(() => {
     const left: StateData[] = [];
     const right: StateData[] = [];
+    const column = new Map<string, Column>();
 
-    for (const state of groupStates) {
+    for (const state of matchableStates) {
       if (state.partisanLean > 0) {
         left.push(state);
-      } else if (state.partisanLean < 0) {
-        right.push(state);
+        column.set(state.id, 'left');
       } else {
-        if (state.id === 'MI') {
-          right.push(state);
-        } else if (state.id === 'WI') {
-          right.push(state);
-        }
+        right.push(state);
+        column.set(state.id, 'right');
       }
     }
 
-    left.sort((a, b) => getDistricts(b) - getDistricts(a));
-    right.sort((a, b) => getDistricts(b) - getDistricts(a));
+    return { leftStates: left, rightStates: right, columnOf: column };
+  }, []);
 
-    return { leftColumn: left, rightColumn: right };
-  }, [groupStates]);
+  const activeState = useMemo(
+    () => (activeStateId ? matchableStates.find(s => s.id === activeStateId) ?? null : null),
+    [activeStateId],
+  );
 
-  const uniqueDistrictCounts = useMemo(() => {
-    const counts = new Set<number>();
-    for (const state of groupStates) {
-      counts.add(getDistricts(state));
-    }
-    return Array.from(counts).sort((a, b) => b - a);
-  }, [groupStates]);
+  // The column opposite the active state re-ranks by closest representation gap;
+  // everything else stays in delegation-size order.
+  const { leftOrder, rightOrder } = useMemo(() => {
+    const activeColumn = activeState ? columnOf.get(activeState.id) : null;
+    const left = leftStates.slice();
+    const right = rightStates.slice();
 
-  const maxStatesPerDistrict = useMemo(() => {
-    const leftCounts = new Map<number, number>();
-    const rightCounts = new Map<number, number>();
+    left.sort(activeState && activeColumn === 'right' ? byClosenessTo(activeState) : bySize);
+    right.sort(activeState && activeColumn === 'left' ? byClosenessTo(activeState) : bySize);
 
-    for (const state of leftColumn) {
-      const d = getDistricts(state);
-      leftCounts.set(d, (leftCounts.get(d) ?? 0) + 1);
-    }
-    for (const state of rightColumn) {
-      const d = getDistricts(state);
-      rightCounts.set(d, (rightCounts.get(d) ?? 0) + 1);
-    }
+    return { leftOrder: left, rightOrder: right };
+  }, [activeState, columnOf, leftStates, rightStates]);
 
-    const maxPerDistrict = new Map<number, number>();
-    for (const d of uniqueDistrictCounts) {
-      maxPerDistrict.set(d, Math.max(leftCounts.get(d) ?? 0, rightCounts.get(d) ?? 0));
-    }
-    return maxPerDistrict;
-  }, [leftColumn, rightColumn, uniqueDistrictCounts]);
+  const rowCount = Math.max(leftOrder.length, rightOrder.length);
+  const totalHeight = TOP_PAD + rowCount * ROW_H - ROW_GAP + BOTTOM_PAD;
 
-  const { leftPositions, rightPositions, totalHeight } = useMemo(() => {
-    const topPadding = 8;
-    const bottomPadding = 8;
-    const groupGap = 8;
-
-    // Every box is the same fixed height
-    const boxHeightMap = new Map(uniqueDistrictCounts.map(d => [d, BOX_HEIGHT]));
-
-    // Calculate start Y and allocated height for each district count group
-    const districtStartY = new Map<number, number>();
-    const districtAllocatedHeight = new Map<number, number>();
-    let currentY = topPadding;
-    for (const d of uniqueDistrictCounts) {
-      const maxStates = maxStatesPerDistrict.get(d) ?? 1;
-      const bh = boxHeightMap.get(d)!;
-      const allocatedHeight = maxStates * bh + (maxStates - 1) * INNER_GAP;
-      districtStartY.set(d, currentY);
-      districtAllocatedHeight.set(d, allocatedHeight);
-      currentY += allocatedHeight + groupGap;
-    }
-    const totalHeight = currentY - groupGap + bottomPadding;
-
-    const calculatePositions = (states: StateData[]): PositionedState[] => {
-      const byDistricts = new Map<number, StateData[]>();
-      for (const state of states) {
-        const d = getDistricts(state);
-        if (!byDistricts.has(d)) byDistricts.set(d, []);
-        byDistricts.get(d)!.push(state);
-      }
-
-      const positions: PositionedState[] = [];
-      for (const [districts, statesInGroup] of byDistricts) {
-        const startY = districtStartY.get(districts)!;
-        const allocatedHeight = districtAllocatedHeight.get(districts)!;
-        const bh = boxHeightMap.get(districts)!;
-        const n = statesInGroup.length;
-        const groupHeight = n * bh + (n - 1) * INNER_GAP;
-        const offset = (allocatedHeight - groupHeight) / 2;
-        statesInGroup.forEach((state, i) => {
-          positions.push({ state, y: startY + offset + i * (bh + INNER_GAP), boxHeight: bh });
-        });
-      }
-
-      return positions;
-    };
-
-    return {
-      leftPositions: calculatePositions(leftColumn),
-      rightPositions: calculatePositions(rightColumn),
-      totalHeight,
-    };
-  }, [leftColumn, rightColumn, uniqueDistrictCounts, maxStatesPerDistrict]);
-
-  const positionMap = useMemo(() => {
-    const map = new Map<string, PositionedState>();
-    for (const pos of leftPositions) map.set(pos.state.id, pos);
-    for (const pos of rightPositions) map.set(pos.state.id, pos);
-    return map;
-  }, [leftPositions, rightPositions]);
-
-  const stateColumn = useMemo(() => {
-    const map = new Map<string, 'left' | 'right'>();
-    for (const pos of leftPositions) map.set(pos.state.id, 'left');
-    for (const pos of rightPositions) map.set(pos.state.id, 'right');
-    return map;
-  }, [leftPositions, rightPositions]);
-
-  // Match lines: computed only within this group
-  const matchLines = useMemo(() => {
-    const lines: MatchLine[] = [];
-    const seenPairs = new Set<string>();
-
-    const allPositionedStates = [...leftPositions, ...rightPositions];
-
-    for (const { state } of allPositionedStates) {
-      const matches = findMatches(state, groupStates);
-
-      for (const match of matches) {
-        const pk = pairKey(state.id, match.id);
-        if (seenPairs.has(pk)) continue;
-        seenPairs.add(pk);
-
-        const fromPos = positionMap.get(state.id);
-        const toPos = positionMap.get(match.id);
-        const fromCol = stateColumn.get(state.id);
-        const toCol = stateColumn.get(match.id);
-
-        if (fromPos && toPos && fromCol && toCol) {
-          const fromX = fromCol === 'left' ? LEFT_X : RIGHT_X;
-          const toX = toCol === 'left' ? LEFT_X : RIGHT_X;
-
-          lines.push({
-            fromState: state,
-            toState: match,
-            fromY: fromPos.y + fromPos.boxHeight / 2,
-            toY: toPos.y + toPos.boxHeight / 2,
-            fromX,
-            toX,
-          });
-        }
-      }
-    }
-
-    return lines;
-  }, [leftPositions, rightPositions, positionMap, stateColumn, groupStates]);
-
-  // States connected to the active state
-  const activeMatchIds = useMemo(() => {
-    const ids = new Set<string>();
-    if (!activeStateId) return ids;
-    ids.add(activeStateId);
-    for (const line of matchLines) {
-      if (line.fromState.id === activeStateId) ids.add(line.toState.id);
-      else if (line.toState.id === activeStateId) ids.add(line.fromState.id);
-    }
-    return ids;
-  }, [activeStateId, matchLines]);
-
-  // When a state is active, clicking anywhere that isn't a state box deactivates it.
+  // Clicking outside any box clears the active selection.
   useEffect(() => {
     if (!activeStateId) return;
     const deactivate = () => setActiveStateId(null);
@@ -294,275 +152,202 @@ export function BipartiteMatchGraph({
   }, [activeStateId]);
 
   const handleStateClick = (state: StateData, e: React.MouseEvent) => {
-    // Stop propagation so the document listener doesn't also fire
     e.stopPropagation();
 
     if (!activeStateId) {
-      // No active state → activate clicked state
       setActiveStateId(state.id);
-    } else if (activeMatchIds.has(state.id) && state.id !== activeStateId) {
-      // Match partner → lock the match & deactivate
-      onToggleMatch([activeStateId, state.id]);
-      setActiveStateId(null);
-    } else if (state.id !== activeStateId) {
-      // Unmatchable state → deactivate first, activate second
-      setActiveStateId(state.id);
-    } else {
-      // Same state → deactivate
-      setActiveStateId(null);
+      return;
     }
+    if (state.id === activeStateId) {
+      setActiveStateId(null);
+      return;
+    }
+    if (columnOf.get(state.id) === columnOf.get(activeStateId)) {
+      // Same side — can't pair, so re-aim at the newly clicked state
+      setActiveStateId(state.id);
+      return;
+    }
+    // Opposite side — seal the pact (overriding either state's previous one)
+    onToggleMatch([activeStateId, state.id]);
+    setActiveStateId(null);
   };
 
-  const renderStateBox = (pos: PositionedState, x: number, align: 'left' | 'right') => {
-    const { state, y, boxHeight } = pos;
+  const renderStateBox = (state: StateData, index: number, column: Column) => {
     const isActive = state.id === activeStateId;
-    const isMatchTarget = activeStateId && activeMatchIds.has(state.id) && !isActive;
-    const isDimmed = activeStateId && !activeMatchIds.has(state.id);
-    const isSelected = selectedPairKeys.has(pairKey(activeStateId ?? '', state.id)) ||
-      selectedMatches.some(([a, b]) => a === state.id || b === state.id);
-    const partisanColor = getPartisanColor(state);
-    const dark = Math.abs(state.partisanLean) > 10;
-    const leanTextColor = dark ? '#fff' : '#333';
-    const borderWidth = isActive ? 3 : isSelected ? 2.5 : 2;
-    const dividerPad = 6;
+    const partner = partnerById.get(state.id);
+    const isMatched = !!partner;
+    const partisanColor = leanColorScale(state.partisanLean);
+    const leanTextColor = Math.abs(state.partisanLean) > 10 ? '#fff' : '#333';
+    const isLeft = column === 'left';
 
-    const boxX = align === 'left' ? x - BOX_WIDTH : x;
+    const boxX = isLeft ? LEFT_BOX_X : RIGHT_BOX_X;
+    const boxY = TOP_PAD + index * ROW_H;
+
+    const leanText = formatLean(state.partisanLean);
+    const badgeW = leanText.length * 5.5 + 8;
+    const badgeH = 13;
+    // Left column reads name→badge, right column mirrors it
+    const badgeX = isLeft ? BOX_W - 5 - badgeW : 5;
+    const nameX = isLeft ? 6 : BOX_W - 6;
+    const nameAnchor = isLeft ? 'start' : 'end';
+
+    const enacted = stateSafeSeats[state.id];
+    const alt = enacted ? alternateMapSafeSeats[state.id] || enacted : null;
+    const repGapSeats = isMatched ? 0 : repGapOf(state);
+    const safeSeats = isMatched && alt ? alt.safeSeats : enacted?.safeSeats ?? 0;
+
+    const tagLabel = partner ? `✓ ${partner.id}` : '';
+    const tagW = tagLabel.length * 5.5 + 10;
+
     return (
       <g
         key={state.id}
-        className={`state-box-group ${isActive ? 'active' : ''} ${isDimmed ? 'dimmed' : ''}`}
-        onClick={(e) => handleStateClick(state, e)}
-        style={{ cursor: 'pointer' }}
+        className={`state-box ${isActive ? 'active' : ''} ${isMatched ? 'matched' : ''}`}
+        style={{ transform: `translate(${boxX}px, ${boxY}px)` }}
+        onClick={e => handleStateClick(state, e)}
       >
-        {/* White fill box */}
+        <rect x={0} y={0} width={BOX_W} height={BOX_H} fill="white" rx={3} />
         <rect
-          x={boxX}
-          y={y}
-          width={BOX_WIDTH}
-          height={boxHeight}
-          fill="white"
-          rx={3}
-        />
-        {/* Thick partisan-colored border */}
-        <rect
-          x={boxX}
-          y={y}
-          width={BOX_WIDTH}
-          height={boxHeight}
+          x={0}
+          y={0}
+          width={BOX_W}
+          height={BOX_H}
           fill="none"
-          stroke={
-            isActive ? '#000' :
-            isSelected ? '#c9a227' :
-            isMatchTarget ? '#666' : partisanColor
-          }
-          strokeWidth={borderWidth}
+          stroke={isActive ? '#000' : isMatched ? MATCH_GOLD : partisanColor}
+          strokeWidth={isActive ? 3 : isMatched ? 2.5 : 2}
           rx={3}
         />
-        {isSelected && (
+        {isMatched && (
           <rect
-            x={boxX - 2}
-            y={y - 2}
-            width={BOX_WIDTH + 4}
-            height={boxHeight + 4}
+            x={-2}
+            y={-2}
+            width={BOX_W + 4}
+            height={BOX_H + 4}
             fill="none"
-            stroke="#c9a227"
+            stroke={MATCH_GOLD}
             strokeWidth={2}
             rx={4}
             opacity={0.6}
           />
         )}
-        {/* Divider line (inset from edges) */}
+
+        {/* Delegation size, on the outer edge of the column */}
+        <text
+          x={isLeft ? -6 : BOX_W + 6}
+          y={BOX_H / 2}
+          textAnchor={isLeft ? 'end' : 'start'}
+          dominantBaseline="central"
+          fontSize={10}
+          fill="#999"
+        >
+          {state.districts2022}
+        </text>
+
         <line
-          x1={boxX + dividerPad}
-          y1={y + HEADER_HEIGHT}
-          x2={boxX + BOX_WIDTH - dividerPad}
-          y2={y + HEADER_HEIGHT}
+          x1={6}
+          y1={HEADER_HEIGHT}
+          x2={BOX_W - 6}
+          y2={HEADER_HEIGHT}
           stroke="rgba(0,0,0,0.15)"
           strokeWidth={0.5}
         />
-        {/* Lean badge and state name — flipped for left (D) vs right (R) */}
-        {(() => {
-          const leanText = formatLean(state.partisanLean);
-          const badgeW = leanText.length * 5.5 + 8;
-          const badgeH = 13;
-          const badgeY = y + 10 - badgeH / 2;
-          const isLeft = align === 'left';
-          // Left column: name on left, badge on right
-          // Right column: badge on left, name on right
-          const badgeX = isLeft ? boxX + BOX_WIDTH - 5 - badgeW : boxX + 5;
-          const nameX = isLeft ? boxX + 6 : boxX + BOX_WIDTH - 6;
-          const nameAnchor = isLeft ? 'start' : 'end';
-          return (
-            <>
-              <rect
-                x={badgeX}
-                y={badgeY}
-                width={badgeW}
-                height={badgeH}
-                fill={partisanColor}
-                rx={2.5}
-              />
-              <text
-                x={badgeX + badgeW / 2}
-                y={y + 10}
-                textAnchor="middle"
-                dominantBaseline="central"
-                fontSize={9}
-                fill={leanTextColor}
-                fontWeight={600}
-              >
-                {leanText}
-              </text>
-              <text
-                x={nameX}
-                y={y + 10}
-                textAnchor={nameAnchor}
-                dominantBaseline="central"
-                fontSize={10}
-                fill="#333"
-                fontWeight={isActive ? 600 : 500}
-              >
-                {state.name}
-              </text>
-            </>
-          );
-        })()}
 
-        {(() => {
-          const enacted = stateSafeSeats[state.id];
-          if (!enacted) return null;
-          const alt = alternateMapSafeSeats[state.id] || enacted;
-          const matched = isSelected;
-          const repGapSeats = matched ? 0 : Math.max(0, getMinoritySeatGain(state) ?? 0);
-          const safeSeats = matched ? alt.safeSeats : enacted.safeSeats;
-          const statX = boxX + 6;
-          const repGapColor = greenGoldScale(repGapSeats / 5);
-          const safeSeatsColor = greenGoldScale(safeSeats / state.districts2022);
-          return (
-            <>
-              <text x={statX} y={y + HEADER_HEIGHT + 11} textAnchor="start" dominantBaseline="central" fontSize={9} fontWeight={600}>
-                <tspan fill={repGapColor} fontWeight={700} fontSize={11}><AnimatedCount value={repGapSeats} /></tspan>
-                <tspan fill="#666" letterSpacing="0.5"> REP. GAP &</tspan>
-              </text>
-              <text x={statX} y={y + HEADER_HEIGHT + 24} textAnchor="start" dominantBaseline="central" fontSize={9} fontWeight={600}>
-                <tspan fill={safeSeatsColor} fontWeight={700} fontSize={11}><AnimatedCount value={safeSeats} /></tspan>
-                <tspan fill="#666" letterSpacing="0.5"> SAFE SEATS</tspan>
-              </text>
-            </>
-          );
-        })()}
+        <rect x={badgeX} y={10 - badgeH / 2} width={badgeW} height={badgeH} fill={partisanColor} rx={2.5} />
+        <text
+          x={badgeX + badgeW / 2}
+          y={10}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fontSize={9}
+          fill={leanTextColor}
+          fontWeight={600}
+        >
+          {leanText}
+        </text>
+        <text
+          x={nameX}
+          y={10}
+          textAnchor={nameAnchor}
+          dominantBaseline="central"
+          fontSize={10}
+          fill="#333"
+          fontWeight={isActive ? 600 : 500}
+        >
+          {state.name}
+        </text>
+
+        {enacted && (
+          <>
+            <text x={6} y={HEADER_HEIGHT + 11} textAnchor="start" dominantBaseline="central" fontSize={9} fontWeight={600}>
+              <tspan fill={greenGoldScale(repGapSeats / 5)} fontWeight={700} fontSize={11}>
+                <AnimatedCount value={repGapSeats} />
+              </tspan>
+              <tspan fill="#666" letterSpacing="0.5"> REP. GAP &</tspan>
+            </text>
+            <text x={6} y={HEADER_HEIGHT + 24} textAnchor="start" dominantBaseline="central" fontSize={9} fontWeight={600}>
+              <tspan fill={greenGoldScale(safeSeats / state.districts2022)} fontWeight={700} fontSize={11}>
+                <AnimatedCount value={safeSeats} />
+              </tspan>
+              <tspan fill="#666" letterSpacing="0.5"> SAFE SEATS</tspan>
+            </text>
+          </>
+        )}
+
+        {partner && (
+          <>
+            <rect
+              x={BOX_W - 6 - tagW}
+              y={BOX_H - 5 - 12}
+              width={tagW}
+              height={12}
+              fill={MATCH_GOLD}
+              rx={2.5}
+            />
+            <text
+              x={BOX_W - 6 - tagW / 2}
+              y={BOX_H - 5 - 6}
+              textAnchor="middle"
+              dominantBaseline="central"
+              fontSize={8.5}
+              fontWeight={700}
+              fill="#fff"
+            >
+              {tagLabel}
+            </text>
+          </>
+        )}
       </g>
     );
   };
 
-  const renderMatchLine = (line: MatchLine, index: number) => {
-    const { fromState, toState, fromY, toY, fromX, toX } = line;
-
-    const isRelatedLine = !activeStateId ||
-      fromState.id === activeStateId ||
-      toState.id === activeStateId;
-
-    const pk = pairKey(fromState.id, toState.id);
-    const isPairSelected = selectedPairKeys.has(pk);
-
-    const controlX = (LEFT_X + RIGHT_X) / 2;
-
-    return (
-      <path
-        key={`${fromState.id}-${toState.id}-${index}`}
-        d={`M ${fromX} ${fromY} C ${controlX} ${fromY}, ${controlX} ${toY}, ${toX} ${toY}`}
-        fill="none"
-        stroke={isPairSelected ? '#c9a227' : '#ccc'}
-        strokeWidth={isPairSelected ? 3 : 1.5}
-        strokeOpacity={isPairSelected ? 1 : isRelatedLine ? 0.7 : 0.15}
-        className={`match-line ${!isRelatedLine && !isPairSelected ? 'dimmed' : ''}`}
-      />
-    );
-  };
-
-  const leftDistrictLabels = useMemo(() => {
-    const groups = new Map<number, { minY: number; maxY: number }>();
-    for (const pos of leftPositions) {
-      const d = getDistricts(pos.state);
-      const existing = groups.get(d);
-      if (existing) {
-        existing.minY = Math.min(existing.minY, pos.y);
-        existing.maxY = Math.max(existing.maxY, pos.y + pos.boxHeight);
-      } else {
-        groups.set(d, { minY: pos.y, maxY: pos.y + pos.boxHeight });
-      }
-    }
-    return Array.from(groups.entries()).map(([districts, { minY, maxY }]) => ({
-      districts,
-      centerY: (minY + maxY) / 2,
-    }));
-  }, [leftPositions]);
-
-  const rightDistrictLabels = useMemo(() => {
-    const groups = new Map<number, { minY: number; maxY: number }>();
-    for (const pos of rightPositions) {
-      const d = getDistricts(pos.state);
-      const existing = groups.get(d);
-      if (existing) {
-        existing.minY = Math.min(existing.minY, pos.y);
-        existing.maxY = Math.max(existing.maxY, pos.y + pos.boxHeight);
-      } else {
-        groups.set(d, { minY: pos.y, maxY: pos.y + pos.boxHeight });
-      }
-    }
-    return Array.from(groups.entries()).map(([districts, { minY, maxY }]) => ({
-      districts,
-      centerY: (minY + maxY) / 2,
-    }));
-  }, [rightPositions]);
-
-  if (groupStates.length === 0) return null;
-
   return (
     <div className="bipartite-graph-wrapper">
-      <div style={{ textAlign: 'center', fontSize: 11, color: '#999', marginBottom: 4 }}>
-        {activeStateId ? 'Click a highlighted match to select the pair' : 'Click a state to see its matches'}
+      <div className="graph-instruction">
+        {activeState
+          ? `Click a state on the ${columnOf.get(activeState.id) === 'left' ? 'right' : 'left'} to form a pact with ${activeState.name}`
+          : 'Click a state to rank the other column by closest representation gap'}
       </div>
-      <svg viewBox={`0 0 390 ${totalHeight}`} className="bipartite-graph">
-        {/* District count labels */}
-        {leftDistrictLabels.map(({ districts, centerY }) => (
-          <text
-            key={`left-${districts}`}
-            x={LEFT_X - BOX_WIDTH - 8}
-            y={centerY}
-            textAnchor="end"
-            dominantBaseline="central"
-            fontSize={10}
-            fill="#999"
-          >
-            {districts}
-          </text>
-        ))}
-        {rightDistrictLabels.map(({ districts, centerY }) => (
-          <text
-            key={`right-${districts}`}
-            x={RIGHT_X + BOX_WIDTH + 8}
-            y={centerY}
-            textAnchor="start"
-            dominantBaseline="central"
-            fontSize={10}
-            fill="#999"
-          >
-            {districts}
-          </text>
-        ))}
+      <svg viewBox={`0 0 ${VIEW_W} ${totalHeight}`} className="bipartite-graph">
+        <text x={LEFT_BOX_X} y={COLUMN_LABEL_Y} fontSize={9} fontWeight={700} fill="#999" letterSpacing="0.08em">
+          DEMOCRATIC-LEANING
+        </text>
+        <text
+          x={RIGHT_BOX_X + BOX_W}
+          y={COLUMN_LABEL_Y}
+          textAnchor="end"
+          fontSize={9}
+          fontWeight={700}
+          fill="#999"
+          letterSpacing="0.08em"
+        >
+          REPUBLICAN-LEANING
+        </text>
 
-        {/* Match lines (behind boxes) */}
-        <g className="match-lines">
-          {matchLines.map((line, i) => renderMatchLine(line, i))}
-        </g>
-
-        {/* State boxes */}
         <g className="left-column">
-          {leftPositions.map(pos => renderStateBox(pos, LEFT_X, 'left'))}
+          {leftOrder.map((state, i) => renderStateBox(state, i, 'left'))}
         </g>
         <g className="right-column">
-          {rightPositions.map(pos => renderStateBox(pos, RIGHT_X, 'right'))}
+          {rightOrder.map((state, i) => renderStateBox(state, i, 'right'))}
         </g>
       </svg>
       {footnote && <p className="graph-footnote">{footnote}</p>}

@@ -1,13 +1,10 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { HeroMap } from './components/HeroMap';
-import { ResultMap } from './components/ResultMap';
-import { BipartiteMatchGraph, bigFourStates, midSmallStates, midSmallFootnote } from './components/BipartiteMatchGraph';
+import { BipartiteMatchGraph, matchFootnote } from './components/BipartiteMatchGraph';
 import { RatingsBar } from './components/RatingsBar';
 import { StateTooltip } from './components/StateTooltip';
 import { useTopoData } from './hooks/useTopoData';
 import { computeAdjustedSafeSeats } from './utils/computeTruceAdjustment';
-import { stateSafeSeats } from './data/districtData/safeSeats';
-import { computeNationalRepresentationGap } from './utils/computeRepresentationGap';
 import { HoveredState, MatchPair } from './types';
 
 function pairKey(a: string, b: string): string {
@@ -17,21 +14,13 @@ function pairKey(a: string, b: string): string {
 function App() {
   const [hoveredState, setHoveredState] = useState<HoveredState | null>(null);
   const [selectedMatches, setSelectedMatches] = useState<MatchPair[]>([]);
+  const [started, setStarted] = useState(false);
+  const columnsRef = useRef<HTMLDivElement>(null);
   const topoData = useTopoData();
 
   const adjustedSafeSeats = useMemo(
     () => computeAdjustedSafeSeats(selectedMatches),
     [selectedMatches],
-  );
-
-  const baselineNationalRepresentationGap = useMemo(
-    () => computeNationalRepresentationGap(stateSafeSeats),
-    [],
-  );
-
-  const nationalRepresentationGapReduced = useMemo(
-    () => baselineNationalRepresentationGap - computeNationalRepresentationGap(adjustedSafeSeats),
-    [adjustedSafeSeats, baselineNationalRepresentationGap],
   );
 
   const handleToggleMatch = useCallback((pair: MatchPair) => {
@@ -41,7 +30,7 @@ function App() {
       if (exists) {
         return prev.filter(([a, b]) => pairKey(a, b) !== pk);
       }
-      // Remove any existing matches involving either state
+      // A state can only hold one pact — drop any it is already part of
       const filtered = prev.filter(([a, b]) =>
         a !== pair[0] && b !== pair[0] && a !== pair[1] && b !== pair[1]
       );
@@ -49,111 +38,50 @@ function App() {
     });
   }, []);
 
+  // Ride the columns' entrance animation up the page
+  useEffect(() => {
+    if (!started) return;
+    columnsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [started]);
+
   return (
-    <article className="article">
-      <header className="article-header">
-        <h1>
-          <span className="headline-kicker">How to End Gerrymandering:</span>
-          <span className="headline-title">Mutually Assured Representation</span>
-        </h1>
-        <p className="article-subtitle">
-          An interactive guide to matching Democratic states with Republican states one truce at a time, to draw down their arms and redistrict in unison
-        </p>
-      </header>
-
-      <section className="hero-section">
-        <HeroMap topoData={topoData} onHoverState={setHoveredState} />
-      </section>
-
-      <section className="article-body">
-        <p>
-          Every ten years, state legislatures redraw congressional districts.
-          In most states, the party in power draws maps that favor their own
-          candidates — a practice known as <strong>gerrymandering</strong>.
-        </p>
-        <p>
-          The result is a distorted House of Representatives where
-          the party balance doesn't reflect the popular vote. Both parties
-          gerrymander where they can, and neither side wants to disarm alone.
-        </p>
-        <p>
-          But what if two states with <em>equal and opposite</em> partisan
-          advantages agreed to reform together? A blue state that gains
-          extra Democratic seats could pair with a red state that gains
-          the same number of extra Republican seats. If both adopt
-          independent redistricting commissions, neither party loses
-          net seats nationally.
-        </p>
-        <p>
-          That's the idea behind <strong>Mutually Assured Representation</strong>:
-          identify matching pairs of states where de-escalation is a fair deal
-          for both sides. Below, we've grouped states by size and found the
-          best matches within each group.
-        </p>
-        <p>
-          <strong>Click a state</strong> in any of the match graphs below to see
-          its potential partners, then <strong>click a partner</strong> to select
-          that pair. Your selections will appear on the de-escalation map at the bottom.
-        </p>
-      </section>
-
-      <div className="visualization-wide">
-        <BipartiteMatchGraph
-          groupStates={bigFourStates}
-          selectedMatches={selectedMatches}
-          onToggleMatch={handleToggleMatch}
-        />
-      </div>
-
-      <section className="article-body">
-        <p>
-          The bar below tracks the national House seat balance as you build
-          your pact map. Each match you select replaces gerrymandered maps with
-          proportional ones — closing the representation gap between what
-          each state's vote share warrants and how seats are actually allocated.
-          The balance between parties stays the same; only the representation gap changes.
-        </p>
-      </section>
-
+    <div className="app">
       <RatingsBar adjustedSafeSeats={adjustedSafeSeats} />
 
-      <div className="visualization-wide">
-        <BipartiteMatchGraph
-          groupStates={midSmallStates}
+      <section className="hero-section">
+        <HeroMap
+          topoData={topoData}
+          onHoverState={setHoveredState}
           selectedMatches={selectedMatches}
-          onToggleMatch={handleToggleMatch}
-          footnote={midSmallFootnote}
+          adjustedSafeSeats={adjustedSafeSeats}
         />
+      </section>
+
+      <div className="action-row">
+        {!started ? (
+          <button className="start-btn" onClick={() => setStarted(true)}>
+            Start
+          </button>
+        ) : (
+          selectedMatches.length > 0 && (
+            <button className="clear-matches-btn" onClick={() => setSelectedMatches([])}>
+              Clear all pacts
+            </button>
+          )
+        )}
       </div>
 
-      {selectedMatches.length > 0 && (
-        <div className="clear-matches-row">
-          <button
-            className="clear-matches-btn"
-            onClick={() => setSelectedMatches([])}
-          >
-            Clear all selections
-          </button>
+      {started && (
+        <div className="match-columns-viewport" ref={columnsRef}>
+          <div className="visualization-wide match-columns">
+            <BipartiteMatchGraph
+              selectedMatches={selectedMatches}
+              onToggleMatch={handleToggleMatch}
+              footnote={matchFootnote}
+            />
+          </div>
         </div>
       )}
-
-<section className="result-section">
-        <div className="article-text">
-          <h2>Your De-escalation Map</h2>
-          <p>
-            The map below shows the match pairs you've selected. Gold arcs connect
-            paired states — each arc represents one potential interstate pact.
-          </p>
-        </div>
-        <div className="visualization-full">
-          <ResultMap
-            topoData={topoData}
-            selectedMatches={selectedMatches}
-            adjustedSafeSeats={adjustedSafeSeats}
-            nationalRepresentationGapReduced={nationalRepresentationGapReduced}
-          />
-        </div>
-      </section>
 
       <footer className="article-footer">
         <p>
@@ -163,7 +91,7 @@ function App() {
       </footer>
 
       {hoveredState && <StateTooltip hoveredState={hoveredState} />}
-    </article>
+    </div>
   );
 }
 

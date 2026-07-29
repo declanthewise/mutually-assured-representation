@@ -1,31 +1,6 @@
-import { useMemo, useState, useEffect, useRef } from 'react';
+import { useMemo } from 'react';
 import type { SafeSeatCounts } from '../data/districtData/safeSeats';
-
-function AnimatedNumber({ value }: { value: number }) {
-  const [display, setDisplay] = useState(value);
-  const prev = useRef(value);
-
-  useEffect(() => {
-    const from = prev.current;
-    const to = value;
-    prev.current = value;
-    if (from === to) return;
-
-    const duration = 400;
-    const start = performance.now();
-    let raf: number;
-
-    const tick = (now: number) => {
-      const t = Math.min((now - start) / duration, 1);
-      setDisplay(Math.round(from + (to - from) * t));
-      if (t < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [value]);
-
-  return <>{display}</>;
-}
+import { AnimatedCount } from './AnimatedCount';
 
 const TOTAL_SEATS = 435;
 const MAJORITY = 218;
@@ -75,19 +50,19 @@ export function RatingsBar({ adjustedSafeSeats }: RatingsBarProps) {
         </div>
         <div className="ratings-bar">
           <div className="ratings-bar-segment segment-d" style={{ width: `${pctD}%` }}>
-            <AnimatedNumber value={totals.safeD} />
+            <AnimatedCount value={totals.safeD} />
           </div>
           <div className="ratings-bar-segment segment-lean-d" style={{ width: `${pctLeanD}%` }}>
-            <AnimatedNumber value={totals.leanD} />
+            <AnimatedCount value={totals.leanD} />
           </div>
           <div className="ratings-bar-segment segment-even" style={{ width: `${pctEven}%` }}>
-            <AnimatedNumber value={totals.even} />
+            <AnimatedCount value={totals.even} />
           </div>
           <div className="ratings-bar-segment segment-lean-r" style={{ width: `${pctLeanR}%` }}>
-            <AnimatedNumber value={totals.leanR} />
+            <AnimatedCount value={totals.leanR} />
           </div>
           <div className="ratings-bar-segment segment-r" style={{ width: `${pctR}%` }}>
-            <AnimatedNumber value={totals.safeR} />
+            <AnimatedCount value={totals.safeR} />
           </div>
         </div>
         <div
