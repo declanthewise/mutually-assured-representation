@@ -86,3 +86,10 @@ export const nationalSeatTotals = Object.values(stateSafeSeats).reduce(
   }),
   { rSeats: 0, dSeats: 0, even: 0 },
 );
+
+/**
+ * The enacted map's seat-lean margin, positive for R. A pact returns the same
+ * number of seats to each side, so this never moves — which is the argument.
+ */
+export const houseBalance = nationalSeatTotals.rSeats - nationalSeatTotals.dSeats;
+export const houseBalanceParty = houseBalance >= 0 ? 'R' : 'D';

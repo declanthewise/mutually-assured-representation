@@ -1,6 +1,5 @@
 import { HoveredState } from '../types';
-
-const PARTY_COLORS = { R: '#c93135', D: '#2e6da4' };
+import { FAIR_GREEN, GAP_GOLD, PARTY_COLORS } from '../colors';
 
 interface StateTooltipProps {
   hoveredState: HoveredState;
@@ -9,7 +8,7 @@ interface StateTooltipProps {
 }
 
 function repGapColor(absGap: number): string {
-  return absGap === 0 ? '#2ca25f' : '#e8a832';
+  return absGap === 0 ? FAIR_GREEN : GAP_GOLD;
 }
 
 export function StateTooltip({ hoveredState, residualGaps }: StateTooltipProps) {
@@ -22,7 +21,7 @@ export function StateTooltip({ hoveredState, residualGaps }: StateTooltipProps) 
 
   let content: React.ReactNode;
   if (absGap === 0) {
-    content = <>{state.name} is<br />represented <span style={{ color: '#2ca25f', fontWeight: 700 }}>proportionally</span></>;
+    content = <>{state.name} is<br />represented <span style={{ color: FAIR_GREEN, fontWeight: 700 }}>proportionally</span></>;
   } else {
     const seats = absGap === 1 ? 'seat' : 'seats';
     const minorityOverRep = (gap > 0 && state.partisanLean > 0) || (gap < 0 && state.partisanLean < 0);

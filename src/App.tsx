@@ -1,6 +1,7 @@
-import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { HeroMap } from './components/HeroMap';
-import { BipartiteMatchGraph, matchFootnote } from './components/BipartiteMatchGraph';
+import { BipartiteMatchGraph } from './components/BipartiteMatchGraph';
+import { ResultsPanel } from './components/ResultsPanel';
 import { StatBar } from './components/StatBar';
 import { StateTooltip } from './components/StateTooltip';
 import { useTopoData } from './map/useTopoData';
@@ -18,7 +19,7 @@ function App() {
   const [hoveredState, setHoveredState] = useState<HoveredState | null>(null);
   const [selectedMatches, setSelectedMatches] = useState<MatchPair[]>([]);
   const [started, setStarted] = useState(false);
-  const columnsRef = useRef<HTMLDivElement>(null);
+  const [finished, setFinished] = useState(false);
   const topoData = useTopoData();
 
   const residualGaps = useMemo(
@@ -46,17 +47,12 @@ function App() {
     });
   }, []);
 
-  // Ride the columns' entrance animation up the page
-  useEffect(() => {
-    if (!started) return;
-    columnsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, [started]);
-
   return (
     <div className="app">
       <StatBar nationalRepresentationGap={nationalRepresentationGap} />
 
-      <section className="hero-section">
+      {/* The map gives up some width once the columns arrive, so they sit higher. */}
+      <section className={`hero-section${started ? ' compact' : ''}`}>
         <HeroMap
           topoData={topoData}
           onHoverState={setHoveredState}
@@ -65,40 +61,59 @@ function App() {
         />
       </section>
 
-      <div className="action-row">
-        {!started ? (
+      {/* The title yields the space to the columns once the user starts. */}
+      {!started && (
+        <header className="app-title">
+          <h1>
+            <span className="app-title-kicker">The Road to Proportionality:</span>
+            <span className="app-title-name">Mutually Assured Representation</span>
+          </h1>
+        </header>
+      )}
+
+      {/* The row exists only to hold Start; Finish lives under the columns. */}
+      {!started && (
+        <div className="action-row">
           <button className="start-btn" onClick={() => setStarted(true)}>
             Start
           </button>
-        ) : (
-          selectedMatches.length > 0 && (
-            <button className="clear-matches-btn" onClick={() => setSelectedMatches([])}>
-              Clear all pacts
-            </button>
-          )
-        )}
-      </div>
+        </div>
+      )}
 
-      {started && (
-        <div className="match-columns-viewport" ref={columnsRef}>
-          <div className="visualization-wide match-columns">
-            <BipartiteMatchGraph
-              selectedMatches={selectedMatches}
-              onToggleMatch={handleToggleMatch}
-              residualGaps={residualGaps}
-              footnote={matchFootnote}
-            />
+      {started && !finished && (
+        <>
+          <div className="match-columns-viewport">
+            <div className="visualization-wide match-columns">
+              <BipartiteMatchGraph
+                selectedMatches={selectedMatches}
+                onToggleMatch={handleToggleMatch}
+                residualGaps={residualGaps}
+              />
+            </div>
           </div>
+
+          <div className="finish-row">
+            <button className="finish-btn" onClick={() => setFinished(true)}>
+              Finish
+            </button>
+          </div>
+        </>
+      )}
+
+      {finished && (
+        <div className="visualization-wide match-columns">
+          <ResultsPanel
+            selectedMatches={selectedMatches}
+            nationalRepresentationGap={nationalRepresentationGap}
+            onResume={() => setFinished(false)}
+          />
         </div>
       )}
 
       <footer className="article-footer">
         <p>
-          By Declan Fitzsimons. Data:{' '}
-          <a href="https://www.cookpolitical.com/cook-pvi/2026-partisan-voting-index/district-map-and-list" target="_blank" rel="noopener noreferrer">2026 Cook PVI</a>{' '}
-          for district partisan leans and{' '}
-          <a href="https://www.cookpolitical.com/cook-pvi" target="_blank" rel="noopener noreferrer">Cook PVI</a>{' '}
-          for statewide partisan leans.
+          By Declan Fitzsimons. Data: 2026 district and 2025 state partisan leans come from{' '}
+          <a href="https://www.cookpolitical.com/cook-pvi/2026-partisan-voting-index/district-map-and-list" target="_blank" rel="noopener noreferrer">The Cook Political Report</a>.
         </p>
       </footer>
 

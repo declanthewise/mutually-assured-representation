@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
 import { HoveredState, MatchPair } from '../types';
+import { FAIR_GREEN, LEAN_DOMAIN, LEAN_RANGE } from '../colors';
 import { stateDataById } from '../data/stateData';
 import { pactSeatsReturned } from '../data/computeRepresentationGap';
 import { fipsToState } from '../map/fipsMapping';
@@ -16,13 +17,12 @@ interface HeroMapProps {
 
 const WIDTH = 960;
 const HEIGHT = 600;
+/** Breathing room left around the cropped map bounds. */
+const VIEW_PAD = 4;
 
 const MAX_REP_GAP = 16;
 const MAX_ICON_RADIUS = 70;
 const BADGE_RADIUS = 17;
-
-const MATCH_GOLD = '#c9a227';
-const MATCH_GREEN = '#2ca25f';
 
 function featureStateId(feature: any): string {
   return fipsToState[feature.id.toString().padStart(2, '0')];
@@ -33,7 +33,6 @@ export function HeroMap({ topoData, onHoverState, selectedMatches, residualGaps 
   const onHoverStateRef = useRef(onHoverState);
   const pathRef = useRef<d3.GeoPath | null>(null);
   const centroidsRef = useRef(new Map<string, [number, number]>());
-  const matchedIdsRef = useRef(new Set<string>());
   const builtRef = useRef(false);
 
   const matchedStateIds = useMemo(() => {
@@ -49,27 +48,31 @@ export function HeroMap({ topoData, onHoverState, selectedMatches, residualGaps 
     onHoverStateRef.current = onHoverState;
   }, [onHoverState]);
 
-  // Keep the hover handlers (bound once) reading the latest match set.
-  matchedIdsRef.current = matchedStateIds;
-
   // --- Build: geometry, state shapes and the layer stack. Runs once per topology.
   useLayoutEffect(() => {
     if (!svgRef.current || !topoData) return;
 
     const svg = d3.select(svgRef.current);
     svg.selectAll('*').remove();
-    svg.attr('viewBox', `0 0 ${WIDTH} ${HEIGHT}`);
 
     // Red/blue based on partisan lean (negative = R, positive = D)
     const leanColorScale = d3.scaleLinear<string>()
-      .domain([-20, 0, 20])
-      .range(['#c93135', '#f0f0f0', '#2e6da4'])
+      .domain(LEAN_DOMAIN)
+      .range(LEAN_RANGE)
       .clamp(true);
 
     const states = topojson.feature(topoData, topoData.objects.states);
     const projection = d3.geoAlbersUsa().fitSize([WIDTH, HEIGHT], states as any);
     const path = d3.geoPath().projection(projection);
     pathRef.current = path;
+
+    // The AlbersUsa fit is width-bound, so it leaves ~19 units of dead space
+    // above and below the geometry. Crop to what's actually drawn — clouds stay
+    // inside these bounds, since they're centered on state centroids.
+    const [[, minY], [, maxY]] = path.bounds(states as any);
+    const viewTop = Math.max(0, minY - VIEW_PAD);
+    const viewBottom = Math.min(HEIGHT, maxY + VIEW_PAD);
+    svg.attr('viewBox', `0 ${viewTop} ${WIDTH} ${viewBottom - viewTop}`);
 
     const centroids = new Map<string, [number, number]>();
     for (const feature of (states as any).features) {
@@ -105,11 +108,8 @@ export function HeroMap({ topoData, onHoverState, selectedMatches, residualGaps 
         if (!data) return;
         onHoverStateRef.current({ state: data, x: event.clientX, y: event.clientY });
       })
-      .on('mouseleave', function (_event: MouseEvent, d: any) {
-        const matched = matchedIdsRef.current.has(featureStateId(d));
-        d3.select(this)
-          .attr('stroke', matched ? MATCH_GOLD : '#fff')
-          .attr('stroke-width', matched ? 2.5 : 1);
+      .on('mouseleave', function () {
+        d3.select(this).attr('stroke', '#fff').attr('stroke-width', 1);
         onHoverStateRef.current(null);
       });
 
@@ -157,9 +157,12 @@ export function HeroMap({ topoData, onHoverState, selectedMatches, residualGaps 
       .domain([0, MAX_REP_GAP])
       .range([0, MAX_ICON_RADIUS]);
 
-    // Clouds track the gap that survives the pacts — a fully offset state clears.
+    // Clouds track the gap, but a pact always clears both partners' — the badge
+    // takes over from there, even where some gap survives the pact.
     const cloudDiameter = (d: any) => {
-      const repGap = Math.abs(residualGaps[featureStateId(d)] ?? 0);
+      const stateId = featureStateId(d);
+      if (matchedStateIds.has(stateId)) return 0;
+      const repGap = Math.abs(residualGaps[stateId] ?? 0);
       return repGap > 0 ? repGapRadius(repGap) * 2 : 0;
     };
 
@@ -173,14 +176,7 @@ export function HeroMap({ topoData, onHoverState, selectedMatches, residualGaps 
       .attr('x', (d: any) => path.centroid(d)[0] - cloudDiameter(d) / 2)
       .attr('y', (d: any) => path.centroid(d)[1] - cloudDiameter(d) / 2);
 
-    svg.select('.state-shapes')
-      .selectAll<SVGPathElement, any>('path')
-      .transition()
-      .duration(400)
-      .attr('stroke', (d: any) => (matchedStateIds.has(featureStateId(d)) ? MATCH_GOLD : '#fff'))
-      .attr('stroke-width', (d: any) => (matchedStateIds.has(featureStateId(d)) ? 2.5 : 1));
-
-    // Gold arcs tie each pact together
+    // Green arcs tie each pact together
     const arcData = selectedMatches
       .map(([a, b]) => ({ key: [a, b].slice().sort().join('-'), c1: centroids.get(a), c2: centroids.get(b) }))
       .filter((d): d is { key: string; c1: [number, number]; c2: [number, number] } => !!d.c1 && !!d.c2);
@@ -199,7 +195,7 @@ export function HeroMap({ topoData, onHoverState, selectedMatches, residualGaps 
       .join(
         enter => enter.append('path')
           .attr('fill', 'none')
-          .attr('stroke', MATCH_GOLD)
+          .attr('stroke', FAIR_GREEN)
           .attr('stroke-width', 2.5)
           .attr('stroke-linecap', 'round')
           .attr('opacity', 0)
@@ -227,7 +223,7 @@ export function HeroMap({ topoData, onHoverState, selectedMatches, residualGaps 
             .attr('opacity', 0);
           g.append('circle')
             .attr('r', BADGE_RADIUS)
-            .attr('fill', MATCH_GREEN)
+            .attr('fill', FAIR_GREEN)
             .attr('stroke', '#fff')
             .attr('stroke-width', 2.5);
           g.append('text')
@@ -247,15 +243,5 @@ export function HeroMap({ topoData, onHoverState, selectedMatches, residualGaps 
       .text(d => (d.gain > 0 ? `+${d.gain}` : '0'));
   }, [topoData, selectedMatches, matchedStateIds, residualGaps]);
 
-  return (
-    <>
-      <svg ref={svgRef} className="hero-map" />
-      <p className="hero-map-caption">
-        Note: States colored by partisan lean (2026 Cook PVI). Clouds sized by representation gap — the difference
-        between the seats each party wins under the enacted district PVIs and the seats it would win under a
-        proportional split of the state's own Cook PVI. A pact unwinds the lesser of its two partners' gaps in both
-        states at once; the green badge counts the seats returned in each, and whatever gap survives keeps its cloud.
-      </p>
-    </>
-  );
+  return <svg ref={svgRef} className="hero-map" />;
 }

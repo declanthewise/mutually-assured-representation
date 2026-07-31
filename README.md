@@ -52,14 +52,15 @@ npm run preview  # preview the production build
 
 ## Data
 
-Everything partisan comes from Cook PVI. State and district figures share one definition, which is
-what makes the representation gap well defined — there is no second methodology in the repo.
+Everything partisan comes from Cook PVI: 2026 district leans and 2025 state leans, the latest
+published for each. State and district figures share one definition, which is what makes the
+representation gap well defined — there is no second methodology in the repo.
 
 ```
 src/data/
 ├── cook2026DistrictPVI.tsv         # 2026 Cook PVI, all 435 districts
 ├── districtLeans.ts                # Parses that file into per-state seat counts
-├── stateData.ts                    # 50 states: Cook PVI, seat count, map-drawing authority
+├── stateData.ts                    # 50 states: 2025 Cook PVI, seat count, map-drawing authority
 └── computeRepresentationGap.ts     # Per-state gaps, pact math, national total
 ```
 
@@ -72,9 +73,10 @@ bundle.
 
 Two fields drive the representation gap:
 
-- `partisanLean` — the **statewide Cook PVI**, signed so positive is D. Redistricting doesn't move a
-  statewide PVI (it's the state's own presidential vote versus the nation's), so the 2026 release
-  left these unchanged from 2025.
+- `partisanLean` — the **2025 statewide Cook PVI**, signed so positive is D. Redistricting doesn't
+  move a statewide PVI (it's the state's own presidential vote versus the nation's), so pairing 2025
+  state figures with 2026 district figures is sound: the 2026 release left the statewide numbers
+  unchanged.
 - `districts2022` — seat count under the 2022 apportionment.
 
 The rest describe **who controls map-drawing**, and are deliberately kept despite having no runtime
@@ -130,5 +132,5 @@ extreme case.
 
 ## Credits
 
-By Declan Fitzsimons. District and state partisan leans from the
-[Cook Political Report](https://www.cookpolitical.com/cook-pvi).
+By Declan Fitzsimons. 2026 district and 2025 state partisan leans come from
+[The Cook Political Report](https://www.cookpolitical.com/cook-pvi/2026-partisan-voting-index/district-map-and-list).

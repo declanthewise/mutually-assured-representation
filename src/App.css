@@ -8,6 +8,13 @@
   padding: 0;
 }
 
+html {
+  /* Hold the scrollbar's width from the start. Without this, the columns
+     mounting makes the page scrollable, the scrollbar takes ~15px of viewport
+     width, and every centered element jumps left mid-animation. */
+  scrollbar-gutter: stable;
+}
+
 body {
   font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: #fafaf7;
@@ -29,18 +36,9 @@ body {
 
 .visualization-wide {
   max-width: 520px;
-  margin: 1.5rem auto 0;
+  margin: 0 auto;
   padding: 0 1.5rem;
   width: 100%;
-}
-
-.graph-footnote {
-  font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 0.65rem;
-  color: #888;
-  text-align: left;
-  margin: 1.25rem 0 1.5rem;
-  line-height: 1.3;
 }
 
 /* ===========================
@@ -50,28 +48,27 @@ body {
 .hero-section {
   max-width: 980px;
   margin: 0 auto;
-  padding: 0 1.5rem 0;
+  /* The viewBox is cropped to the geometry, so the map's breathing room under
+     the stat bar has to come from here. */
+  padding: 0.75rem 1.5rem 0;
   width: 100%;
   position: relative;
 }
 
 .hero-map {
   width: 100%;
+  max-width: 100%;
   height: auto;
   display: block;
-  margin: 0;
+  margin: 0 auto;
+  /* Shrinking max-width scales the whole SVG, so the columns can ride up.
+     Eased in and out, rather than the columns' fast-out curve, so the map
+     starts moving gently instead of snapping. */
+  transition: max-width 750ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.hero-map-caption {
-  font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 0.65rem;
-  line-height: 1.3;
-  color: #999;
-  text-align: left;
-  padding: 0.25rem 1rem 0.5rem;
-  margin: 0 auto 0.75rem;
-  max-width: 560px;
-  border-bottom: 1px solid #e0e0e0;
+.hero-section.compact .hero-map {
+  max-width: 70%;
 }
 
 /* ===========================
@@ -153,6 +150,65 @@ body {
   line-height: 1.2;
 }
 
+/* Label beside its figure rather than stacked above it. */
+.stat-block-inline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.stat-block-inline .stat-label {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Seat split as a donut, with the headline number sitting in the hole. */
+.stat-donut {
+  display: block;
+  width: 4.75rem;
+  height: 4.75rem;
+  flex: 0 0 auto;
+}
+
+/* Keeps the gap arc in step with its counting-up number. */
+.stat-donut-arc {
+  transition: stroke-dasharray 400ms ease-out;
+}
+
+/* ===========================
+   App Title (map → Start, pre-launch only)
+   =========================== */
+
+.app-title {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0.5rem 1.5rem 0.9rem;
+  text-align: center;
+}
+
+.app-title h1 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
+  font-weight: 600;
+  color: #111;
+  line-height: 1.12;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.app-title-kicker {
+  display: block;
+  font-size: 0.62em;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.25rem;
+}
+
+.app-title-name {
+  display: block;
+}
+
 /* ===========================
    Action Row (Start / Clear)
    =========================== */
@@ -163,6 +219,12 @@ body {
   align-items: center;
   min-height: 3.75rem;
   padding: 0.25rem 1.5rem 0.75rem;
+}
+
+.finish-row {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 1.5rem 0.5rem;
 }
 
 .start-btn {
@@ -182,25 +244,121 @@ body {
 }
 
 .start-btn:hover {
-  background: #c9a227;
+  background: #2d6a4f; /* FAIR_GREEN — see src/colors.ts */
   transform: translateY(-1px);
 }
 
-.clear-matches-btn {
+.finish-btn {
   display: inline-block;
-  padding: 0.5rem 1.25rem;
+  padding: 0.5rem 2rem;
   background: #fff;
-  border: 1px solid #ccc;
-  border-radius: 6px;
+  border: 1.5px solid #2d6a4f; /* FAIR_GREEN — see src/colors.ts */
+  border-radius: 999px;
   font-family: inherit;
-  font-size: 0.9rem;
-  color: #666;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #2d6a4f;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
-.clear-matches-btn:hover {
-  background: #f5f5f5;
+.finish-btn:hover {
+  background: #2d6a4f;
+  color: #fff;
+}
+
+/* ===========================
+   Results Panel
+   =========================== */
+
+.results-panel {
+  text-align: center;
+  padding: 0.5rem 0 1rem;
+}
+
+.results-headline {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(1.15rem, 2.4vw, 1.4rem);
+  font-weight: 600;
+  line-height: 1.3;
+  color: #111;
+  text-wrap: balance;
+  margin-bottom: 0.9rem;
+}
+
+.results-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: #e8b31f; /* GAP_GOLD — the gap still standing */
+  overflow: hidden;
+}
+
+.results-bar-fill {
+  height: 100%;
+  background: #2d6a4f; /* FAIR_GREEN — seats returned */
+  border-radius: 999px;
+  transition: width 500ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.results-bar-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.results-pacts {
+  list-style: none;
+  margin: 1.1rem 0 0;
+  border-top: 1px solid #e0e0e0;
+}
+
+.results-pacts li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid #eee;
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+.results-pact-states {
+  color: #333;
+}
+
+.results-pact-seats {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.results-note {
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: #888;
+  margin: 1rem 0 0;
+  text-align: left;
+}
+
+.results-resume-btn {
+  margin-top: 1.1rem;
+  padding: 0.35rem 1.25rem;
+  background: none;
+  border: 1px solid #ccc;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 0.75rem;
+  color: #666;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.results-resume-btn:hover {
   border-color: #999;
   color: #333;
 }
@@ -212,7 +370,6 @@ body {
 /* Clips the entrance animation so it never lengthens the page */
 .match-columns-viewport {
   overflow: hidden;
-  scroll-margin-top: 5.5rem;
 }
 
 .match-columns {
@@ -233,14 +390,6 @@ body {
 .bipartite-graph-wrapper {
   display: flex;
   flex-direction: column;
-}
-
-.graph-instruction {
-  text-align: center;
-  font-size: 0.7rem;
-  color: #999;
-  margin-bottom: 0.35rem;
-  line-height: 1.3;
 }
 
 .bipartite-graph {
@@ -331,9 +480,12 @@ body {
    =========================== */
 
 .article-footer {
+  /* `.app` is a min-height: 100vh column, so this pins the byline to the
+     bottom of the viewport when the page is short and follows the content
+     down when it isn't. */
+  margin: auto auto 0;
   padding: 0.75rem 1.5rem;
   max-width: 710px;
-  margin: 0 auto;
   text-align: center;
   font-size: 0.75rem;
   color: #aaa;
@@ -370,6 +522,19 @@ body {
     padding: 0 0.5rem;
   }
 
+  /* Less width to give up on a phone, where the map is already small. */
+  .hero-section.compact .hero-map {
+    max-width: 92%;
+  }
+
+  .app-title {
+    padding: 0.4rem 1rem 0.6rem;
+  }
+
+  .app-title h1 {
+    font-size: 1.5rem;
+  }
+
   .action-row {
     min-height: 3.25rem;
     padding: 0.25rem 1rem 0.5rem;
@@ -380,7 +545,8 @@ body {
   }
 
   .stat-bar {
-    gap: 1.25rem;
+    gap: 0.75rem 1.25rem;
+    flex-wrap: wrap; /* safety valve on very narrow screens */
   }
 
   .stat-number {
@@ -394,5 +560,14 @@ body {
 
   .stat-sub {
     font-size: 0.58rem;
+  }
+
+  .stat-block-inline {
+    gap: 0.4rem;
+  }
+
+  .stat-donut {
+    width: 3.5rem;
+    height: 3.5rem;
   }
 }

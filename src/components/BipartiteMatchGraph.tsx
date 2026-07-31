@@ -1,60 +1,67 @@
 import { useEffect, useMemo, useState } from 'react';
 import * as d3 from 'd3';
 import { StateData, MatchPair } from '../types';
-import { baselineGaps } from '../data/computeRepresentationGap';
+import { FAIR_GREEN, GAP_GOLD, LEAN_DOMAIN, LEAN_RANGE } from '../colors';
+import { baselineGaps, proportionalRSeats } from '../data/computeRepresentationGap';
 import { stateSafeSeats } from '../data/districtLeans';
 import { stateData } from '../data/stateData';
 import { AnimatedCount } from './AnimatedCount';
 
 /** Single-district states have no map to draw, so they never enter a pact. */
 export const matchableStates = stateData.filter(s => s.districts2022 >= 2);
-export const matchFootnote =
-  'Note: Columns follow each state\'s own partisan lean, since it is the state government that would sign a pact. ' +
-  'A pact only returns seats where the two maps are gerrymandered in opposite directions — states already at zero, ' +
-  'or the rare state whose map favors the party it does not lean toward, can still pair off pre-emptively for no gain today. ' +
-  'Single-district states Alaska, Delaware, North Dakota, South Dakota, Vermont and Wyoming are omitted as they have no representation gap.';
 
 interface BipartiteMatchGraphProps {
   selectedMatches: MatchPair[];
   onToggleMatch: (pair: MatchPair) => void;
   residualGaps: Record<string, number>;
-  footnote?: string;
 }
 
 const leanColorScale = d3.scaleLinear<string>()
-  .domain([-20, 0, 20])
-  .range(['#c93135', '#f0f0f0', '#2e6da4'])
+  .domain(LEAN_DOMAIN)
+  .range(LEAN_RANGE)
   .clamp(true);
 
-const greenGoldScale = d3.scaleLinear<string>()
+/** Fair at zero, gold as the gap widens — 0 is a state already at its share. */
+const gapScale = d3.scaleLinear<string>()
   .domain([0, 1])
-  .range(['#4caf50', '#e8a832'])
+  .range([FAIR_GREEN, GAP_GOLD])
   .clamp(true);
 
 const BOX_W = 116;
-const BOX_H = 54;
+const BOX_H = 60;
 const ROW_GAP = 6;
 const ROW_H = BOX_H + ROW_GAP;
 const HEADER_HEIGHT = 19;
+
+/** Baselines of the three equation rows, and the rule above the total. */
+const EQ_ROW_Y = [29, 40, 52];
+const EQ_RULE_Y = 46;
 
 const LEFT_BOX_X = 20;
 const COL_GAP = 28;
 const RIGHT_BOX_X = LEFT_BOX_X + BOX_W + COL_GAP;
 const VIEW_W = RIGHT_BOX_X + BOX_W + LEFT_BOX_X;
 
-const COLUMN_LABEL_Y = 12;
-const TOP_PAD = 26;
-const BOTTOM_PAD = 10;
-
-const MATCH_GOLD = '#c9a227';
+const TOP_PAD = 8;
+const BOTTOM_PAD = 14;
+/** Room above the parked block: its "Your Pacts" heading, plus a little air. */
+const PACT_HEADER_H = 30;
 
 type Column = 'left' | 'right';
+
+/** A state, the row it occupies in its column, and any push from the heading. */
+interface Placement {
+  state: StateData;
+  row: number;
+  yOffset: number;
+}
 
 function formatLean(lean: number): string {
   if (lean === 0) return 'EVEN';
   const dir = lean > 0 ? 'D' : 'R';
   return `${dir}+${Math.abs(lean).toFixed(0)}%`;
 }
+
 
 /** Seats the enacted map denies the minority party — the number shown on each box. */
 function repGapOf(state: StateData): number {
@@ -83,7 +90,6 @@ export function BipartiteMatchGraph({
   selectedMatches,
   onToggleMatch,
   residualGaps,
-  footnote,
 }: BipartiteMatchGraphProps) {
   const [activeStateId, setActiveStateId] = useState<string | null>(null);
 
@@ -130,21 +136,72 @@ export function BipartiteMatchGraph({
     [activeStateId],
   );
 
-  // The column opposite the active state re-ranks by closest representation gap;
-  // everything else stays in delegation-size order.
-  const { leftOrder, rightOrder } = useMemo(() => {
+  // Matched states leave the running order for good and park at the bottom,
+  // both partners on the same row so their link runs flat. Only the unmatched
+  // half of a column re-ranks against the active state.
+  const { leftPlacements, rightPlacements, rowCount, pactHeader } = useMemo(() => {
     const activeColumn = activeState ? columnOf.get(activeState.id) : null;
-    const left = leftStates.slice();
-    const right = rightStates.slice();
+    const matchedIds = new Set(partnerById.keys());
+    const pactIndexOf = new Map<string, number>();
+    selectedMatches.forEach(([a, b], i) => {
+      pactIndexOf.set(a, i);
+      pactIndexOf.set(b, i);
+    });
 
-    left.sort(activeState && activeColumn === 'right' ? byClosenessTo(activeState) : bySize);
-    right.sort(activeState && activeColumn === 'left' ? byClosenessTo(activeState) : bySize);
+    const planColumn = (states: StateData[], column: Column) => {
+      const isRanking = !!activeState && activeColumn !== column;
+      return {
+        flowing: states
+          .filter(s => !matchedIds.has(s.id))
+          .sort(isRanking ? byClosenessTo(activeState) : bySize),
+        // Pact order, so both columns park their halves in the same sequence.
+        parked: states
+          .filter(s => matchedIds.has(s.id))
+          .sort((x, y) => (pactIndexOf.get(x.id) ?? 0) - (pactIndexOf.get(y.id) ?? 0)),
+      };
+    };
 
-    return { leftOrder: left, rightOrder: right };
-  }, [activeState, columnOf, leftStates, rightStates]);
+    const left = planColumn(leftStates, 'left');
+    const right = planColumn(rightStates, 'right');
+    const rows = Math.max(
+      left.flowing.length + left.parked.length,
+      right.flowing.length + right.parked.length,
+    );
 
-  const rowCount = Math.max(leftOrder.length, rightOrder.length);
-  const totalHeight = TOP_PAD + rowCount * ROW_H - ROW_GAP + BOTTOM_PAD;
+    const headed = selectedMatches.length > 0;
+    const offset = headed ? PACT_HEADER_H : 0;
+
+    const place = (plan: { flowing: StateData[]; parked: StateData[] }): Placement[] => [
+      ...plan.flowing.map((state, i) => ({ state, row: i, yOffset: 0 })),
+      ...plan.parked.map((state, i) => ({
+        state,
+        row: rows - plan.parked.length + i,
+        yOffset: offset,
+      })),
+    ];
+
+    return {
+      leftPlacements: place(left),
+      rightPlacements: place(right),
+      rowCount: rows,
+      pactHeader: headed ? { startRow: rows - selectedMatches.length } : null,
+    };
+  }, [activeState, columnOf, leftStates, rightStates, partnerById, selectedMatches]);
+
+  const totalHeight =
+    TOP_PAD + rowCount * ROW_H - ROW_GAP + BOTTOM_PAD + (pactHeader ? PACT_HEADER_H : 0);
+
+  /** Where each state landed, so the links know which rows to span. */
+  const rowById = useMemo(() => {
+    const map = new Map<string, { row: number; yOffset: number; column: Column }>();
+    for (const { state, row, yOffset } of leftPlacements) {
+      map.set(state.id, { row, yOffset, column: 'left' });
+    }
+    for (const { state, row, yOffset } of rightPlacements) {
+      map.set(state.id, { row, yOffset, column: 'right' });
+    }
+    return map;
+  }, [leftPlacements, rightPlacements]);
 
   // Clicking outside any box clears the active selection.
   useEffect(() => {
@@ -180,7 +237,9 @@ export function BipartiteMatchGraph({
     setActiveStateId(null);
   };
 
-  const renderStateBox = (state: StateData, index: number, column: Column) => {
+  const rowTopY = (row: number, yOffset: number) => TOP_PAD + row * ROW_H + yOffset;
+
+  const renderStateBox = (state: StateData, index: number, column: Column, yOffset: number) => {
     const isActive = state.id === activeStateId;
     const partner = partnerById.get(state.id);
     const isMatched = !!partner;
@@ -189,7 +248,7 @@ export function BipartiteMatchGraph({
     const isLeft = column === 'left';
 
     const boxX = isLeft ? LEFT_BOX_X : RIGHT_BOX_X;
-    const boxY = TOP_PAD + index * ROW_H;
+    const boxY = rowTopY(index, yOffset);
 
     const leanText = formatLean(state.partisanLean);
     const badgeW = leanText.length * 5.5 + 8;
@@ -199,12 +258,21 @@ export function BipartiteMatchGraph({
     const nameX = isLeft ? 6 : BOX_W - 6;
     const nameAnchor = isLeft ? 'start' : 'end';
 
-    const enacted = stateSafeSeats[state.id];
-    const repGapSeats = Math.abs(residualGaps[state.id] ?? 0);
-    const safeSeats = enacted?.safeSeats ?? 0;
+    // The equation the box spells out: where the delegation sits now, less
+    // where the state's own PVI says it should sit, leaves the gap. "Now" moves
+    // with the pacts, so it's derived from the residual rather than the enacted
+    // count — before any pact the two are the same.
+    const proportionalR = proportionalRSeats(state);
+    const signedGap = residualGaps[state.id] ?? 0;
+    const currentR = proportionalR + signedGap;
 
-    const tagLabel = partner ? `✓ ${partner.id}` : '';
-    const tagW = tagLabel.length * 5.5 + 10;
+    // A state's balances read in its own party's seats, matching its column.
+    // EVEN districts belong to neither side, so they sit outside both figures —
+    // which is also what keeps the subtraction landing exactly on the gap.
+    const balanceParty = state.partisanLean > 0 ? 'D' : 'R';
+    const assignable = state.districts2022 - (stateSafeSeats[state.id]?.even ?? 0);
+    const currentBalance = balanceParty === 'D' ? assignable - currentR : currentR;
+    const proportionalBalance = balanceParty === 'D' ? assignable - proportionalR : proportionalR;
 
     return (
       <g
@@ -220,23 +288,10 @@ export function BipartiteMatchGraph({
           width={BOX_W}
           height={BOX_H}
           fill="none"
-          stroke={isActive ? '#000' : isMatched ? MATCH_GOLD : partisanColor}
+          stroke={isActive ? '#000' : isMatched ? FAIR_GREEN : partisanColor}
           strokeWidth={isActive ? 3 : isMatched ? 2.5 : 2}
           rx={3}
         />
-        {isMatched && (
-          <rect
-            x={-2}
-            y={-2}
-            width={BOX_W + 4}
-            height={BOX_H + 4}
-            fill="none"
-            stroke={MATCH_GOLD}
-            strokeWidth={2}
-            rx={4}
-            opacity={0.6}
-          />
-        )}
 
         {/* Delegation size, on the outer edge of the column */}
         <text
@@ -283,81 +338,114 @@ export function BipartiteMatchGraph({
           {state.name}
         </text>
 
-        {enacted && (
-          <>
-            <text x={6} y={HEADER_HEIGHT + 11} textAnchor="start" dominantBaseline="central" fontSize={9} fontWeight={600}>
-              <tspan fill={greenGoldScale(repGapSeats / 8)} fontWeight={700} fontSize={11}>
-                <AnimatedCount value={repGapSeats} />
-              </tspan>
-              <tspan fill="#666" letterSpacing="0.5"> REP. GAP &</tspan>
-            </text>
-            <text x={6} y={HEADER_HEIGHT + 24} textAnchor="start" dominantBaseline="central" fontSize={9} fontWeight={600}>
-              <tspan fill={greenGoldScale(safeSeats / state.districts2022)} fontWeight={700} fontSize={11}>
-                <AnimatedCount value={safeSeats} />
-              </tspan>
-              <tspan fill="#666" letterSpacing="0.5"> SAFE SEATS</tspan>
-            </text>
-          </>
-        )}
+        {/* Current − Proportional = Gap, read top to bottom. */}
+        <text x={6} y={EQ_ROW_Y[0]} dominantBaseline="central" fontSize={7} fill="#888">
+          Current Balance
+        </text>
+        <text
+          x={BOX_W - 6} y={EQ_ROW_Y[0]}
+          textAnchor="end" dominantBaseline="central"
+          fontSize={9} fontWeight={700} fill="#333"
+        >
+          <AnimatedCount value={currentBalance} />{balanceParty}
+        </text>
 
-        {partner && (
-          <>
-            <rect
-              x={BOX_W - 6 - tagW}
-              y={BOX_H - 5 - 12}
-              width={tagW}
-              height={12}
-              fill={MATCH_GOLD}
-              rx={2.5}
-            />
-            <text
-              x={BOX_W - 6 - tagW / 2}
-              y={BOX_H - 5 - 6}
-              textAnchor="middle"
-              dominantBaseline="central"
-              fontSize={8.5}
-              fontWeight={700}
-              fill="#fff"
-            >
-              {tagLabel}
-            </text>
-          </>
-        )}
+        <text x={6} y={EQ_ROW_Y[1]} dominantBaseline="central" fontSize={7} fill="#888">
+          &minus; Proportional Balance
+        </text>
+        <text
+          x={BOX_W - 6} y={EQ_ROW_Y[1]}
+          textAnchor="end" dominantBaseline="central"
+          fontSize={9} fontWeight={700} fill="#333"
+        >
+          {proportionalBalance}{balanceParty}
+        </text>
+
+        <line
+          x1={6}
+          y1={EQ_RULE_Y}
+          x2={BOX_W - 6}
+          y2={EQ_RULE_Y}
+          stroke="rgba(0,0,0,0.15)"
+          strokeWidth={0.5}
+        />
+
+        <text x={6} y={EQ_ROW_Y[2]} dominantBaseline="central" fontSize={7} fill="#888">
+          = Representation Gap
+        </text>
+        <text
+          x={BOX_W - 6} y={EQ_ROW_Y[2]}
+          textAnchor="end" dominantBaseline="central"
+          fontSize={9.5} fontWeight={700}
+          fill={gapScale(Math.abs(signedGap) / 8)}
+        >
+          <AnimatedCount value={Math.abs(signedGap)} />
+        </text>
       </g>
     );
   };
 
   return (
     <div className="bipartite-graph-wrapper">
-      <div className="graph-instruction">
-        {activeState
-          ? `Click a state on the ${columnOf.get(activeState.id) === 'left' ? 'right' : 'left'} to form a pact with ${activeState.name}`
-          : 'Click a state to rank the other column by closest representation gap'}
-      </div>
       <svg viewBox={`0 0 ${VIEW_W} ${totalHeight}`} className="bipartite-graph">
-        <text x={LEFT_BOX_X} y={COLUMN_LABEL_Y} fontSize={9} fontWeight={700} fill="#999" letterSpacing="0.08em">
-          DEMOCRATIC-LEANING
-        </text>
-        <text
-          x={RIGHT_BOX_X + BOX_W}
-          y={COLUMN_LABEL_Y}
-          textAnchor="end"
-          fontSize={9}
-          fontWeight={700}
-          fill="#999"
-          letterSpacing="0.08em"
-        >
-          REPUBLICAN-LEANING
-        </text>
+        {/* Links first, so the boxes sit on top of where they meet. */}
+        <g className="match-links">
+          {selectedMatches.map(([a, b]) => {
+            const placedA = rowById.get(a);
+            const placedB = rowById.get(b);
+            if (!placedA || !placedB) return null;
+            const [onLeft, onRight] = placedA.column === 'left' ? [placedA, placedB] : [placedB, placedA];
+            return (
+              <line
+                key={[a, b].slice().sort().join('-')}
+                x1={LEFT_BOX_X + BOX_W}
+                y1={rowTopY(onLeft.row, onLeft.yOffset) + BOX_H / 2}
+                x2={RIGHT_BOX_X}
+                y2={rowTopY(onRight.row, onRight.yOffset) + BOX_H / 2}
+                stroke={FAIR_GREEN}
+                strokeWidth={2}
+                strokeLinecap="round"
+              />
+            );
+          })}
+        </g>
+
+        {pactHeader && (
+          <g className="pact-heading">
+            <line
+              x1={LEFT_BOX_X}
+              x2={RIGHT_BOX_X + BOX_W}
+              y1={rowTopY(pactHeader.startRow, PACT_HEADER_H) - 16}
+              y2={rowTopY(pactHeader.startRow, PACT_HEADER_H) - 16}
+              stroke={FAIR_GREEN}
+              strokeWidth={0.75}
+              opacity={0.3}
+            />
+            <text
+              x={VIEW_W / 2}
+              y={rowTopY(pactHeader.startRow, PACT_HEADER_H) - 6}
+              textAnchor="middle"
+              fontSize={9}
+              fontWeight={700}
+              letterSpacing="0.1em"
+              fill={FAIR_GREEN}
+            >
+              YOUR PACTS
+            </text>
+          </g>
+        )}
 
         <g className="left-column">
-          {leftOrder.map((state, i) => renderStateBox(state, i, 'left'))}
+          {leftPlacements.map(({ state, row, yOffset }) =>
+            renderStateBox(state, row, 'left', yOffset),
+          )}
         </g>
         <g className="right-column">
-          {rightOrder.map((state, i) => renderStateBox(state, i, 'right'))}
+          {rightPlacements.map(({ state, row, yOffset }) =>
+            renderStateBox(state, row, 'right', yOffset),
+          )}
         </g>
       </svg>
-      {footnote && <p className="graph-footnote">{footnote}</p>}
     </div>
   );
 }

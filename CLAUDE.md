@@ -28,13 +28,14 @@ src/
 ├── data/                    # Data plus the math over it; nothing generated
 │   ├── cook2026DistrictPVI.tsv  # 2026 Cook PVI, all 435 districts
 │   ├── districtLeans.ts     # Parses that file into per-state + national seat counts
-│   ├── stateData.ts         # 50 states: Cook PVI, seat count, map-drawing authority
+│   ├── stateData.ts         # 50 states: 2025 Cook PVI, seat count, map-drawing authority
 │   └── computeRepresentationGap.ts # Per-state gaps, pact math, national total
 ├── map/                     # Map geometry and its assets
 │   ├── useTopoData.ts       # Fetches the topology (null until it lands)
 │   ├── fipsMapping.ts       # FIPS code → state abbreviation, for the TopoJSON
 │   ├── us-states-10m.json   # TopoJSON state boundaries — imported `?url`, never inlined
 │   └── mushroom-cloud.png   # Cloud icon sized by representation gap
+├── colors.ts                # The whole palette; every component imports from here
 └── types.ts                 # TypeScript interfaces
 ```
 
@@ -46,7 +47,12 @@ into the JS bundle, which is what `?url` plus the runtime fetch exists to avoid.
 
 ## Key Concepts
 
-- **Partisan Lean**: State's statewide Cook PVI, signed positive for D.
+- **Color coding**: Gold (`GAP_GOLD`) always means representation gap, forest green (`FAIR_GREEN`)
+  always means fair representation — a state at its proportional share, the seats inside that share,
+  and the pacts that get there (matched borders, arcs, badges). Red/blue stay reserved for party.
+  All of it lives in `src/colors.ts`; don't hardcode a hex in a component. The two lean gradients in
+  `App.css` are the exception CSS forces.
+- **Partisan Lean**: State's 2025 statewide Cook PVI, signed positive for D.
 - **Representation Gap**: A state's enacted R seats (districts whose own Cook PVI leans R) minus the
   proportional ideal implied by its statewide PVI, `round(districts × (50 − statePVI) / 100)`.
   Positive = R overrepresented, negative = D overrepresented. Both sides come from Cook PVI, so
@@ -78,8 +84,9 @@ only README in the repo; don't add per-folder ones.
 - **District leans**: [2026 Cook PVI](https://www.cookpolitical.com/cook-pvi/2026-partisan-voting-index/district-map-and-list)
   → `data/cook2026DistrictPVI.tsv` (tab-separated with a header row; the app reads the `2026 PVI`
   column and skips the header).
-- **State leans**: statewide Cook PVI, stored as `partisanLean` in `data/stateData.ts`.
-  Redistricting doesn't move a statewide PVI, so the 2026 release left these unchanged.
+- **State leans**: 2025 statewide Cook PVI, stored as `partisanLean` in `data/stateData.ts`.
+  Redistricting doesn't move a statewide PVI, so the 2026 release left these unchanged — pairing
+  2025 state figures with 2026 district figures is sound. The footer credits them as such.
 
 Both files are hand-edited; the `stateData.csv` → `stateData.ts` generation step and the PlanScore
 verification script are gone.

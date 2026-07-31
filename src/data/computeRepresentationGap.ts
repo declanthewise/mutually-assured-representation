@@ -16,10 +16,12 @@ import { stateData, stateDataById } from './stateData';
  * EVEN districts (PVI exactly even) are excluded from both party counts —
  * they are genuinely competitive, so the map hands them to neither side.
  */
+export function proportionalRSeats(state: StateData): number {
+  return Math.round(state.districts2022 * ((50 - state.partisanLean) / 100));
+}
+
 export function computeRepresentationGap(state: StateData, counts: SafeSeatCounts): number {
-  const idealRFraction = (50 - state.partisanLean) / 100;
-  const idealRSeats = Math.round(state.districts2022 * idealRFraction);
-  return counts.rSeats - idealRSeats;
+  return counts.rSeats - proportionalRSeats(state);
 }
 
 /** Signed representation gap for a state id, or 0 if we have no district data. */
