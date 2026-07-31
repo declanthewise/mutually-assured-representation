@@ -1,20 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
 import * as d3 from 'd3';
 import { StateData, MatchPair } from '../types';
-import { getMinoritySeatGain } from '../utils/minoritySeatGain';
-import { stateSafeSeats } from '../data/districtData/safeSeats';
-import { alternateMapSafeSeats } from '../data/districtData/alternateMapLeans';
-import { stateData } from '../data/stateData/stateData';
+import { baselineGaps } from '../data/computeRepresentationGap';
+import { stateSafeSeats } from '../data/districtLeans';
+import { stateData } from '../data/stateData';
 import { AnimatedCount } from './AnimatedCount';
 
 /** Single-district states have no map to draw, so they never enter a pact. */
 export const matchableStates = stateData.filter(s => s.districts2022 >= 2);
 export const matchFootnote =
-  'Note: Single-district states Alaska, Delaware, North Dakota, South Dakota, Vermont and Wyoming are omitted as they have no representation gap.';
+  'Note: Columns follow each state\'s own partisan lean, since it is the state government that would sign a pact. ' +
+  'A pact only returns seats where the two maps are gerrymandered in opposite directions — states already at zero, ' +
+  'or the rare state whose map favors the party it does not lean toward, can still pair off pre-emptively for no gain today. ' +
+  'Single-district states Alaska, Delaware, North Dakota, South Dakota, Vermont and Wyoming are omitted as they have no representation gap.';
 
 interface BipartiteMatchGraphProps {
   selectedMatches: MatchPair[];
   onToggleMatch: (pair: MatchPair) => void;
+  residualGaps: Record<string, number>;
   footnote?: string;
 }
 
@@ -55,7 +58,7 @@ function formatLean(lean: number): string {
 
 /** Seats the enacted map denies the minority party — the number shown on each box. */
 function repGapOf(state: StateData): number {
-  return Math.max(0, getMinoritySeatGain(state) ?? 0);
+  return Math.abs(baselineGaps[state.id] ?? 0);
 }
 
 function bySize(a: StateData, b: StateData): number {
@@ -79,6 +82,7 @@ function byClosenessTo(target: StateData) {
 export function BipartiteMatchGraph({
   selectedMatches,
   onToggleMatch,
+  residualGaps,
   footnote,
 }: BipartiteMatchGraphProps) {
   const [activeStateId, setActiveStateId] = useState<string | null>(null);
@@ -98,7 +102,11 @@ export function BipartiteMatchGraph({
     return map;
   }, [selectedMatches]);
 
-  // D-leaning states on the left, R-leaning (and even) on the right
+  // Sides follow the state's own partisan lean, because it's the state government
+  // that signs a pact — not its congressional delegation. Usually the map leans the
+  // same way the state does; where it doesn't (Nevada, R+1 but D-gerrymandered) the
+  // pairing is still allowed but returns no seats, since both sides would be handing
+  // seats to the same party. See pactSeatsReturned().
   const { leftStates, rightStates, columnOf } = useMemo(() => {
     const left: StateData[] = [];
     const right: StateData[] = [];
@@ -192,9 +200,8 @@ export function BipartiteMatchGraph({
     const nameAnchor = isLeft ? 'start' : 'end';
 
     const enacted = stateSafeSeats[state.id];
-    const alt = enacted ? alternateMapSafeSeats[state.id] || enacted : null;
-    const repGapSeats = isMatched ? 0 : repGapOf(state);
-    const safeSeats = isMatched && alt ? alt.safeSeats : enacted?.safeSeats ?? 0;
+    const repGapSeats = Math.abs(residualGaps[state.id] ?? 0);
+    const safeSeats = enacted?.safeSeats ?? 0;
 
     const tagLabel = partner ? `✓ ${partner.id}` : '';
     const tagW = tagLabel.length * 5.5 + 10;
@@ -279,7 +286,7 @@ export function BipartiteMatchGraph({
         {enacted && (
           <>
             <text x={6} y={HEADER_HEIGHT + 11} textAnchor="start" dominantBaseline="central" fontSize={9} fontWeight={600}>
-              <tspan fill={greenGoldScale(repGapSeats / 5)} fontWeight={700} fontSize={11}>
+              <tspan fill={greenGoldScale(repGapSeats / 8)} fontWeight={700} fontSize={11}>
                 <AnimatedCount value={repGapSeats} />
               </tspan>
               <tspan fill="#666" letterSpacing="0.5"> REP. GAP &</tspan>

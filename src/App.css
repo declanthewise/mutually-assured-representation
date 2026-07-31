@@ -55,33 +55,6 @@ body {
   position: relative;
 }
 
-.hero-stat-bar {
-  position: absolute;
-  top: 2rem;
-  right: 0;
-  width: 50%;
-  text-align: center;
-  z-index: 1;
-}
-
-.hero-stat-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #666;
-  margin: 0;
-  line-height: 1.2;
-}
-
-.hero-stat-number {
-  font-size: 2rem;
-  font-weight: 700;
-  line-height: 1;
-  color: #222;
-  margin: 0;
-}
-
 .hero-map {
   width: 100%;
   height: auto;
@@ -123,10 +96,10 @@ body {
 }
 
 /* ===========================
-   Ratings Bar
+   Stat Bar (sticky, above map)
    =========================== */
 
-.ratings-bar-wrapper {
+.stat-bar-wrapper {
   position: sticky;
   top: 0;
   z-index: 10;
@@ -135,74 +108,49 @@ body {
   border-bottom: 1px solid #e0e0e0;
 }
 
-.ratings-bar-container {
+.stat-bar {
   max-width: 980px;
   margin: 0 auto;
-  position: relative;
-  padding: 0 1.5rem 14px;
-}
-
-.ratings-bar-labels {
-  display: flex;
-  width: 100%;
-  margin-bottom: 0.25rem;
-}
-
-.ratings-bar-labels > span {
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #666;
-  text-align: center;
-  flex-shrink: 0;
-  transition: width 0.4s ease;
-}
-
-.ratings-bar {
-  display: flex;
-  width: 100%;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.ratings-bar-segment {
-  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  white-space: nowrap;
-  font-size: 13px;
+  gap: 2.5rem;
+}
+
+.stat-block {
+  text-align: center;
+  flex: 0 1 auto;
+}
+
+.stat-divider {
+  width: 1px;
+  align-self: stretch;
+  background: #e0e0e0;
+  flex: 0 0 auto;
+}
+
+.stat-label {
+  font-size: 0.7rem;
   font-weight: 600;
-  color: #fff;
-  transition: width 0.4s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #666;
+  line-height: 1.2;
 }
 
-.segment-d { background: #2e6da4; }
-.segment-lean-d { background: #6a9dc9; }
-.segment-even { background: #d0d0d0; color: #444; }
-.segment-lean-r { background: #d97a7c; }
-.segment-r { background: #c93135; }
-
-.ratings-bar-majority {
-  position: absolute;
-  bottom: 0;
-  height: 14px;
-  width: 2px;
-  background: #111;
-  transform: translateX(-50%);
-}
-
-.majority-label {
-  position: absolute;
-  top: 50%;
-  left: calc(100% + 4px);
-  transform: translateY(-50%);
-  font-size: 0.6rem;
+.stat-number {
+  font-size: 2rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  color: #111;
+  line-height: 1.1;
+  color: #222;
   white-space: nowrap;
+}
+
+.stat-sub {
+  font-size: 0.65rem;
+  color: #999;
+  letter-spacing: 0.03em;
+  line-height: 1.2;
 }
 
 /* ===========================
@@ -418,18 +366,6 @@ body {
     padding: 0;
   }
 
-  .hero-stat-bar {
-    top: 0;
-  }
-
-  .hero-stat-number {
-    font-size: 1.4rem;
-  }
-
-  .hero-stat-label {
-    font-size: 0.65rem;
-  }
-
   .visualization-wide {
     padding: 0 0.5rem;
   }
@@ -439,24 +375,24 @@ body {
     padding: 0.25rem 1rem 0.5rem;
   }
 
-  .ratings-bar-wrapper {
-    padding: 0.5rem 0;
+  .stat-bar-wrapper {
+    padding: 0.5rem 0.75rem;
   }
 
-  .ratings-bar-container {
-    padding: 0 0.4rem 14px;
+  .stat-bar {
+    gap: 1.25rem;
   }
 
-  .ratings-bar-labels > span {
+  .stat-number {
+    font-size: 1.4rem;
+  }
+
+  .stat-label {
     font-size: 0.6rem;
+    letter-spacing: 0.05em;
   }
 
-  .ratings-label-text {
-    display: none;
-  }
-
-  .ratings-bar-segment {
-    font-size: 11px;
-    height: 24px;
+  .stat-sub {
+    font-size: 0.58rem;
   }
 }

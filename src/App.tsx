@@ -1,10 +1,13 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { HeroMap } from './components/HeroMap';
 import { BipartiteMatchGraph, matchFootnote } from './components/BipartiteMatchGraph';
-import { RatingsBar } from './components/RatingsBar';
+import { StatBar } from './components/StatBar';
 import { StateTooltip } from './components/StateTooltip';
-import { useTopoData } from './hooks/useTopoData';
-import { computeAdjustedSafeSeats } from './utils/computeTruceAdjustment';
+import { useTopoData } from './map/useTopoData';
+import {
+  computeResidualGaps,
+  computeNationalRepresentationGap,
+} from './data/computeRepresentationGap';
 import { HoveredState, MatchPair } from './types';
 
 function pairKey(a: string, b: string): string {
@@ -18,9 +21,14 @@ function App() {
   const columnsRef = useRef<HTMLDivElement>(null);
   const topoData = useTopoData();
 
-  const adjustedSafeSeats = useMemo(
-    () => computeAdjustedSafeSeats(selectedMatches),
+  const residualGaps = useMemo(
+    () => computeResidualGaps(selectedMatches),
     [selectedMatches],
+  );
+
+  const nationalRepresentationGap = useMemo(
+    () => computeNationalRepresentationGap(residualGaps),
+    [residualGaps],
   );
 
   const handleToggleMatch = useCallback((pair: MatchPair) => {
@@ -46,14 +54,14 @@ function App() {
 
   return (
     <div className="app">
-      <RatingsBar adjustedSafeSeats={adjustedSafeSeats} />
+      <StatBar nationalRepresentationGap={nationalRepresentationGap} />
 
       <section className="hero-section">
         <HeroMap
           topoData={topoData}
           onHoverState={setHoveredState}
           selectedMatches={selectedMatches}
-          adjustedSafeSeats={adjustedSafeSeats}
+          residualGaps={residualGaps}
         />
       </section>
 
@@ -77,6 +85,7 @@ function App() {
             <BipartiteMatchGraph
               selectedMatches={selectedMatches}
               onToggleMatch={handleToggleMatch}
+              residualGaps={residualGaps}
               footnote={matchFootnote}
             />
           </div>
@@ -85,12 +94,15 @@ function App() {
 
       <footer className="article-footer">
         <p>
-          By Declan Fitzsimons. Data: <a href="https://en.wikipedia.org/wiki/Cook_Partisan_Voting_Index" target="_blank" rel="noopener noreferrer">Cook PVI</a> for 2025 partisan leans.{' '}
-          <a href="https://davesredistricting.org/" target="_blank" rel="noopener noreferrer">Dave's Redistricting App</a> for 2022 proportional districts.
+          By Declan Fitzsimons. Data:{' '}
+          <a href="https://www.cookpolitical.com/cook-pvi/2026-partisan-voting-index/district-map-and-list" target="_blank" rel="noopener noreferrer">2026 Cook PVI</a>{' '}
+          for district partisan leans and{' '}
+          <a href="https://www.cookpolitical.com/cook-pvi" target="_blank" rel="noopener noreferrer">Cook PVI</a>{' '}
+          for statewide partisan leans.
         </p>
       </footer>
 
-      {hoveredState && <StateTooltip hoveredState={hoveredState} />}
+      {hoveredState && <StateTooltip hoveredState={hoveredState} residualGaps={residualGaps} />}
     </div>
   );
 }

@@ -2,24 +2,22 @@ import { useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
 import { HoveredState, MatchPair } from '../types';
-import { stateDataById } from '../data/stateData/stateData';
-import { SafeSeatCounts } from '../data/districtData/safeSeats';
-import { computeRepresentationGap, computeNationalRepresentationGap } from '../utils/computeRepresentationGap';
-import { getMinoritySeatGain } from '../utils/minoritySeatGain';
-import { fipsToState } from '../utils/fipsMapping';
-import { AnimatedCount } from './AnimatedCount';
+import { stateDataById } from '../data/stateData';
+import { pactSeatsReturned } from '../data/computeRepresentationGap';
+import { fipsToState } from '../map/fipsMapping';
+import cloudUrl from '../map/mushroom-cloud.png';
 
 interface HeroMapProps {
   topoData: any;
   onHoverState: (state: HoveredState | null) => void;
   selectedMatches: MatchPair[];
-  adjustedSafeSeats: Record<string, SafeSeatCounts>;
+  residualGaps: Record<string, number>;
 }
 
 const WIDTH = 960;
 const HEIGHT = 600;
 
-const MAX_REP_GAP = 12;
+const MAX_REP_GAP = 16;
 const MAX_ICON_RADIUS = 70;
 const BADGE_RADIUS = 17;
 
@@ -30,18 +28,13 @@ function featureStateId(feature: any): string {
   return fipsToState[feature.id.toString().padStart(2, '0')];
 }
 
-export function HeroMap({ topoData, onHoverState, selectedMatches, adjustedSafeSeats }: HeroMapProps) {
+export function HeroMap({ topoData, onHoverState, selectedMatches, residualGaps }: HeroMapProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const onHoverStateRef = useRef(onHoverState);
   const pathRef = useRef<d3.GeoPath | null>(null);
   const centroidsRef = useRef(new Map<string, [number, number]>());
   const matchedIdsRef = useRef(new Set<string>());
   const builtRef = useRef(false);
-
-  const nationalRepresentationGap = useMemo(
-    () => computeNationalRepresentationGap(adjustedSafeSeats),
-    [adjustedSafeSeats],
-  );
 
   const matchedStateIds = useMemo(() => {
     const ids = new Set<string>();
@@ -139,7 +132,7 @@ export function HeroMap({ topoData, onHoverState, selectedMatches, adjustedSafeS
       .selectAll('image')
       .data(featuresYSorted)
       .join('image')
-      .attr('href', '/mushroom-cloud.png')
+      .attr('href', cloudUrl)
       .attr('pointer-events', 'none')
       .attr('x', (d: any) => path.centroid(d)[0])
       .attr('y', (d: any) => path.centroid(d)[1])
@@ -164,14 +157,9 @@ export function HeroMap({ topoData, onHoverState, selectedMatches, adjustedSafeS
       .domain([0, MAX_REP_GAP])
       .range([0, MAX_ICON_RADIUS]);
 
-    // A matched state's cloud collapses to nothing — its badge takes over.
+    // Clouds track the gap that survives the pacts — a fully offset state clears.
     const cloudDiameter = (d: any) => {
-      const stateId = featureStateId(d);
-      if (matchedStateIds.has(stateId)) return 0;
-      const counts = adjustedSafeSeats[stateId];
-      const data = stateDataById[stateId];
-      if (!counts || !data) return 0;
-      const repGap = Math.abs(computeRepresentationGap(data, counts));
+      const repGap = Math.abs(residualGaps[featureStateId(d)] ?? 0);
       return repGap > 0 ? repGapRadius(repGap) * 2 : 0;
     };
 
@@ -221,13 +209,12 @@ export function HeroMap({ topoData, onHoverState, selectedMatches, adjustedSafeS
         exit => exit.transition().duration(200).attr('opacity', 0).remove(),
       );
 
-    // Badges: seats a pact hands back to the under-represented party
-    const badgeData = Array.from(matchedStateIds)
-      .map(id => ({
-        id,
-        gain: Math.max(0, getMinoritySeatGain(stateDataById[id]) ?? 0),
-        centroid: centroids.get(id),
-      }))
+    // Badges: seats a pact hands back to the under-represented party in each state
+    const badgeData = selectedMatches
+      .flatMap(([a, b]) => {
+        const gain = pactSeatsReturned(a, b);
+        return [a, b].map(id => ({ id, gain, centroid: centroids.get(id) }));
+      })
       .filter((d): d is { id: string; gain: number; centroid: [number, number] } => !!d.centroid);
 
     svg.select('.match-badges')
@@ -258,23 +245,16 @@ export function HeroMap({ topoData, onHoverState, selectedMatches, adjustedSafeS
       .attr('transform', d => `translate(${d.centroid[0]}, ${d.centroid[1]})`)
       .select('text')
       .text(d => (d.gain > 0 ? `+${d.gain}` : '0'));
-  }, [topoData, selectedMatches, matchedStateIds, adjustedSafeSeats]);
+  }, [topoData, selectedMatches, matchedStateIds, residualGaps]);
 
   return (
     <>
-      <div className="hero-stat-bar">
-        <div className="hero-stat-label">National Representation Gap</div>
-        <div className="hero-stat-number">
-          <span style={{ color: '#e8a832' }}><AnimatedCount value={nationalRepresentationGap} /></span>
-          <span style={{ color: '#000' }}>/435</span>
-        </div>
-      </div>
       <svg ref={svgRef} className="hero-map" />
       <p className="hero-map-caption">
-        Note: States colored by partisan lean (Cook PVI). Clouds sized by representation gap — how many seats the
-        enacted map over- or under-allocates to the minority party relative to each state's Cook PVI proportional
-        ideal. Once a state joins a pact its cloud clears, and a green badge counts the seats returned to the
-        under-represented party.
+        Note: States colored by partisan lean (2026 Cook PVI). Clouds sized by representation gap — the difference
+        between the seats each party wins under the enacted district PVIs and the seats it would win under a
+        proportional split of the state's own Cook PVI. A pact unwinds the lesser of its two partners' gaps in both
+        states at once; the green badge counts the seats returned in each, and whatever gap survives keeps its cloud.
       </p>
     </>
   );

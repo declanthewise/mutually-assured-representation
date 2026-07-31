@@ -11,45 +11,56 @@ Interactive visualization tool to identify US states with equal and opposite ger
 
 ## Project Structure
 
+There is no `public/` directory — every asset is imported, so Vite hashes it and fails the build if
+it goes missing.
+
 ```
 src/
 ├── App.tsx                  # Root component, manages state and layout
 ├── App.css                  # All styles
 ├── main.tsx                 # Entry point
-├── components/
+├── components/              # All UI
 │   ├── HeroMap.tsx          # D3-based interactive US map — clouds, pact badges and arcs
+│   ├── StateTooltip.tsx     # Hover tooltip, driven by HeroMap
 │   ├── BipartiteMatchGraph.tsx  # Two re-sorting columns of state boxes
-│   ├── RatingsBar.tsx       # Seat count bar chart (sticky, above the map)
-│   ├── StateTooltip.tsx     # Hover tooltip on map
-│   └── AnimatedCount.tsx    # Shared count-up number
-├── data/
-│   ├── stateData/           # State-level data
-│   │   ├── stateData.ts     # All 50 states' metrics
-│   │   ├── stateData.csv    # Raw state data
-│   │   ├── districtGroups.ts    # Groups states by district count
-│   │   └── csv-to-statedata.cjs # Script: CSV → stateData.ts
-│   └── districtData/        # District-level lean data
-│       ├── safeSeats.ts     # Shared types + safe-seat categorization
-│       ├── alternateMapLeans.ts  # Indirection: swap active alternate map here
-│       ├── enacted/         # Current enacted maps
-│       ├── compact/         # ALARM compact maps
-│       ├── competitive/     # DRA most-competitive maps
-│       └── proportional/    # DRA most-proportional maps [ACTIVE alternate]
-├── types/
-│   └── index.ts             # TypeScript interfaces
-└── utils/
-    ├── minoritySeatGain.ts  # Seats the alternate map returns to the minority party
-    ├── computeRepresentationGap.ts # Per-state and national representation gap
-    └── computeTruceAdjustment.ts   # Truce seat adjustment
+│   ├── StatBar.tsx          # House balance + national rep. gap (sticky, above the map)
+│   └── AnimatedCount.tsx    # Count-up number, used by StatBar and the match graph
+├── data/                    # Data plus the math over it; nothing generated
+│   ├── cook2026DistrictPVI.tsv  # 2026 Cook PVI, all 435 districts
+│   ├── districtLeans.ts     # Parses that file into per-state + national seat counts
+│   ├── stateData.ts         # 50 states: Cook PVI, seat count, map-drawing authority
+│   └── computeRepresentationGap.ts # Per-state gaps, pact math, national total
+├── map/                     # Map geometry and its assets
+│   ├── useTopoData.ts       # Fetches the topology (null until it lands)
+│   ├── fipsMapping.ts       # FIPS code → state abbreviation, for the TopoJSON
+│   ├── us-states-10m.json   # TopoJSON state boundaries — imported `?url`, never inlined
+│   └── mushroom-cloud.png   # Cloud icon sized by representation gap
+└── types.ts                 # TypeScript interfaces
 ```
+
+`HeroMap` and `StateTooltip` are the only consumers of `src/map/`, but they live with the other
+components rather than beside the geometry they draw.
+
+The topology is imported as `./us-states-10m.json?url` — a plain JSON import would inline all 112 KB
+into the JS bundle, which is what `?url` plus the runtime fetch exists to avoid. Keep the suffix.
 
 ## Key Concepts
 
-- **Efficiency Gap**: Measures wasted votes. Positive = R advantage, negative = D advantage.
-- **Partisan Lean**: State's overall partisan lean from presidential vote share.
-- **Representation Gap**: Seats the enacted map denies the minority party, versus the alternate map.
+- **Partisan Lean**: State's statewide Cook PVI, signed positive for D.
+- **Representation Gap**: A state's enacted R seats (districts whose own Cook PVI leans R) minus the
+  proportional ideal implied by its statewide PVI, `round(districts × (50 − statePVI) / 100)`.
+  Positive = R overrepresented, negative = D overrepresented. Both sides come from Cook PVI, so
+  they're measured on the same scale.
+- **Pacts**: A pact between two oppositely-gerrymandered states unwinds the **lesser** of their two
+  gaps in *both* states, so its national effect is `2 × min(|gapA|, |gapB|)`. Whatever gap survives
+  stays on the map. Because each side returns the same number of seats, a pact never changes the
+  national party balance — only the gap closes.
 - **MAR Matching**: The user pairs states manually. Clicking a state re-ranks the opposite
-  column by closest representation gap, breaking ties on closest delegation size.
+  column by closest representation gap, breaking ties on closest delegation size. Columns are split
+  by the state's own partisan lean, because the signatory is the state government, not the
+  congressional delegation. A state whose map favors the party it doesn't lean toward (Nevada is
+  R+1 but D-gerrymandered) therefore sits in the column opposite its gerrymander; `pactSeatsReturned`
+  returns 0 for such a pairing rather than letting both partners hand seats to the same party.
 
 ## Commands
 
@@ -61,11 +72,24 @@ npm run preview  # Preview production build
 
 ## Data Sources
 
-Each `districtData/` subfolder contains its data CSV, loader `.ts`, processing script, and raw inputs (if any). Scripts live alongside the data they produce.
+Everything partisan comes from Cook PVI. See the root `README.md` for the full breakdown — it is the
+only README in the repo; don't add per-folder ones.
 
-- **Enacted**: PlanScore district-level results (`planscore-raw-data.tsv`) → `districtPVI.csv`
-- **Compact**: ALARM Project 50-State Simulations → `alarmCompactMaps.csv` (via `fetch-alarm-data.cjs`)
-- **Competitive**: DRA most-competitive maps → `draCompetitiveMaps.csv` (via `consolidate-dra-competitive.cjs`)
-- **Proportional**: DRA most-proportional maps → `draProportionalMaps.csv` (via `consolidate-dra-proportional.cjs`)
+- **District leans**: [2026 Cook PVI](https://www.cookpolitical.com/cook-pvi/2026-partisan-voting-index/district-map-and-list)
+  → `data/cook2026DistrictPVI.tsv` (tab-separated with a header row; the app reads the `2026 PVI`
+  column and skips the header).
+- **State leans**: statewide Cook PVI, stored as `partisanLean` in `data/stateData.ts`.
+  Redistricting doesn't move a statewide PVI, so the 2026 release left these unchanged.
 
-To switch the active alternate map, change one import line in `src/data/districtData/alternateMapLeans.ts`.
+Both files are hand-edited; the `stateData.csv` → `stateData.ts` generation step and the PlanScore
+verification script are gone.
+
+`stateData.ts` also carries map-drawing fields with no runtime reader yet — `districts2032`,
+`stateControl`, `redistrictingAuthority`, `governorCanVeto`, `hasBallotInitiative`. Keep them: a pact
+has to survive whoever holds the pen. `efficiencyGap` is deliberately *not* among them, since it came
+from the PlanScore methodology the representation gap replaced.
+
+The DRA and ALARM alternate maps were removed: the proportional ideal is now derived from each state's
+own PVI, so there is no hypothetical map to compare against. Cook's site blocks scripted fetches, so
+refreshing district data means pasting a new export into `data/cook2026DistrictPVI.tsv` by hand,
+keeping the header row and column order.

@@ -1,21 +1,20 @@
 import { HoveredState } from '../types';
-import { stateSafeSeats } from '../data/districtData/safeSeats';
-import { computeRepresentationGap } from '../utils/computeRepresentationGap';
 
 const PARTY_COLORS = { R: '#c93135', D: '#2e6da4' };
 
 interface StateTooltipProps {
   hoveredState: HoveredState;
+  /** Signed gap left after any pact — positive favors R, negative favors D. */
+  residualGaps: Record<string, number>;
 }
 
 function repGapColor(absGap: number): string {
   return absGap === 0 ? '#2ca25f' : '#e8a832';
 }
 
-export function StateTooltip({ hoveredState }: StateTooltipProps) {
+export function StateTooltip({ hoveredState, residualGaps }: StateTooltipProps) {
   const { state, x, y } = hoveredState;
-  const safeCounts = stateSafeSeats[state.id];
-  const gap = safeCounts ? computeRepresentationGap(state, safeCounts) : 0;
+  const gap = residualGaps[state.id] ?? 0;
   const absGap = Math.abs(gap);
 
   const tooltipWidth = 220;
