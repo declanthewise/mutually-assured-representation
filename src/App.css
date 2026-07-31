@@ -397,6 +397,10 @@ body {
   max-width: 420px;
   height: auto;
   margin: 0 auto;
+  /* The viewBox scales by a fractional factor, so every row lands on a different
+     subpixel offset. Without this the two font sizes sharing the header baseline
+     snap independently and the delegation count drifts a pixel on some rows. */
+  text-rendering: geometricPrecision;
 }
 
 .bipartite-graph .state-box {

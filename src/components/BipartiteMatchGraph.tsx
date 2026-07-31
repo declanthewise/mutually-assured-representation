@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import * as d3 from 'd3';
 import { StateData, MatchPair } from '../types';
-import { FAIR_GREEN, GAP_GOLD, LEAN_DOMAIN, LEAN_RANGE } from '../colors';
+import { FAIR_GREEN, GAP_GOLD, LEAN_DOMAIN, LEAN_RANGE, PARTY_COLORS } from '../colors';
 import { baselineGaps, proportionalRSeats } from '../data/computeRepresentationGap';
 import { stateSafeSeats } from '../data/districtLeans';
 import { stateData } from '../data/stateData';
@@ -21,13 +21,7 @@ const leanColorScale = d3.scaleLinear<string>()
   .range(LEAN_RANGE)
   .clamp(true);
 
-/** Fair at zero, gold as the gap widens — 0 is a state already at its share. */
-const gapScale = d3.scaleLinear<string>()
-  .domain([0, 1])
-  .range([FAIR_GREEN, GAP_GOLD])
-  .clamp(true);
-
-const BOX_W = 116;
+const BOX_W = 140;
 const BOX_H = 60;
 const ROW_GAP = 6;
 const ROW_H = BOX_H + ROW_GAP;
@@ -37,7 +31,7 @@ const HEADER_HEIGHT = 19;
 const EQ_ROW_Y = [29, 40, 52];
 const EQ_RULE_Y = 46;
 
-const LEFT_BOX_X = 20;
+const LEFT_BOX_X = 12;
 const COL_GAP = 28;
 const RIGHT_BOX_X = LEFT_BOX_X + BOX_W + COL_GAP;
 const VIEW_W = RIGHT_BOX_X + BOX_W + LEFT_BOX_X;
@@ -66,6 +60,21 @@ function formatLean(lean: number): string {
 /** Seats the enacted map denies the minority party — the number shown on each box. */
 function repGapOf(state: StateData): number {
   return Math.abs(baselineGaps[state.id] ?? 0);
+}
+
+/**
+ * Render order, held fixed no matter how the ranking moves.
+ *
+ * React reorders keyed children by re-inserting the nodes that moved, and a
+ * re-inserted node loses its running CSS transition — so any box whose DOM
+ * position changed would jump to its new row instead of sliding. React only
+ * moves the ones that slipped backwards in the list, which is why the boxes
+ * floating down were the ones landing without an animation. Keeping document
+ * order constant leaves nothing but the transform to change, and every box
+ * animates in both directions.
+ */
+function inDomOrder(placements: Placement[]): Placement[] {
+  return placements.slice().sort((a, b) => a.state.id.localeCompare(b.state.id));
 }
 
 function bySize(a: StateData, b: StateData): number {
@@ -250,13 +259,11 @@ export function BipartiteMatchGraph({
     const boxX = isLeft ? LEFT_BOX_X : RIGHT_BOX_X;
     const boxY = rowTopY(index, yOffset);
 
+    // Both columns read name→badge, so the two sides scan the same way.
     const leanText = formatLean(state.partisanLean);
-    const badgeW = leanText.length * 5.5 + 8;
+    const badgeW = leanText.length * 5 + 8;
     const badgeH = 13;
-    // Left column reads name→badge, right column mirrors it
-    const badgeX = isLeft ? BOX_W - 5 - badgeW : 5;
-    const nameX = isLeft ? 6 : BOX_W - 6;
-    const nameAnchor = isLeft ? 'start' : 'end';
+    const badgeX = BOX_W - 5 - badgeW;
 
     // The equation the box spells out: where the delegation sits now, less
     // where the state's own PVI says it should sit, leaves the gap. "Now" moves
@@ -266,13 +273,25 @@ export function BipartiteMatchGraph({
     const signedGap = residualGaps[state.id] ?? 0;
     const currentR = proportionalR + signedGap;
 
-    // A state's balances read in its own party's seats, matching its column.
-    // EVEN districts belong to neither side, so they sit outside both figures —
-    // which is also what keeps the subtraction landing exactly on the gap.
-    const balanceParty = state.partisanLean > 0 ? 'D' : 'R';
+    // EVEN districts belong to neither side, so they sit outside both party
+    // counts — which is what keeps the subtraction landing exactly on the gap.
     const assignable = state.districts2022 - (stateSafeSeats[state.id]?.even ?? 0);
-    const currentBalance = balanceParty === 'D' ? assignable - currentR : currentR;
-    const proportionalBalance = balanceParty === 'D' ? assignable - proportionalR : proportionalR;
+
+    // Only the minority party's districts are shown: the side the enacted map
+    // squeezes. Which party that is follows the state's own lean, matching the
+    // column, so the two rows always read in the same party.
+    const minorityParty = isLeft ? 'R' : 'D';
+    const minorityOf = (rSeats: number) => (isLeft ? rSeats : assignable - rSeats);
+
+    const seatCount = (y: number, value: React.ReactNode) => (
+      <text
+        x={BOX_W - 6} y={y}
+        textAnchor="end" dominantBaseline="central"
+        fontSize={9} fontWeight={700} fill={PARTY_COLORS[minorityParty]}
+      >
+        {value}{minorityParty}
+      </text>
+    );
 
     return (
       <g
@@ -293,18 +312,6 @@ export function BipartiteMatchGraph({
           rx={3}
         />
 
-        {/* Delegation size, on the outer edge of the column */}
-        <text
-          x={isLeft ? -6 : BOX_W + 6}
-          y={BOX_H / 2}
-          textAnchor={isLeft ? 'end' : 'start'}
-          dominantBaseline="central"
-          fontSize={10}
-          fill="#999"
-        >
-          {state.districts2022}
-        </text>
-
         <line
           x1={6}
           y1={HEADER_HEIGHT}
@@ -320,46 +327,37 @@ export function BipartiteMatchGraph({
           y={10}
           textAnchor="middle"
           dominantBaseline="central"
-          fontSize={9}
+          fontSize={8.5}
           fill={leanTextColor}
           fontWeight={600}
         >
           {leanText}
         </text>
         <text
-          x={nameX}
+          x={6}
           y={10}
-          textAnchor={nameAnchor}
           dominantBaseline="central"
-          fontSize={10}
+          fontSize={9.5}
           fill="#333"
           fontWeight={isActive ? 600 : 500}
         >
           {state.name}
+          <tspan dx={3} fontSize={8.5} fontWeight={500} fill="#999">
+            ({state.districts2022})
+          </tspan>
         </text>
 
-        {/* Current − Proportional = Gap, read top to bottom. */}
+        {/* Where the state's PVI says the delegation should sit, where it does,
+            and the gap between them — read top to bottom. */}
         <text x={6} y={EQ_ROW_Y[0]} dominantBaseline="central" fontSize={7} fill="#888">
-          Current Balance
+          Fair Minority Districts
         </text>
-        <text
-          x={BOX_W - 6} y={EQ_ROW_Y[0]}
-          textAnchor="end" dominantBaseline="central"
-          fontSize={9} fontWeight={700} fill="#333"
-        >
-          <AnimatedCount value={currentBalance} />{balanceParty}
-        </text>
+        {seatCount(EQ_ROW_Y[0], minorityOf(proportionalR))}
 
         <text x={6} y={EQ_ROW_Y[1]} dominantBaseline="central" fontSize={7} fill="#888">
-          &minus; Proportional Balance
+          2026 Minority Districts
         </text>
-        <text
-          x={BOX_W - 6} y={EQ_ROW_Y[1]}
-          textAnchor="end" dominantBaseline="central"
-          fontSize={9} fontWeight={700} fill="#333"
-        >
-          {proportionalBalance}{balanceParty}
-        </text>
+        {seatCount(EQ_ROW_Y[1], <AnimatedCount value={minorityOf(currentR)} />)}
 
         <line
           x1={6}
@@ -371,13 +369,13 @@ export function BipartiteMatchGraph({
         />
 
         <text x={6} y={EQ_ROW_Y[2]} dominantBaseline="central" fontSize={7} fill="#888">
-          = Representation Gap
+          Representation Gap
         </text>
         <text
           x={BOX_W - 6} y={EQ_ROW_Y[2]}
           textAnchor="end" dominantBaseline="central"
           fontSize={9.5} fontWeight={700}
-          fill={gapScale(Math.abs(signedGap) / 8)}
+          fill={signedGap === 0 ? FAIR_GREEN : GAP_GOLD}
         >
           <AnimatedCount value={Math.abs(signedGap)} />
         </text>
@@ -436,12 +434,12 @@ export function BipartiteMatchGraph({
         )}
 
         <g className="left-column">
-          {leftPlacements.map(({ state, row, yOffset }) =>
+          {inDomOrder(leftPlacements).map(({ state, row, yOffset }) =>
             renderStateBox(state, row, 'left', yOffset),
           )}
         </g>
         <g className="right-column">
-          {rightPlacements.map(({ state, row, yOffset }) =>
+          {inDomOrder(rightPlacements).map(({ state, row, yOffset }) =>
             renderStateBox(state, row, 'right', yOffset),
           )}
         </g>
