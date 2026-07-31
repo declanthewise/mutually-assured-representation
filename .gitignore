@@ -17,6 +17,3 @@ dist/
 
 # TypeScript build info
 tsconfig.tsbuildinfo
-
-# Claude Code
-.claude/*.local.json
