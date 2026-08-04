@@ -19,6 +19,9 @@ export const FAIR_GREEN = '#2d6a4f';
 
 export const PARTY_COLORS = { R: '#c93135', D: '#2e6da4' } as const;
 
+/** Section-break rules, drawn by BipartiteMatchGraph. */
+export const DIVIDER_GRAY = '#e0e0e0';
+
 /** Districts Cook rates EVEN. */
 export const EVEN_GRAY = '#c2c0b8';
 

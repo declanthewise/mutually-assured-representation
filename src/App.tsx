@@ -65,7 +65,7 @@ function App() {
       {!started && (
         <header className="app-title">
           <h1>
-            <span className="app-title-kicker">The Road to Proportionality:</span>
+            <span className="app-title-kicker">The Path to Proportionality:</span>
             <span className="app-title-name">Mutually Assured Representation</span>
           </h1>
         </header>

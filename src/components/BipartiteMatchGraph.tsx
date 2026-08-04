@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import * as d3 from 'd3';
 import { StateData, MatchPair } from '../types';
-import { FAIR_GREEN, GAP_GOLD, LEAN_DOMAIN, LEAN_RANGE, PARTY_COLORS } from '../colors';
+import { DIVIDER_GRAY, FAIR_GREEN, GAP_GOLD, LEAN_DOMAIN, LEAN_RANGE, PARTY_COLORS } from '../colors';
 import { baselineGaps, proportionalRSeats } from '../data/computeRepresentationGap';
 import { stateSafeSeats } from '../data/districtLeans';
 import { stateData } from '../data/stateData';
@@ -36,10 +36,33 @@ const COL_GAP = 28;
 const RIGHT_BOX_X = LEFT_BOX_X + BOX_W + COL_GAP;
 const VIEW_W = RIGHT_BOX_X + BOX_W + LEFT_BOX_X;
 
-const TOP_PAD = 8;
+/**
+ * Both section rules — the one splitting the map from the columns, and the one
+ * above "Your Pacts" — are the same divider: 160px wide, 1px, 24px of air on
+ * each side. They're drawn in a viewBox that renders at `max-width: 420px`,
+ * so the px figures convert at that scale.
+ */
+const UNITS_PER_PX = VIEW_W / 420;
+const RULE_W = 160 * UNITS_PER_PX;
+const RULE_PAD = 24 * UNITS_PER_PX;
+const RULE_STROKE = 1 * UNITS_PER_PX;
+
+/** The top rule sits flush with the viewBox edge; its air above is CSS margin. */
+const TOP_RULE_Y = RULE_STROKE / 2;
+const TOP_PAD = TOP_RULE_Y + RULE_PAD;
 const BOTTOM_PAD = 14;
-/** Room above the parked block: its "Your Pacts" heading, plus a little air. */
-const PACT_HEADER_H = 30;
+
+/**
+ * The heading under the pact rule. Spacing is measured to the top of its ink,
+ * not its em box — Source Sans 3 caps fill 0.66em, and the ~3.5 units of slack
+ * above them would otherwise read as extra air under the rule.
+ */
+const PACT_LABEL_SIZE = 9;
+const PACT_LABEL_CAP = PACT_LABEL_SIZE * 0.66;
+const PACT_LABEL_GAP = 14;
+
+/** Room above the parked block: the rule, its padding, and that heading. */
+const PACT_HEADER_H = RULE_PAD * 2 + PACT_LABEL_CAP + PACT_LABEL_GAP - ROW_GAP;
 
 type Column = 'left' | 'right';
 
@@ -75,6 +98,20 @@ function repGapOf(state: StateData): number {
  */
 function inDomOrder(placements: Placement[]): Placement[] {
   return placements.slice().sort((a, b) => a.state.id.localeCompare(b.state.id));
+}
+
+/** The section rule, centered on the columns. Both dividers are this line. */
+function sectionRule(y: number) {
+  return (
+    <line
+      x1={(VIEW_W - RULE_W) / 2}
+      x2={(VIEW_W + RULE_W) / 2}
+      y1={y}
+      y2={y}
+      stroke={DIVIDER_GRAY}
+      strokeWidth={RULE_STROKE}
+    />
+  );
 }
 
 function bySize(a: StateData, b: StateData): number {
@@ -248,6 +285,9 @@ export function BipartiteMatchGraph({
 
   const rowTopY = (row: number, yOffset: number) => TOP_PAD + row * ROW_H + yOffset;
 
+  /** Top of the first parked pact — everything in the heading hangs off it. */
+  const pactTopY = pactHeader ? rowTopY(pactHeader.startRow, PACT_HEADER_H) : 0;
+
   const renderStateBox = (state: StateData, index: number, column: Column, yOffset: number) => {
     const isActive = state.id === activeStateId;
     const partner = partnerById.get(state.id);
@@ -386,6 +426,9 @@ export function BipartiteMatchGraph({
   return (
     <div className="bipartite-graph-wrapper">
       <svg viewBox={`0 0 ${VIEW_W} ${totalHeight}`} className="bipartite-graph">
+        {/* The break from the map above — same rule as the pact heading's. */}
+        {sectionRule(TOP_RULE_Y)}
+
         {/* Links first, so the boxes sit on top of where they meet. */}
         <g className="match-links">
           {selectedMatches.map(([a, b]) => {
@@ -410,20 +453,12 @@ export function BipartiteMatchGraph({
 
         {pactHeader && (
           <g className="pact-heading">
-            <line
-              x1={LEFT_BOX_X}
-              x2={RIGHT_BOX_X + BOX_W}
-              y1={rowTopY(pactHeader.startRow, PACT_HEADER_H) - 16}
-              y2={rowTopY(pactHeader.startRow, PACT_HEADER_H) - 16}
-              stroke={FAIR_GREEN}
-              strokeWidth={0.75}
-              opacity={0.3}
-            />
+            {sectionRule(pactTopY - (RULE_PAD + PACT_LABEL_CAP + PACT_LABEL_GAP))}
             <text
               x={VIEW_W / 2}
-              y={rowTopY(pactHeader.startRow, PACT_HEADER_H) - 6}
+              y={pactTopY - PACT_LABEL_GAP}
               textAnchor="middle"
-              fontSize={9}
+              fontSize={PACT_LABEL_SIZE}
               fontWeight={700}
               letterSpacing="0.1em"
               fill={FAIR_GREEN}

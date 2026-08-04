@@ -370,6 +370,9 @@ body {
 /* Clips the entrance animation so it never lengthens the page */
 .match-columns-viewport {
   overflow: hidden;
+  /* Air above the section rule the graph draws along its top edge; the matching
+     24px below it is the graph's own TOP_PAD. */
+  margin-top: 1.5rem;
 }
 
 .match-columns {
