@@ -61,8 +61,12 @@ into the JS bundle, which is what `?url` plus the runtime fetch exists to avoid.
   gaps in *both* states, so its national effect is `2 × min(|gapA|, |gapB|)`. Whatever gap survives
   stays on the map. Because each side returns the same number of seats, a pact never changes the
   national party balance — only the gap closes.
-- **MAR Matching**: The user pairs states manually. Clicking a state re-ranks the opposite
-  column by closest representation gap, breaking ties on closest delegation size. Columns are split
+- **MAR Matching**: The user pairs states manually. Clicking a state pins it to the head of its own
+  column and re-ranks *both* columns around it: closest delegation size, then closest proportional
+  minority share (the box's top row), then alphabetical. The representation gap is deliberately not
+  a ranking key — a state can redraw its way out of its gap but not out of its size or its lean, so
+  the durable pact is between alike states and matched gaps are a benefit of that rather than the
+  thing being sorted on. Columns are split
   by the state's own partisan lean, because the signatory is the state government, not the
   congressional delegation. A state whose map favors the party it doesn't lean toward (Nevada is
   R+1 but D-gerrymandered) therefore sits in the column opposite its gerrymander; `pactSeatsReturned`

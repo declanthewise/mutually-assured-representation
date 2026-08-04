@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { StateData, MatchPair } from '../types';
 import { DIVIDER_GRAY, FAIR_GREEN, GAP_GOLD, LEAN_DOMAIN, LEAN_RANGE, PARTY_COLORS } from '../colors';
-import { baselineGaps, proportionalRSeats } from '../data/computeRepresentationGap';
+import { proportionalRSeats } from '../data/computeRepresentationGap';
 import { stateSafeSeats } from '../data/districtLeans';
 import { stateData } from '../data/stateData';
 import { AnimatedCount } from './AnimatedCount';
@@ -96,9 +96,16 @@ function formatLean(lean: number): string {
 }
 
 
-/** Seats the enacted map denies the minority party — the number shown on each box. */
-function repGapOf(state: StateData): number {
-  return Math.abs(baselineGaps[state.id] ?? 0);
+/**
+ * The box's top row: districts the state's own PVI says the minority party should
+ * hold. Which party that is follows the state's lean, so reading the figure across
+ * the gutter compares an R share to a D share — the trade a pact actually makes.
+ */
+function minorityProportionalOf(state: StateData): number {
+  const proportionalR = proportionalRSeats(state);
+  if (state.partisanLean > 0) return proportionalR;
+  const assignable = state.districts2022 - (stateSafeSeats[state.id]?.even ?? 0);
+  return assignable - proportionalR;
 }
 
 /**
@@ -134,24 +141,37 @@ function bySize(a: StateData, b: StateData): number {
   return b.districts2022 - a.districts2022 || a.name.localeCompare(b.name);
 }
 
-/** Closest representation gap first; ties broken by closest delegation size. */
+/**
+ * Closest delegation size first, then closest proportional minority share, then
+ * alphabetical.
+ *
+ * The representation gap deliberately isn't a key. The durable pact is between
+ * alike states — a state can redraw its way out of its gap, but not out of its
+ * size or its lean, so those are the terms that hold. Matched gaps are a benefit
+ * of a good pairing rather than the thing being ranked, and the box prints the
+ * gap anyway for whoever wants to weigh it.
+ */
 function byClosenessTo(target: StateData) {
-  const targetGap = repGapOf(target);
+  const targetSize = target.districts2022;
+  const targetMinority = minorityProportionalOf(target);
   return (a: StateData, b: StateData): number => {
-    // The state that was clicked heads its own column. It already scores zero on
-    // both keys, but so does any state of the same gap and size — three 2-district
-    // states with a gap of 1 would otherwise settle it alphabetically, which is how
-    // Rhode Island ended up below Hawaii and New Hampshire.
+    // The state that was clicked heads its own column. It scores zero on every key
+    // below, but so does any state of the same size and share — three 2-district
+    // states would otherwise settle it alphabetically, which is how Rhode Island
+    // ended up below Hawaii and New Hampshire.
     if (a.id === target.id) return -1;
     if (b.id === target.id) return 1;
 
-    const gapDiff = Math.abs(repGapOf(a) - targetGap) - Math.abs(repGapOf(b) - targetGap);
-    if (gapDiff !== 0) return gapDiff;
     const sizeDiff =
-      Math.abs(a.districts2022 - target.districts2022) -
-      Math.abs(b.districts2022 - target.districts2022);
+      Math.abs(a.districts2022 - targetSize) - Math.abs(b.districts2022 - targetSize);
     if (sizeDiff !== 0) return sizeDiff;
-    return bySize(a, b);
+
+    const minorityDiff =
+      Math.abs(minorityProportionalOf(a) - targetMinority) -
+      Math.abs(minorityProportionalOf(b) - targetMinority);
+    if (minorityDiff !== 0) return minorityDiff;
+
+    return a.name.localeCompare(b.name);
   };
 }
 
