@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { StateData, MatchPair } from '../types';
 import { DIVIDER_GRAY, FAIR_GREEN, GAP_GOLD, LEAN_DOMAIN, LEAN_RANGE, PARTY_COLORS } from '../colors';
@@ -31,10 +31,23 @@ const HEADER_HEIGHT = 19;
 const EQ_ROW_Y = [29, 40, 52];
 const EQ_RULE_Y = 46;
 
+/**
+ * The three row labels, which read as one column and so share a size. The cap is
+ * the longest label against the widest count: "Minority Districts (Proportional)"
+ * runs ~0.41 units per character per unit of font size, and a two-digit count
+ * ("13D") leaves it about 108 units of the row. That puts the ceiling near 8.3.
+ */
+const EQ_LABEL_SIZE = 8;
+
 const LEFT_BOX_X = 12;
 const COL_GAP = 28;
 const RIGHT_BOX_X = LEFT_BOX_X + BOX_W + COL_GAP;
 const VIEW_W = RIGHT_BOX_X + BOX_W + LEFT_BOX_X;
+
+/** The break-pact button, centered in the gutter the links cross. */
+const LINK_MID_X = LEFT_BOX_X + BOX_W + COL_GAP / 2;
+const REMOVE_R = 8;
+const REMOVE_TICK = 3;
 
 /**
  * Both section rules — the one splitting the map from the columns, and the one
@@ -51,6 +64,9 @@ const RULE_STROKE = 1 * UNITS_PER_PX;
 const TOP_RULE_Y = RULE_STROKE / 2;
 const TOP_PAD = TOP_RULE_Y + RULE_PAD;
 const BOTTOM_PAD = 14;
+
+/** Air kept around the active box when the view follows it, in CSS px. */
+const SCROLL_MARGIN = 12;
 
 /**
  * The heading under the pact rule. Spacing is measured to the top of its ink,
@@ -122,6 +138,13 @@ function bySize(a: StateData, b: StateData): number {
 function byClosenessTo(target: StateData) {
   const targetGap = repGapOf(target);
   return (a: StateData, b: StateData): number => {
+    // The state that was clicked heads its own column. It already scores zero on
+    // both keys, but so does any state of the same gap and size — three 2-district
+    // states with a gap of 1 would otherwise settle it alphabetically, which is how
+    // Rhode Island ended up below Hawaii and New Hampshire.
+    if (a.id === target.id) return -1;
+    if (b.id === target.id) return 1;
+
     const gapDiff = Math.abs(repGapOf(a) - targetGap) - Math.abs(repGapOf(b) - targetGap);
     if (gapDiff !== 0) return gapDiff;
     const sizeDiff =
@@ -138,6 +161,7 @@ export function BipartiteMatchGraph({
   residualGaps,
 }: BipartiteMatchGraphProps) {
   const [activeStateId, setActiveStateId] = useState<string | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
 
   /** stateId → the state it is currently paired with */
   const partnerById = useMemo(() => {
@@ -183,10 +207,11 @@ export function BipartiteMatchGraph({
   );
 
   // Matched states leave the running order for good and park at the bottom,
-  // both partners on the same row so their link runs flat. Only the unmatched
-  // half of a column re-ranks against the active state.
+  // both partners on the same row so their link runs flat. The unmatched half of
+  // *both* columns re-ranks against the active state, so its own column brings the
+  // nearest alternatives up beside it (the active state itself sorts first, being
+  // zero from itself) while the opposite column offers its closest partners.
   const { leftPlacements, rightPlacements, rowCount, pactHeader } = useMemo(() => {
-    const activeColumn = activeState ? columnOf.get(activeState.id) : null;
     const matchedIds = new Set(partnerById.keys());
     const pactIndexOf = new Map<string, number>();
     selectedMatches.forEach(([a, b], i) => {
@@ -194,8 +219,8 @@ export function BipartiteMatchGraph({
       pactIndexOf.set(b, i);
     });
 
-    const planColumn = (states: StateData[], column: Column) => {
-      const isRanking = !!activeState && activeColumn !== column;
+    const planColumn = (states: StateData[]) => {
+      const isRanking = !!activeState;
       return {
         flowing: states
           .filter(s => !matchedIds.has(s.id))
@@ -207,8 +232,8 @@ export function BipartiteMatchGraph({
       };
     };
 
-    const left = planColumn(leftStates, 'left');
-    const right = planColumn(rightStates, 'right');
+    const left = planColumn(leftStates);
+    const right = planColumn(rightStates);
     const rows = Math.max(
       left.flowing.length + left.parked.length,
       right.flowing.length + right.parked.length,
@@ -232,7 +257,7 @@ export function BipartiteMatchGraph({
       rowCount: rows,
       pactHeader: headed ? { startRow: rows - selectedMatches.length } : null,
     };
-  }, [activeState, columnOf, leftStates, rightStates, partnerById, selectedMatches]);
+  }, [activeState, leftStates, rightStates, partnerById, selectedMatches]);
 
   const totalHeight =
     TOP_PAD + rowCount * ROW_H - ROW_GAP + BOTTOM_PAD + (pactHeader ? PACT_HEADER_H : 0);
@@ -288,6 +313,30 @@ export function BipartiteMatchGraph({
   /** Top of the first parked pact — everything in the heading hangs off it. */
   const pactTopY = pactHeader ? rowTopY(pactHeader.startRow, PACT_HEADER_H) : 0;
 
+  // A clicked state sorts to the head of its own column, which is usually above
+  // where it was standing — so follow it up, or the click appears to make the box
+  // vanish. The row is read from the plan rather than the DOM because the box is
+  // still mid-transition to it. Nothing moves if it's already on screen.
+  useEffect(() => {
+    const placed = activeStateId ? rowById.get(activeStateId) : null;
+    if (!placed || !svgRef.current) return;
+
+    const svgBox = svgRef.current.getBoundingClientRect();
+    const scale = svgBox.width / VIEW_W;
+    const top = svgBox.top + rowTopY(placed.row, placed.yOffset) * scale;
+    const bottom = top + BOX_H * scale;
+
+    // The stat bar is sticky at the top of the viewport and would cover the row.
+    const statBar = document.querySelector('.stat-bar-wrapper');
+    const headroom = (statBar?.getBoundingClientRect().height ?? 0) + SCROLL_MARGIN;
+    if (top >= headroom && bottom <= window.innerHeight - SCROLL_MARGIN) return;
+
+    window.scrollBy({
+      top: top - headroom,
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+    });
+  }, [activeStateId, rowById]);
+
   const renderStateBox = (state: StateData, index: number, column: Column, yOffset: number) => {
     const isActive = state.id === activeStateId;
     const partner = partnerById.get(state.id);
@@ -338,7 +387,8 @@ export function BipartiteMatchGraph({
         key={state.id}
         className={`state-box ${isActive ? 'active' : ''} ${isMatched ? 'matched' : ''}`}
         style={{ transform: `translate(${boxX}px, ${boxY}px)` }}
-        onClick={e => handleStateClick(state, e)}
+        // A parked pact is settled: the only move left on it is the × that breaks it.
+        onClick={isMatched ? undefined : e => handleStateClick(state, e)}
       >
         <rect x={0} y={0} width={BOX_W} height={BOX_H} fill="white" rx={3} />
         <rect
@@ -388,14 +438,16 @@ export function BipartiteMatchGraph({
         </text>
 
         {/* Where the state's PVI says the delegation should sit, where it does,
-            and the gap between them — read top to bottom. */}
-        <text x={6} y={EQ_ROW_Y[0]} dominantBaseline="central" fontSize={7} fill="#888">
-          Fair Minority Districts
+            and the gap between them — read top to bottom. Once a pact is sealed
+            the middle row is no longer the enacted 2026 map but what the pact
+            leaves behind, and the gap below it is what survives that. */}
+        <text x={6} y={EQ_ROW_Y[0]} dominantBaseline="central" fontSize={EQ_LABEL_SIZE} fill="#888">
+          Minority Districts (Proportional)
         </text>
         {seatCount(EQ_ROW_Y[0], minorityOf(proportionalR))}
 
-        <text x={6} y={EQ_ROW_Y[1]} dominantBaseline="central" fontSize={7} fill="#888">
-          2026 Minority Districts
+        <text x={6} y={EQ_ROW_Y[1]} dominantBaseline="central" fontSize={EQ_LABEL_SIZE} fill="#888">
+          Minority Districts ({isMatched ? 'Pact' : '2026'})
         </text>
         {seatCount(EQ_ROW_Y[1], <AnimatedCount value={minorityOf(currentR)} />)}
 
@@ -408,8 +460,8 @@ export function BipartiteMatchGraph({
           strokeWidth={0.5}
         />
 
-        <text x={6} y={EQ_ROW_Y[2]} dominantBaseline="central" fontSize={7} fill="#888">
-          Representation Gap
+        <text x={6} y={EQ_ROW_Y[2]} dominantBaseline="central" fontSize={EQ_LABEL_SIZE} fill="#888">
+          {isMatched ? 'New Representation Gap' : 'Representation Gap'}
         </text>
         <text
           x={BOX_W - 6} y={EQ_ROW_Y[2]}
@@ -425,7 +477,7 @@ export function BipartiteMatchGraph({
 
   return (
     <div className="bipartite-graph-wrapper">
-      <svg viewBox={`0 0 ${VIEW_W} ${totalHeight}`} className="bipartite-graph">
+      <svg ref={svgRef} viewBox={`0 0 ${VIEW_W} ${totalHeight}`} className="bipartite-graph">
         {/* The break from the map above — same rule as the pact heading's. */}
         {sectionRule(TOP_RULE_Y)}
 
@@ -436,17 +488,41 @@ export function BipartiteMatchGraph({
             const placedB = rowById.get(b);
             if (!placedA || !placedB) return null;
             const [onLeft, onRight] = placedA.column === 'left' ? [placedA, placedB] : [placedB, placedA];
+            const leftY = rowTopY(onLeft.row, onLeft.yOffset) + BOX_H / 2;
+            const rightY = rowTopY(onRight.row, onRight.yOffset) + BOX_H / 2;
             return (
-              <line
-                key={[a, b].slice().sort().join('-')}
-                x1={LEFT_BOX_X + BOX_W}
-                y1={rowTopY(onLeft.row, onLeft.yOffset) + BOX_H / 2}
-                x2={RIGHT_BOX_X}
-                y2={rowTopY(onRight.row, onRight.yOffset) + BOX_H / 2}
-                stroke={FAIR_GREEN}
-                strokeWidth={2}
-                strokeLinecap="round"
-              />
+              <g key={[a, b].slice().sort().join('-')}>
+                <line
+                  x1={LEFT_BOX_X + BOX_W}
+                  y1={leftY}
+                  x2={RIGHT_BOX_X}
+                  y2={rightY}
+                  stroke={FAIR_GREEN}
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                />
+                {/* Dissolving the pact is a property of the pair, not of either
+                    state, so the control sits on the link that joins them. */}
+                <g
+                  className="pact-remove"
+                  transform={`translate(${LINK_MID_X}, ${(leftY + rightY) / 2})`}
+                  onClick={e => {
+                    e.stopPropagation();
+                    setActiveStateId(null);
+                    onToggleMatch([a, b]);
+                  }}
+                >
+                  <title>Break this pact</title>
+                  <circle r={REMOVE_R} fill="white" stroke={FAIR_GREEN} strokeWidth={1.5} />
+                  <path
+                    d={`M${-REMOVE_TICK} ${-REMOVE_TICK}L${REMOVE_TICK} ${REMOVE_TICK}
+                        M${REMOVE_TICK} ${-REMOVE_TICK}L${-REMOVE_TICK} ${REMOVE_TICK}`}
+                    stroke={GAP_GOLD}
+                    strokeWidth={1.5}
+                    strokeLinecap="round"
+                  />
+                </g>
+              </g>
             );
           })}
         </g>

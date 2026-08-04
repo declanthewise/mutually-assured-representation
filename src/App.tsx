@@ -47,6 +47,15 @@ function App() {
     });
   }, []);
 
+  // Back to the opening screen with an empty board — the map, the stat bar and the
+  // columns all read off selectedMatches, so clearing it resets every one of them.
+  const handleStartOver = useCallback(() => {
+    setSelectedMatches([]);
+    setStarted(false);
+    setFinished(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   return (
     <div className="app">
       <StatBar nationalRepresentationGap={nationalRepresentationGap} />
@@ -93,6 +102,9 @@ function App() {
           </div>
 
           <div className="finish-row">
+            <button className="restart-btn" onClick={handleStartOver}>
+              Start Over
+            </button>
             <button className="finish-btn" onClick={() => setFinished(true)}>
               Finish
             </button>

@@ -224,6 +224,8 @@ body {
 .finish-row {
   display: flex;
   justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
   padding: 1rem 1.5rem 0.5rem;
 }
 
@@ -259,14 +261,37 @@ body {
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #2d6a4f;
+  color: #111;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
 
+/* The label goes white only once the green fills in behind it. */
 .finish-btn:hover {
   background: #2d6a4f;
   color: #fff;
+}
+
+/* Gold, against Finish's green: it puts every gap back on the board. The label
+   stays dark either way — gold on white is too faint to read at this size. */
+.restart-btn {
+  display: inline-block;
+  padding: 0.5rem 1.5rem;
+  background: #fff;
+  border: 1.5px solid #e8b31f; /* GAP_GOLD — see src/colors.ts */
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #333;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.restart-btn:hover {
+  background: #e8b31f;
 }
 
 /* ===========================
@@ -411,8 +436,29 @@ body {
   transition: transform 550ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.bipartite-graph .state-box:hover > rect:nth-child(2) {
+/* Boxes in "Your Pacts" are inert — no cursor, no hover, no click. Breaking the
+   pact is the × on the link, and that sits outside the box. */
+.bipartite-graph .state-box.matched {
+  pointer-events: none;
+}
+
+.bipartite-graph .state-box:not(.matched):hover > rect:nth-child(2) {
   stroke: #000;
+}
+
+/* Break-pact button. Presentation attributes lose to these rules, so the
+   filled-in hover state needs no second set of colours in the markup. */
+.bipartite-graph .pact-remove {
+  cursor: pointer;
+}
+
+.bipartite-graph .pact-remove circle {
+  transition: fill 150ms ease;
+}
+
+/* The ring fills in; the gold × rides on top of it either way. */
+.bipartite-graph .pact-remove:hover circle {
+  fill: #2d6a4f; /* FAIR_GREEN — see src/colors.ts */
 }
 
 @media (prefers-reduced-motion: reduce) {
