@@ -118,11 +118,11 @@ function App() {
           </div>
 
           <div className="finish-row">
-            <button className="restart-btn" onClick={handleStartOver}>
-              Start Over
-            </button>
             <button className="finish-btn" onClick={() => setFinished(true)}>
               Finish
+            </button>
+            <button className="restart-btn" onClick={handleStartOver}>
+              Start Over
             </button>
           </div>
         </>
