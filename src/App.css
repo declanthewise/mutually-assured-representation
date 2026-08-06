@@ -370,24 +370,6 @@ body {
   text-align: left;
 }
 
-.results-resume-btn {
-  margin-top: 1.1rem;
-  padding: 0.35rem 1.25rem;
-  background: none;
-  border: 1px solid #ccc;
-  border-radius: 999px;
-  font-family: inherit;
-  font-size: 0.75rem;
-  color: #666;
-  cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease;
-}
-
-.results-resume-btn:hover {
-  border-color: #999;
-  color: #333;
-}
-
 /* ===========================
    Match Columns
    =========================== */

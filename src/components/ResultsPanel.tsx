@@ -15,12 +15,14 @@ interface ResultsPanelProps {
   selectedMatches: MatchPair[];
   nationalRepresentationGap: number;
   onResume: () => void;
+  onStartOver: () => void;
 }
 
 export function ResultsPanel({
   selectedMatches,
   nationalRepresentationGap,
   onResume,
+  onStartOver,
 }: ResultsPanelProps) {
   const seatsClosed = BASELINE_GAP - nationalRepresentationGap;
   const closedShare = (seatsClosed / BASELINE_GAP) * 100;
@@ -73,9 +75,15 @@ export function ResultsPanel({
         number of seats to each side, so none of this moved the party balance — only the distortion.
       </p>
 
-      <button className="results-resume-btn" onClick={onResume}>
-        Keep matching
-      </button>
+      {/* Same pair as under the columns: gold puts the board back, green goes on. */}
+      <div className="finish-row">
+        <button className="restart-btn" onClick={onStartOver}>
+          Start Over
+        </button>
+        <button className="finish-btn" onClick={onResume}>
+          Keep Matching
+        </button>
+      </div>
     </div>
   );
 }

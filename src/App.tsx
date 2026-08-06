@@ -118,6 +118,7 @@ function App() {
             selectedMatches={selectedMatches}
             nationalRepresentationGap={nationalRepresentationGap}
             onResume={() => setFinished(false)}
+            onStartOver={handleStartOver}
           />
         </div>
       )}
