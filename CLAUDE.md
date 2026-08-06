@@ -72,17 +72,18 @@ into the JS bundle, which is what `?url` plus the runtime fetch exists to avoid.
   minority share (the box's top row), then alphabetical. The representation gap is deliberately not
   a ranking key — a state can redraw its way out of its gap but not out of its size or its lean, so
   the durable pact is between alike states and matched gaps are a benefit of that rather than the
-  thing being sorted on. Columns are split
-  by the state's own partisan lean, because the signatory is the state government, not the
-  congressional delegation. A state whose map favors the party it doesn't lean toward (Nevada is
-  R+1 but D-gerrymandered) therefore sits in the column opposite its gerrymander; `pactSeatsReturned`
-  returns 0 for such a pairing rather than letting both partners hand seats to the same party.
-  A PVI of exactly EVEN has no side, so those states are placed by who holds their branches —
-  the same signatory logic, read off the government instead of a rounded margin. That's Michigan
-  (D governor, D senate, R house → left) and Wisconsin (D governor, R senate, R house → right).
-  D has to win the branches outright, so an even split stays right. One predicate, `leansDemocratic()`
-  in `BipartiteMatchGraph.tsx`, decides both the column and which party the box's minority rows
-  count — they must not disagree.
+  thing being sorted on. It is, however, what splits the columns: the side a state sits on is the
+  direction of its *baseline* gap, D-drawn left and R-drawn right, so every pairing across the gutter
+  has seats to trade. Statewide lean is a close proxy — 43 of the 44 multi-district states sit on the
+  side their own PVI names — and reading the gap instead only moves Nevada, which is R+1 with a
+  D-drawn map and belongs with the states it can actually disarm. The gap must be the baseline and
+  not the residual, or sealing a pact would move its own partners' columns.
+  Six states carry no gap and so no side; they fall back to lean, and Michigan (gap 0 and exactly
+  EVEN) falls further, to who holds its branches — the signatory read off the government instead of
+  a rounded margin, D governor and D senate over an R house putting it left. D has to win the
+  branches outright, so an even split stays right. One predicate, `isDemocraticSide()` in
+  `BipartiteMatchGraph.tsx`, decides both the column and which party the box's minority rows count —
+  they must not disagree.
 
 ## Commands
 

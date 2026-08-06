@@ -35,17 +35,17 @@ price: a state with a 3-seat gap can only buy 3 seats of disarmament from a part
 remaining 6 stays on the map. Because each side gives up the same number, no pact changes the
 national party balance.
 
-Columns in the matching view are split by each state's **own partisan lean**, not by which way its
-map is drawn — the signatory is the state government, not the congressional delegation. Nevada is the
-only state where the two disagree (R+1, but D-gerrymandered by one seat); pairing it with a
-Democratic-leaning state returns zero seats rather than letting both partners hand seats to the same
-party.
+Columns in the matching view are split by **which way each state's map is drawn** — the direction of
+its representation gap, D-drawn on the left and R-drawn on the right. That's the thing a pact trades,
+so every pairing across the gutter has seats in it. A state's own partisan lean is a close proxy: 43
+of the 44 multi-district states sit on the side their statewide PVI names. Nevada is the exception,
+R+1 but D-gerrymandered by a seat, and it sits with the states it can actually disarm.
 
-Michigan and Wisconsin are exactly EVEN, and a lean of zero picks no side. Those two are placed by
-**who holds their branches** instead — the same signatory reasoning, taken from the government rather
-than a rounded statewide margin. Michigan (D governor, D senate, R house) sits on the left, Wisconsin
-(D governor, R senate, R house) on the right. Democrats have to win the branches outright, so a state
-that split them evenly would stay on the right.
+Six states carry no gap and so no side. They fall back to their lean, and Michigan — no gap and
+exactly EVEN — falls further, to **who holds its branches**: the signatory is the state government,
+so its party is better read off the government than off a rounded statewide margin. A D governor and
+D senate over an R house put Michigan on the left. Democrats have to win the branches outright, so a
+state that split them evenly would stay on the right.
 
 ## Running it
 

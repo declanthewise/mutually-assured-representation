@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { BranchControl, StateData, MatchPair } from '../types';
 import { DIVIDER_GRAY, EVEN_GRAY, FAIR_GREEN, GAP_GOLD, LEAN_DOMAIN, LEAN_RANGE, PARTY_COLORS } from '../colors';
-import { proportionalRSeats } from '../data/computeRepresentationGap';
+import { baselineGaps, proportionalRSeats } from '../data/computeRepresentationGap';
 import { stateSafeSeats } from '../data/districtLeans';
 import { stateData } from '../data/stateData';
 import { AnimatedCount } from './AnimatedCount';
@@ -205,20 +205,30 @@ function formatLean(lean: number): string {
 
 
 /**
- * Which side of the graph a state sits on: D on the left, R on the right.
+ * Which side of the graph a state sits on: the D-drawn maps on the left, the
+ * R-drawn on the right.
  *
- * Normally that's just the statewide PVI. Michigan and Wisconsin are exactly EVEN
- * though, and a PVI of 0 has no side to be on — so control breaks the tie, which
- * is the same principle the split already runs on. It's the state government that
- * signs a pact, and the surer reading of a government's party is who holds its
- * branches, not a rounded statewide margin. That puts Michigan (D governor, D
- * senate, R house) on the left and Wisconsin (D governor, R senate, R house) on
- * the right.
+ * The column is the gerrymander the state has to give up, because that's what a
+ * pact trades — so every pairing across the gutter is a real trade. Statewide lean
+ * is a close proxy for that and used to be what the split read: 43 of the 44
+ * multi-district states sit on the side their own PVI names. Nevada is the one
+ * that doesn't, R+1 with a D-drawn map, and reading the gap directly puts it with
+ * the states it can actually disarm.
  *
- * D has to win the branches outright, so a state that splits them evenly stays on
- * the right, where every non-positive lean already lands.
+ * Six states carry no gap and so hold no gerrymander to name a side. They fall
+ * back to the lean, and Michigan — gap 0 and exactly EVEN — falls further, to who
+ * holds its branches: it's the state government that signs a pact, and the surer
+ * reading of a government's party is its branches, not a rounded statewide margin.
+ * D governor, D senate, R house puts it on the left. D has to win the branches
+ * outright, so a state that splits them evenly stays on the right, where every
+ * non-positive lean already lands.
+ *
+ * The gap read here is the baseline, never the residual: sealing a pact must not
+ * move its own partners out from under it.
  */
-function leansDemocratic(state: StateData): boolean {
+function isDemocraticSide(state: StateData): boolean {
+  const gap = baselineGaps[state.id] ?? 0;
+  if (gap !== 0) return gap < 0;
   if (state.partisanLean !== 0) return state.partisanLean > 0;
 
   const branches = [state.governorParty, state.senateParty, state.houseParty];
@@ -231,11 +241,12 @@ function leansDemocratic(state: StateData): boolean {
  * The box's top row: districts the state's own PVI says the minority party should
  * hold. Which party that is follows the state's side of the graph, so reading the
  * figure across the gutter compares an R share to a D share — the trade a pact
- * actually makes.
+ * actually makes. On the left that's the R share, which is the side a D-drawn map
+ * squeezes, so the row names the party the pact would hand seats back to.
  */
 function minorityProportionalOf(state: StateData): number {
   const proportionalR = proportionalRSeats(state);
-  if (leansDemocratic(state)) return proportionalR;
+  if (isDemocraticSide(state)) return proportionalR;
   const assignable = state.districts2022 - (stateSafeSeats[state.id]?.even ?? 0);
   return assignable - proportionalR;
 }
@@ -330,19 +341,19 @@ export function BipartiteMatchGraph({
     return map;
   }, [selectedMatches]);
 
-  // Sides follow the state's own partisan lean, because it's the state government
-  // that signs a pact — not its congressional delegation. Usually the map leans the
-  // same way the state does; where it doesn't (Nevada, R+1 but D-gerrymandered) the
-  // pairing is still allowed but returns no seats, since both sides would be handing
-  // seats to the same party. See pactSeatsReturned(). An EVEN state has its side
-  // settled by who holds its branches — see leansDemocratic().
+  // Sides follow the direction of the state's gerrymander, so a pairing across the
+  // gutter always has seats to trade — see pactSeatsReturned(), which pays out
+  // nothing on two states drawn the same way. A state carrying no gap has no
+  // gerrymander to place it, and falls back to lean and then to who holds its
+  // branches; see isDemocraticSide(). It can still be paired, but a partner with
+  // nothing to give up returns nothing.
   const { leftStates, rightStates, columnOf } = useMemo(() => {
     const left: StateData[] = [];
     const right: StateData[] = [];
     const column = new Map<string, Column>();
 
     for (const state of matchableStates) {
-      if (leansDemocratic(state)) {
+      if (isDemocraticSide(state)) {
         left.push(state);
         column.set(state.id, 'left');
       } else {
