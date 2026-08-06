@@ -41,6 +41,12 @@ only state where the two disagree (R+1, but D-gerrymandered by one seat); pairin
 Democratic-leaning state returns zero seats rather than letting both partners hand seats to the same
 party.
 
+Michigan and Wisconsin are exactly EVEN, and a lean of zero picks no side. Those two are placed by
+**who holds their branches** instead — the same signatory reasoning, taken from the government rather
+than a rounded statewide margin. Michigan (D governor, D senate, R house) sits on the left, Wisconsin
+(D governor, R senate, R house) on the right. Democrats have to win the branches outright, so a state
+that split them evenly would stay on the right.
+
 ## Running it
 
 ```bash
@@ -79,10 +85,98 @@ Two fields drive the representation gap:
   unchanged.
 - `districts2022` — seat count under the 2022 apportionment.
 
-The rest describe **who controls map-drawing**, and are deliberately kept despite having no runtime
-reader yet: `districts2032`, `stateControl`, `redistrictingAuthority`, `governorCanVeto`,
-`hasBallotInitiative`. A pact has to survive whoever holds the pen, so pact-feasibility work will
-want them.
+Three more describe **who can sign a pact**, and are drawn as the control pyramid on each box in the
+match graph — `governorParty` on top, `senateParty` and `houseParty` as the course beneath:
+
+- Each is `'dem'`, `'rep'`, or `'split'`. `'split'` on a chamber means no party commands it: a tie
+  (Minnesota's 67–67 House) or a cross-party coalition (both of Alaska's).
+- `houseParty` is `null` for Nebraska alone, whose legislature is unicameral — and officially
+  nonpartisan, though its members' own registration runs R.
+- A trifecta is simply all three agreeing, which is why the verdict isn't stored separately. The
+  pyramid shows *which* branch is the holdout, and that's the part that decides whether a state can
+  actually enter a pact.
+
+`independentCommission` and `governorCanVeto` decide **which mark** a box gets, because the pyramid
+should only claim power the branches actually hold:
+
+| Mark | Condition | States |
+|---|---|---|
+| Gray circle | An independent commission draws the map | AZ, CO, ID, MI, MT, WA |
+| Upside-down pyramid | Governor has **no** veto over the map | CT, HI, NC, NJ, VA |
+| Pyramid | The branches enact it, governor can veto | the other 39 |
+
+A circle means none of the three branches holds the pen, so there's no structure to draw. An
+inverted pyramid means the executive can't block the map — the structure rests on that point rather
+than being weighed down by it.
+
+`independentCommission` is deliberately strict: **true only where a commission holds the pen
+outright**, which is six states. Everything else is false, because the elected branches still decide:
+
+- **Politician commissions** (HI, NJ, VA) are appointed by, or seated with, legislators.
+- **Advisory commissions** (AK, IA, ME, MD, NM, RI, UT) only recommend; the legislature adopts and
+  the governor signs.
+- **New York's** commission can be overridden by the legislature, which is what happened in 2022 and
+  2024 — and its governor *can* veto the map, which is the tell. A commission that holds the pen
+  leaves the governor nothing to veto.
+
+Note that the two conditions are independent, so the inverted pyramid means only what it says: the
+governor has no veto. CT and NC land there because they set lines by joint resolution; HI, NJ and VA
+land there because a commission does the drawing and the governor is simply not in the process.
+
+`districts2032` and `hasBallotInitiative` still have no runtime reader and are deliberately kept —
+a ballot initiative is a route around a hostile legislature.
+
+Both fields describe the map **actually in force for 2026**, not the state's standing rule, and the
+mid-decade wave moved several:
+
+- **California** — Prop 50 (Nov 2025) suspended the citizens' commission and handed the pen to the
+  legislature through 2030; the commission resumes in 2031. So California is a pyramid, not a circle.
+- **Virginia** — the April 2026 amendment that would have bypassed its commission passed 51%, then
+  the Supreme Court of Virginia struck it down on May 8, 2026. The commission stands, so Virginia
+  keeps its circle.
+- **Arkansas and Missouri** — both were once miscategorized as commission states. Their commissions
+  draw *state legislative* lines only; congressional maps come from the legislature, and Missouri's
+  governor signed one in September 2025.
+
+#### Refreshing branch control
+
+Unlike the PVI figures, this **goes out of date on an election calendar** — every regular November,
+plus the occasional special election, party switch, or resignation. As recorded, the branch fields
+come to 16 D trifectas, 23 R and 11 split, and the chambers alone to 57 R and 39 D.
+
+There's no clean API for it, and the states that break automated counts are exactly the ones this app
+cares about, so the edits stay manual. `npm run check:control` narrows down where to look:
+
+```
+npm run check:control
+```
+
+It pulls the nightly [Open States legislator roster](https://open.pluralpolicy.com/data/legislator-csv/)
+(no API key), counts each chamber by party, and prints every chamber that disagrees with
+`stateData.ts`. It **never writes** — it exits 1 with a list of states to go read. Then:
+
+1. Check each flagged state against
+   [Ballotpedia's trifecta table](https://ballotpedia.org/State_government_trifectas) and edit
+   `stateData.ts` by hand.
+2. Cross-check the chamber totals it prints against
+   [NCSL's partisan composition](https://www.ncsl.org/about-state-legislatures). Two independent
+   sources agreeing on both the trifecta counts *and* the chamber counts is a real check; either one
+   alone can hide two offsetting errors.
+3. Verify per state, not just on the totals — the national figures survive compensating mistakes.
+
+**Two things it cannot do**, both by design:
+
+- **Governors are invisible to it.** The roster is legislators only, so the branch most likely to
+  flip is the one branch it can't see. Every run says so. Check all 50 by hand after a statewide
+  election.
+- **A seat count is not control.** Three states disagree with the roster on every run and are
+  correct as recorded: Alaska (coalitions running both chambers read as R pluralities), Nebraska
+  (nonpartisan, so nothing resolves), and Maine (a D-organized House that never reaches 76 of 151).
+  The script carries them as named blind spots with reasons, and still prints them, so a genuine
+  change in one isn't swallowed by its own exemption.
+
+That's the whole argument for report-over-write: a script that patched `stateData.ts` from the
+roster would silently declare Alaska a Republican trifecta.
 
 `efficiencyGap` is the one field not kept — it came from PlanScore 2024 election results, a
 methodology the representation gap no longer uses, and keeping it would put a second definition of

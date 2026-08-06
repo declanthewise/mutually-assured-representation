@@ -1,10 +1,9 @@
-export type RedistrictingAuthority =
-  | 'legislature'            // State legislature draws maps
-  | 'independent_commission' // Independent citizen commission
-  | 'politician_commission'  // Commission of politicians
-  | 'advisory_commission';   // Advisory commission, legislature has final say
-
-export type StateControl = 'dem' | 'rep' | 'split';
+/**
+ * Who holds one branch of a state government. 'split' is the branch nobody
+ * commands: a tied chamber (Minnesota's 67–67 House) or one run by a
+ * cross-party coalition (both of Alaska's).
+ */
+export type BranchControl = 'dem' | 'rep' | 'split';
 
 export interface StateData {
   id: string;            // State abbreviation, e.g., "CA"
@@ -13,11 +12,23 @@ export interface StateData {
   partisanLean: number;  // Statewide Cook PVI: positive = D lean, negative = R lean
 
   // Who draws the maps. Unused at runtime today — kept for pact-feasibility work.
-  districts2032: number;                          // Projected districts after the 2030 census
-  stateControl: StateControl;                     // Trifecta control, or split
-  redistrictingAuthority: RedistrictingAuthority; // Who draws the congressional maps
-  governorCanVeto: boolean;                       // Can the governor veto a congressional map
-  hasBallotInitiative: boolean;                   // Does the state allow citizen initiatives
+  districts2032: number;       // Projected districts after the 2030 census
+
+  /**
+   * Does an independent commission draw the congressional map — one that holds the
+   * pen outright, not a commission the legislature can override or ignore? True for
+   * six states. Politician commissions, advisory commissions and legislature-drawn
+   * maps are all false, because in every one of those the elected branches decide.
+   */
+  independentCommission: boolean;
+  governorCanVeto: boolean;    // Can the governor veto a congressional map
+  hasBallotInitiative: boolean; // Does the state allow citizen initiatives
+
+  // The three branches that have to agree to sign anything, drawn as the pyramid
+  // on each match-graph box. A trifecta is simply all three matching.
+  governorParty: BranchControl;
+  senateParty: BranchControl;
+  houseParty: BranchControl | null; // null → unicameral (Nebraska only)
 }
 
 export interface HoveredState {

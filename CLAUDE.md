@@ -37,6 +37,9 @@ src/
 │   └── mushroom-cloud.png   # Cloud icon sized by representation gap
 ├── colors.ts                # The whole palette; every component imports from here
 └── types.ts                 # TypeScript interfaces
+
+scripts/                     # Dev tooling. Type-checked by `npm run build`, never bundled
+└── checkBranchControl.ts    # Reports where Open States disagrees with stateData; never writes
 ```
 
 `HeroMap` and `StateTooltip` are the only consumers of `src/map/`, but they live with the other
@@ -71,14 +74,27 @@ into the JS bundle, which is what `?url` plus the runtime fetch exists to avoid.
   congressional delegation. A state whose map favors the party it doesn't lean toward (Nevada is
   R+1 but D-gerrymandered) therefore sits in the column opposite its gerrymander; `pactSeatsReturned`
   returns 0 for such a pairing rather than letting both partners hand seats to the same party.
+  A PVI of exactly EVEN has no side, so those states are placed by who holds their branches —
+  the same signatory logic, read off the government instead of a rounded margin. That's Michigan
+  (D governor, D senate, R house → left) and Wisconsin (D governor, R senate, R house → right).
+  D has to win the branches outright, so an even split stays right. One predicate, `leansDemocratic()`
+  in `BipartiteMatchGraph.tsx`, decides both the column and which party the box's minority rows
+  count — they must not disagree.
 
 ## Commands
 
 ```bash
-npm run dev      # Start dev server
-npm run build    # Type-check and build for production
-npm run preview  # Preview production build
+npm run dev            # Start dev server
+npm run build          # Type-check (src + scripts) and build for production
+npm run preview        # Preview production build
+npm run check:control  # Report where branch control has drifted from Open States
 ```
+
+`check:control` reports and exits 1; it never edits `stateData.ts`. A seat count can't see a
+coalition (Alaska), a nonpartisan chamber (Nebraska), or a chamber organized on a plurality (Maine),
+so those three are carried as named blind spots and control is corrected by hand. It can't see
+governors at all. There was a `generate-data` script pointing at a `scripts/csv-to-statedata.cjs`
+that no longer exists; it's gone now.
 
 ## Data Sources
 
@@ -95,10 +111,31 @@ only README in the repo; don't add per-folder ones.
 Both files are hand-edited; the `stateData.csv` → `stateData.ts` generation step and the PlanScore
 verification script are gone.
 
-`stateData.ts` also carries map-drawing fields with no runtime reader yet — `districts2032`,
-`stateControl`, `redistrictingAuthority`, `governorCanVeto`, `hasBallotInitiative`. Keep them: a pact
-has to survive whoever holds the pen. `efficiencyGap` is deliberately *not* among them, since it came
-from the PlanScore methodology the representation gap replaced.
+`stateData.ts` also carries map-drawing fields. `governorParty`, `senateParty` and `houseParty` are
+read at runtime, as the control pyramid on each match-graph box — governor on top, the two chambers
+below, one course for Nebraska's unicameral. They replaced a single `stateControl` verdict, which
+threw away the useful half: *which* branch is the holdout. A trifecta is just all three agreeing, and
+`'split'` on a chamber means nobody commands it (Minnesota's tied House, Alaska's coalitions).
+
+`independentCommission` and `governorCanVeto` pick which mark the box gets, via `markFor()` — the
+pyramid must not claim power the branches don't have. A **gray circle** means an independent
+commission holds the pen, so no branch decides; that's true of six states (AZ, CO, ID, MI, MT, WA)
+and the flag is deliberately strict. Politician commissions (HI, NJ, VA), advisory commissions (AK,
+IA, ME, MD, NM, RI, UT) and New York's overridable one are all `false`, because elected officials
+still decide. New York is the useful test: its governor can veto the map, and a commission that
+really held the pen would leave nothing to veto.
+
+An **inverted pyramid** means only that the governor has no veto — CT and NC by joint resolution,
+HI/NJ/VA because a commission draws and the governor isn't in the process. Everyone else gets the
+upright pyramid. Both fields track the map in force for 2026, not the state's standing rule:
+California is `false` right now because Prop 50 suspended its commission through 2030.
+
+`districts2032` and `hasBallotInitiative` have no reader yet — keep them: a pact has to survive
+whoever holds the pen. `efficiencyGap` is deliberately *not* among them, since it came from the
+PlanScore methodology the representation gap replaced.
+
+Branch control moves with elections, so it dates in a way the PVI figures don't. See "Data Sources"
+in the root `README.md` for where it comes from and how to re-check it.
 
 The DRA and ALARM alternate maps were removed: the proportional ideal is now derived from each state's
 own PVI, so there is no hypothetical map to compare against. Cook's site blocks scripted fetches, so

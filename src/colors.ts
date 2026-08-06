@@ -22,7 +22,10 @@ export const PARTY_COLORS = { R: '#c93135', D: '#2e6da4' } as const;
 /** Section-break rules, drawn by BipartiteMatchGraph. */
 export const DIVIDER_GRAY = '#e0e0e0';
 
-/** Districts Cook rates EVEN. */
+/**
+ * Neither party's: a district Cook rates EVEN, and a chamber no party commands
+ * (tied, or run by a cross-party coalition).
+ */
 export const EVEN_GRAY = '#c2c0b8';
 
 /** Endpoints of the partisan-lean ramp: R at −20, neutral at 0, D at +20. */

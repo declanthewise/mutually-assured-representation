@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as d3 from 'd3';
-import { StateData, MatchPair } from '../types';
-import { DIVIDER_GRAY, FAIR_GREEN, GAP_GOLD, LEAN_DOMAIN, LEAN_RANGE, PARTY_COLORS } from '../colors';
+import { BranchControl, StateData, MatchPair } from '../types';
+import { DIVIDER_GRAY, EVEN_GRAY, FAIR_GREEN, GAP_GOLD, LEAN_DOMAIN, LEAN_RANGE, PARTY_COLORS } from '../colors';
 import { proportionalRSeats } from '../data/computeRepresentationGap';
 import { stateSafeSeats } from '../data/districtLeans';
 import { stateData } from '../data/stateData';
@@ -38,6 +38,32 @@ const EQ_RULE_Y = 46;
  * ("13D") leaves it about 108 units of the row. That puts the ceiling near 8.3.
  */
 const EQ_LABEL_SIZE = 8;
+
+/**
+ * The control pyramid: the governor as the apex, the two chambers as the course
+ * beneath. A state signs a pact only when the whole pyramid is one color, so a
+ * two-tone pyramid is a state that can't act alone, and which piece is off-color
+ * says which branch is the holdout.
+ *
+ * It shares the header row with the state name, so the long names set the width
+ * budget. "New Hampshire (2)" is the tightest: at 11 wide the pyramid clears the
+ * end of that name by about 10 units. Re-measure if the name font or the badge
+ * grows — the pyramid is what gives first.
+ */
+const PYRAMID_W = 11;
+const PYRAMID_H = 10;
+const PYRAMID_GAP = 3.5;
+/** Height of the apex course, as a fraction of the whole. */
+const PYRAMID_APEX = 0.44;
+/** Mortar between the courses, and between the two chambers. */
+const PYRAMID_MORTAR = 0.9;
+/**
+ * The commission ring: hollow, because the point is that nothing in the state
+ * fills it. Sized to just fit the pyramid's footprint — at r=4.8 the stroke's
+ * outer edge lands within a fifth of a unit of the 11-wide box.
+ */
+const CIRCLE_R = 4.8;
+const CIRCLE_STROKE = 1.3;
 
 const LEFT_BOX_X = 12;
 const COL_GAP = 28;
@@ -82,6 +108,129 @@ const PACT_HEADER_H = RULE_PAD * 2 + PACT_LABEL_CAP + PACT_LABEL_GAP - ROW_GAP;
 
 type Column = 'left' | 'right';
 
+const BRANCH_COLORS: Record<BranchControl, string> = {
+  dem: PARTY_COLORS.D,
+  rep: PARTY_COLORS.R,
+  // Nobody's to command — the same gray an EVEN district gets, for the same reason.
+  split: EVEN_GRAY,
+};
+
+const BRANCH_LABELS: Record<BranchControl, string> = {
+  dem: 'D',
+  rep: 'R',
+  split: 'no majority',
+};
+
+/**
+ * Which mark a state gets, from who actually holds the pen on its congressional map.
+ *
+ * - `circle` — an independent commission draws it, so none of the three branches
+ *   decides and there is no pyramid to show. Only commissions that hold the pen
+ *   outright count: where the legislature can override the commission, or the
+ *   commission merely advises, the branches still decide and still get a pyramid.
+ * - `inverted` — the governor cannot veto the map, so the executive is the point
+ *   the structure rests on rather than the weight on top. Two ways to land here,
+ *   and the mark claims only the thing they share: Connecticut and North Carolina
+ *   set their lines by joint resolution, which the governor has no power over;
+ *   Hawaii, New Jersey and Virginia use commissions the legislature appoints or
+ *   sits on, which leaves the governor out but keeps elected officials drawing.
+ * - `pyramid` — the ordinary case: the branches enact the map and the governor
+ *   can veto it.
+ */
+type ControlMark = 'pyramid' | 'inverted' | 'circle';
+
+function markFor(state: StateData): ControlMark {
+  if (state.independentCommission) return 'circle';
+  return state.governorCanVeto ? 'pyramid' : 'inverted';
+}
+
+/**
+ * The control pyramid for one state, drawn from its apex at the top-center of a
+ * PYRAMID_W × PYRAMID_H box. A slice at height y is as wide as the triangle is
+ * there, which is what keeps the courses reading as one pyramid rather than as
+ * stacked bars. The chambers always sit senate-left, house-right, so the same
+ * branch is in the same place on every box.
+ *
+ * An inverted state draws the identical geometry through a vertical flip, so the
+ * two orientations can never drift apart. The flip is y-only, which leaves senate
+ * and house on the sides they occupy everywhere else.
+ */
+function ControlPyramid({ state }: { state: StateData }) {
+  const mark = markFor(state);
+
+  if (mark === 'circle') {
+    return (
+      <circle
+        cx={PYRAMID_W / 2}
+        cy={PYRAMID_H / 2}
+        r={CIRCLE_R - CIRCLE_STROKE / 2}
+        fill="none"
+        stroke={EVEN_GRAY}
+        strokeWidth={CIRCLE_STROKE}
+      >
+        <title>Congressional map drawn by an independent commission, not by the branches</title>
+      </circle>
+    );
+  }
+  return (
+    <g transform={mark === 'inverted' ? `translate(0, ${PYRAMID_H}) scale(1, -1)` : undefined}>
+      <BranchCourses state={state} inverted={mark === 'inverted'} />
+    </g>
+  );
+}
+
+function BranchCourses({ state, inverted }: { state: StateData; inverted: boolean }) {
+  const mid = PYRAMID_W / 2;
+  const halfWidthAt = (y: number) => (y / PYRAMID_H) * mid;
+
+  const apexY = PYRAMID_H * PYRAMID_APEX;
+  const courseY = apexY + PYRAMID_MORTAR;
+  const apexHalf = halfWidthAt(apexY);
+  const courseHalf = halfWidthAt(courseY);
+  const seam = PYRAMID_MORTAR / 2;
+
+  const piece = (branch: BranchControl, points: string, label: string) => (
+    <polygon points={points} fill={BRANCH_COLORS[branch]}>
+      <title>{`${label}: ${BRANCH_LABELS[branch]}`}</title>
+    </polygon>
+  );
+
+  return (
+    <>
+      {piece(
+        state.governorParty,
+        `${mid},0 ${mid + apexHalf},${apexY} ${mid - apexHalf},${apexY}`,
+        inverted ? 'Governor — no veto over the congressional map' : 'Governor',
+      )}
+
+      {state.houseParty === null ? (
+        // Nebraska: one chamber, so the course runs the full width of the base.
+        piece(
+          state.senateParty,
+          `${mid - courseHalf},${courseY} ${mid + courseHalf},${courseY} ` +
+            `${PYRAMID_W},${PYRAMID_H} 0,${PYRAMID_H}`,
+          'Legislature',
+        )
+      ) : (
+        <>
+          {piece(
+            state.senateParty,
+            `${mid - courseHalf},${courseY} ${mid - seam},${courseY} ` +
+              `${mid - seam},${PYRAMID_H} 0,${PYRAMID_H}`,
+            'Senate',
+          )}
+          {piece(
+            state.houseParty,
+            `${mid + seam},${courseY} ${mid + courseHalf},${courseY} ` +
+              `${PYRAMID_W},${PYRAMID_H} ${mid + seam},${PYRAMID_H}`,
+            'House',
+          )}
+        </>
+      )}
+    </>
+  );
+}
+
 /** A state, the row it occupies in its column, and any push from the heading. */
 interface Placement {
   state: StateData;
@@ -97,13 +246,37 @@ function formatLean(lean: number): string {
 
 
 /**
+ * Which side of the graph a state sits on: D on the left, R on the right.
+ *
+ * Normally that's just the statewide PVI. Michigan and Wisconsin are exactly EVEN
+ * though, and a PVI of 0 has no side to be on — so control breaks the tie, which
+ * is the same principle the split already runs on. It's the state government that
+ * signs a pact, and the surer reading of a government's party is who holds its
+ * branches, not a rounded statewide margin. That puts Michigan (D governor, D
+ * senate, R house) on the left and Wisconsin (D governor, R senate, R house) on
+ * the right.
+ *
+ * D has to win the branches outright, so a state that splits them evenly stays on
+ * the right, where every non-positive lean already lands.
+ */
+function leansDemocratic(state: StateData): boolean {
+  if (state.partisanLean !== 0) return state.partisanLean > 0;
+
+  const branches = [state.governorParty, state.senateParty, state.houseParty];
+  const dem = branches.filter(b => b === 'dem').length;
+  const rep = branches.filter(b => b === 'rep').length;
+  return dem > rep;
+}
+
+/**
  * The box's top row: districts the state's own PVI says the minority party should
- * hold. Which party that is follows the state's lean, so reading the figure across
- * the gutter compares an R share to a D share — the trade a pact actually makes.
+ * hold. Which party that is follows the state's side of the graph, so reading the
+ * figure across the gutter compares an R share to a D share — the trade a pact
+ * actually makes.
  */
 function minorityProportionalOf(state: StateData): number {
   const proportionalR = proportionalRSeats(state);
-  if (state.partisanLean > 0) return proportionalR;
+  if (leansDemocratic(state)) return proportionalR;
   const assignable = state.districts2022 - (stateSafeSeats[state.id]?.even ?? 0);
   return assignable - proportionalR;
 }
@@ -202,14 +375,15 @@ export function BipartiteMatchGraph({
   // that signs a pact — not its congressional delegation. Usually the map leans the
   // same way the state does; where it doesn't (Nevada, R+1 but D-gerrymandered) the
   // pairing is still allowed but returns no seats, since both sides would be handing
-  // seats to the same party. See pactSeatsReturned().
+  // seats to the same party. See pactSeatsReturned(). An EVEN state has its side
+  // settled by who holds its branches — see leansDemocratic().
   const { leftStates, rightStates, columnOf } = useMemo(() => {
     const left: StateData[] = [];
     const right: StateData[] = [];
     const column = new Map<string, Column>();
 
     for (const state of matchableStates) {
-      if (state.partisanLean > 0) {
+      if (leansDemocratic(state)) {
         left.push(state);
         column.set(state.id, 'left');
       } else {
@@ -430,6 +604,10 @@ export function BipartiteMatchGraph({
           stroke="rgba(0,0,0,0.15)"
           strokeWidth={0.5}
         />
+
+        <g transform={`translate(${badgeX - PYRAMID_GAP - PYRAMID_W}, ${10 - PYRAMID_H / 2})`}>
+          <ControlPyramid state={state} />
+        </g>
 
         <rect x={badgeX} y={10 - badgeH / 2} width={badgeW} height={badgeH} fill={partisanColor} rx={2.5} />
         <text

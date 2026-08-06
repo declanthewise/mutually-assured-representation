@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "generate-data": "node scripts/csv-to-statedata.cjs"
+    "check:control": "tsx scripts/checkBranchControl.ts"
   },
   "dependencies": {
     "d3": "^7.9.0",
@@ -18,11 +18,13 @@
   },
   "devDependencies": {
     "@types/d3": "^7.4.3",
+    "@types/node": "^26.1.2",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@types/topojson-client": "^3.1.5",
     "@types/topojson-specification": "^1.0.5",
     "@vitejs/plugin-react": "^4.3.4",
+    "tsx": "^4.23.9",
     "typescript": "~5.6.2",
     "vite": "^6.0.3"
   }
