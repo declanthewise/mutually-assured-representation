@@ -1,6 +1,10 @@
 /**
  * Reports where Open States' current legislator roster disagrees with the
- * branch-control fields in `src/data/stateData.ts`.
+ * branch-control fields in `stateData.ts`, alongside which it lives.
+ *
+ * It is a dev tool, not part of the app: nothing imports it, so it never reaches
+ * the bundle. It sits here rather than in a scripts/ directory because the data
+ * it checks is the file next to it, and the two should move together.
  *
  * It never writes. A seat count is not the same thing as control, and the states
  * where the two come apart are the ones this app cares most about: Alaska's two
@@ -19,8 +23,8 @@
  * Source: https://open.pluralpolicy.com/data/legislator-csv/ (nightly, no key).
  */
 import { csvParse } from 'd3';
-import { stateData } from '../src/data/stateData';
-import { BranchControl, StateData } from '../src/types';
+import { stateData } from './stateData';
+import { BranchControl, StateData } from '../types';
 
 const rosterUrl = (id: string) => `https://data.openstates.org/people/current/${id.toLowerCase()}.csv`;
 

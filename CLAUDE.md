@@ -29,7 +29,8 @@ src/
 │   ├── cook2026DistrictPVI.tsv  # 2026 Cook PVI, all 435 districts
 │   ├── districtLeans.ts     # Parses that file into per-state + national seat counts
 │   ├── stateData.ts         # 50 states: 2025 Cook PVI, seat count, map-drawing authority
-│   └── computeRepresentationGap.ts # Per-state gaps, pact math, national total
+│   ├── computeRepresentationGap.ts # Per-state gaps, pact math, national total
+│   └── checkBranchControl.ts  # Dev tool beside the data it checks — see Commands
 ├── map/                     # Map geometry and its assets
 │   ├── useTopoData.ts       # Fetches the topology (null until it lands)
 │   ├── fipsMapping.ts       # FIPS code → state abbreviation, for the TopoJSON
@@ -37,10 +38,12 @@ src/
 │   └── mushroom-cloud.png   # Cloud icon sized by representation gap
 ├── colors.ts                # The whole palette; every component imports from here
 └── types.ts                 # TypeScript interfaces
-
-scripts/                     # Dev tooling. Type-checked by `npm run build`, never bundled
-└── checkBranchControl.ts    # Reports where Open States disagrees with stateData; never writes
 ```
+
+`checkBranchControl.ts` is the one file in `src/` the app never imports — it's a dev tool, so it
+stays out of the bundle while `tsc -b` still type-checks it against the data it reads. It lives
+beside `stateData.ts` rather than in a `scripts/` directory because it exists to check that file,
+and the two should move together.
 
 `HeroMap` and `StateTooltip` are the only consumers of `src/map/`, but they live with the other
 components rather than beside the geometry they draw.
@@ -85,7 +88,7 @@ into the JS bundle, which is what `?url` plus the runtime fetch exists to avoid.
 
 ```bash
 npm run dev            # Start dev server
-npm run build          # Type-check (src + scripts) and build for production
+npm run build          # Type-check and build for production
 npm run preview        # Preview production build
 npm run check:control  # Report where branch control has drifted from Open States
 ```
@@ -94,7 +97,7 @@ npm run check:control  # Report where branch control has drifted from Open State
 coalition (Alaska), a nonpartisan chamber (Nebraska), or a chamber organized on a plurality (Maine),
 so those three are carried as named blind spots and control is corrected by hand. It can't see
 governors at all. There was a `generate-data` script pointing at a `scripts/csv-to-statedata.cjs`
-that no longer exists; it's gone now.
+that no longer exists; it's gone now, and with it the `scripts/` directory.
 
 ## Data Sources
 
