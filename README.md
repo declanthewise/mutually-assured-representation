@@ -96,34 +96,28 @@ match graph — `governorParty` on top, `senateParty` and `houseParty` as the co
   pyramid shows *which* branch is the holdout, and that's the part that decides whether a state can
   actually enter a pact.
 
-`independentCommission` and `governorCanVeto` decide **which mark** a box gets, because the pyramid
-should only claim power the branches actually hold:
+**Every state shows its pyramid.** `governorCanVeto` sets the orientation, and that's the only other
+thing the mark says:
 
-| Mark | Condition | States |
+| Orientation | Condition | States |
 |---|---|---|
-| Gray circle | An independent commission draws the map | AZ, CO, ID, MI, MT, WA |
-| Upside-down pyramid | Governor has **no** veto over the map | CT, HI, NC, NJ, VA |
-| Pyramid | The branches enact it, governor can veto | the other 39 |
+| Upright | The governor can veto the congressional map | 39 states |
+| Upside-down | The governor **cannot** | AZ, CO, CT, HI, ID, MI, MT, NC, NJ, VA, WA |
 
-A circle means none of the three branches holds the pen, so there's no structure to draw. An
-inverted pyramid means the executive can't block the map — the structure rests on that point rather
-than being weighed down by it.
+Inverted means the executive can't block the map, so the structure rests on that point rather than
+being weighed down by it. Two routes lead there and the mark claims only what they share: CT and NC
+set their lines by joint resolution, which the governor has no power over; the other nine use
+commissions that leave the governor out of the process entirely.
 
-`independentCommission` is deliberately strict: **true only where a commission holds the pen
-outright**, which is six states. Everything else is false, because the elected branches still decide:
+`independentCommission` is recorded but **nothing reads it** — it's kept for pact-feasibility work,
+like the other map-drawing fields. It's deliberately strict: true only where a commission holds the
+pen outright, which is six states (AZ, CO, ID, MI, MT, WA). Politician commissions (HI, NJ, VA),
+advisory commissions (AK, IA, ME, MD, NM, RI, UT) and New York's overridable one are all false,
+because elected officials still decide. New York is the useful test — its legislature overrode the
+commission in 2022 and 2024, and its governor can veto the map, which a commission holding the pen
+would leave nothing to do.
 
-- **Politician commissions** (HI, NJ, VA) are appointed by, or seated with, legislators.
-- **Advisory commissions** (AK, IA, ME, MD, NM, RI, UT) only recommend; the legislature adopts and
-  the governor signs.
-- **New York's** commission can be overridden by the legislature, which is what happened in 2022 and
-  2024 — and its governor *can* veto the map, which is the tell. A commission that holds the pen
-  leaves the governor nothing to veto.
-
-Note that the two conditions are independent, so the inverted pyramid means only what it says: the
-governor has no veto. CT and NC land there because they set lines by joint resolution; HI, NJ and VA
-land there because a commission does the drawing and the governor is simply not in the process.
-
-`districts2032` and `hasBallotInitiative` still have no runtime reader and are deliberately kept —
+`districts2032` and `hasBallotInitiative` likewise have no runtime reader and are deliberately kept —
 a ballot initiative is a route around a hostile legislature.
 
 Both fields describe the map **actually in force for 2026**, not the state's standing rule, and the

@@ -57,13 +57,6 @@ const PYRAMID_GAP = 3.5;
 const PYRAMID_APEX = 0.44;
 /** Mortar between the courses, and between the two chambers. */
 const PYRAMID_MORTAR = 0.9;
-/**
- * The commission ring: hollow, because the point is that nothing in the state
- * fills it. Sized to just fit the pyramid's footprint — at r=4.8 the stroke's
- * outer edge lands within a fifth of a unit of the 11-wide box.
- */
-const CIRCLE_R = 4.8;
-const CIRCLE_STROKE = 1.3;
 
 const LEFT_BOX_X = 12;
 const COL_GAP = 28;
@@ -122,59 +115,25 @@ const BRANCH_LABELS: Record<BranchControl, string> = {
 };
 
 /**
- * Which mark a state gets, from who actually holds the pen on its congressional map.
- *
- * - `circle` — an independent commission draws it, so none of the three branches
- *   decides and there is no pyramid to show. Only commissions that hold the pen
- *   outright count: where the legislature can override the commission, or the
- *   commission merely advises, the branches still decide and still get a pyramid.
- * - `inverted` — the governor cannot veto the map, so the executive is the point
- *   the structure rests on rather than the weight on top. Two ways to land here,
- *   and the mark claims only the thing they share: Connecticut and North Carolina
- *   set their lines by joint resolution, which the governor has no power over;
- *   Hawaii, New Jersey and Virginia use commissions the legislature appoints or
- *   sits on, which leaves the governor out but keeps elected officials drawing.
- * - `pyramid` — the ordinary case: the branches enact the map and the governor
- *   can veto it.
- */
-type ControlMark = 'pyramid' | 'inverted' | 'circle';
-
-function markFor(state: StateData): ControlMark {
-  if (state.independentCommission) return 'circle';
-  return state.governorCanVeto ? 'pyramid' : 'inverted';
-}
-
-/**
  * The control pyramid for one state, drawn from its apex at the top-center of a
  * PYRAMID_W × PYRAMID_H box. A slice at height y is as wide as the triangle is
  * there, which is what keeps the courses reading as one pyramid rather than as
  * stacked bars. The chambers always sit senate-left, house-right, so the same
  * branch is in the same place on every box.
  *
- * An inverted state draws the identical geometry through a vertical flip, so the
- * two orientations can never drift apart. The flip is y-only, which leaves senate
- * and house on the sides they occupy everywhere else.
+ * Every state gets one. Orientation carries the only other thing the mark says:
+ * upright where the governor can veto the congressional map, inverted where they
+ * can't, so the executive is the point the structure rests on rather than the
+ * weight on top. An inverted state draws the identical geometry through a
+ * vertical flip, so the two orientations can never drift apart — and the flip is
+ * y-only, which leaves senate and house on the sides they occupy everywhere else.
  */
 function ControlPyramid({ state }: { state: StateData }) {
-  const mark = markFor(state);
+  const inverted = !state.governorCanVeto;
 
-  if (mark === 'circle') {
-    return (
-      <circle
-        cx={PYRAMID_W / 2}
-        cy={PYRAMID_H / 2}
-        r={CIRCLE_R - CIRCLE_STROKE / 2}
-        fill="none"
-        stroke={EVEN_GRAY}
-        strokeWidth={CIRCLE_STROKE}
-      >
-        <title>Congressional map drawn by an independent commission, not by the branches</title>
-      </circle>
-    );
-  }
   return (
-    <g transform={mark === 'inverted' ? `translate(0, ${PYRAMID_H}) scale(1, -1)` : undefined}>
-      <BranchCourses state={state} inverted={mark === 'inverted'} />
+    <g transform={inverted ? `translate(0, ${PYRAMID_H}) scale(1, -1)` : undefined}>
+      <BranchCourses state={state} inverted={inverted} />
     </g>
   );
 }

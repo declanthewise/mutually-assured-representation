@@ -120,22 +120,19 @@ below, one course for Nebraska's unicameral. They replaced a single `stateContro
 threw away the useful half: *which* branch is the holdout. A trifecta is just all three agreeing, and
 `'split'` on a chamber means nobody commands it (Minnesota's tied House, Alaska's coalitions).
 
-`independentCommission` and `governorCanVeto` pick which mark the box gets, via `markFor()` — the
-pyramid must not claim power the branches don't have. A **gray circle** means an independent
-commission holds the pen, so no branch decides; that's true of six states (AZ, CO, ID, MI, MT, WA)
-and the flag is deliberately strict. Politician commissions (HI, NJ, VA), advisory commissions (AK,
-IA, ME, MD, NM, RI, UT) and New York's overridable one are all `false`, because elected officials
-still decide. New York is the useful test: its governor can veto the map, and a commission that
-really held the pen would leave nothing to veto.
+Every state shows a pyramid; `governorCanVeto` only sets its orientation. **Inverted** means the
+governor has no veto over the congressional map — CT and NC by joint resolution, the other nine
+because a commission draws and the governor isn't in the process. That's all the orientation claims,
+which is what lets those two different situations share a mark honestly.
 
-An **inverted pyramid** means only that the governor has no veto — CT and NC by joint resolution,
-HI/NJ/VA because a commission draws and the governor isn't in the process. Everyone else gets the
-upright pyramid. Both fields track the map in force for 2026, not the state's standing rule:
-California is `false` right now because Prop 50 suspended its commission through 2030.
-
-`districts2032` and `hasBallotInitiative` have no reader yet — keep them: a pact has to survive
-whoever holds the pen. `efficiencyGap` is deliberately *not* among them, since it came from the
-PlanScore methodology the representation gap replaced.
+`independentCommission`, `districts2032` and `hasBallotInitiative` have no reader — keep them: a pact
+has to survive whoever holds the pen, and a ballot initiative is a route around a hostile
+legislature. `independentCommission` is deliberately strict, true only where a commission holds the
+pen outright (AZ, CO, ID, MI, MT, WA); politician and advisory commissions and New York's overridable
+one are all `false`, because elected officials still decide. It tracks the map in force for 2026, not
+the standing rule — California is `false` because Prop 50 suspended its commission through 2030.
+`efficiencyGap` is deliberately *not* among these, since it came from the PlanScore methodology the
+representation gap replaced.
 
 Branch control moves with elections, so it dates in a way the PVI figures don't. See "Data Sources"
 in the root `README.md` for where it comes from and how to re-check it.
