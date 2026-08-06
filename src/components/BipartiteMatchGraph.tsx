@@ -69,19 +69,21 @@ const REMOVE_R = 8;
 const REMOVE_TICK = 3;
 
 /**
- * Both section rules — the one splitting the map from the columns, and the one
- * above "Your Pacts" — are the same divider: 160px wide, 1px, 24px of air on
- * each side. They're drawn in a viewBox that renders at `max-width: 420px`,
- * so the px figures convert at that scale.
+ * The section rule above "Your Pacts": 160px wide, 1px, with 24px of air on each
+ * side. It's drawn in a viewBox that renders at `max-width: 420px`, so the px
+ * figures convert at that scale.
  */
 const UNITS_PER_PX = VIEW_W / 420;
 const RULE_W = 160 * UNITS_PER_PX;
 const RULE_PAD = 24 * UNITS_PER_PX;
 const RULE_STROKE = 1 * UNITS_PER_PX;
 
-/** The top rule sits flush with the viewBox edge; its air above is CSS margin. */
-const TOP_RULE_Y = RULE_STROKE / 2;
-const TOP_PAD = TOP_RULE_Y + RULE_PAD;
+/**
+ * Air above the first row. The columns are headed by the instructions in
+ * `App.tsx`, which are HTML and keep their own spacing; this is only the gap
+ * between them and the boxes.
+ */
+const TOP_PAD = RULE_PAD;
 const BOTTOM_PAD = 14;
 
 /** Air kept around the active box when the view follows it, in CSS px. */
@@ -266,7 +268,7 @@ function inDomOrder(placements: Placement[]): Placement[] {
   return placements.slice().sort((a, b) => a.state.id.localeCompare(b.state.id));
 }
 
-/** The section rule, centered on the columns. Both dividers are this line. */
+/** The section rule, centered on the columns. */
 function sectionRule(y: number) {
   return (
     <line
@@ -646,9 +648,6 @@ export function BipartiteMatchGraph({
   return (
     <div className="bipartite-graph-wrapper">
       <svg ref={svgRef} viewBox={`0 0 ${VIEW_W} ${totalHeight}`} className="bipartite-graph">
-        {/* The break from the map above — same rule as the pact heading's. */}
-        {sectionRule(TOP_RULE_Y)}
-
         {/* Links first, so the boxes sit on top of where they meet. */}
         <g className="match-links">
           {selectedMatches.map(([a, b]) => {

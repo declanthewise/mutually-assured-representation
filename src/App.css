@@ -355,11 +355,28 @@ body {
    =========================== */
 
 /* Clips the entrance animation so it never lengthens the page */
+/* The columns' header. It runs to the graph's own width so the two read as one
+   block, and being HTML it wraps on its own — the SVG would need every line set
+   by hand. */
+.match-instructions {
+  max-width: 420px;
+  /* The 24px the graph keeps above its first row (TOP_PAD), matched above the
+     text so it sits centered in its own band. */
+  margin: 24px auto 0;
+  padding: 0 1rem;
+  text-align: center;
+  /* Even lines rather than a full-width first one over a short last — the same
+     balance the results headline uses. */
+  text-wrap: balance;
+  font-size: 0.7rem;
+  line-height: 1.35;
+  color: #888;
+}
+
 .match-columns-viewport {
   overflow: hidden;
-  /* Air above the section rule the graph draws along its top edge; the matching
-     24px below it is the graph's own TOP_PAD. */
-  margin-top: 1.5rem;
+  /* All the air under the instructions is the graph's own TOP_PAD. */
+  margin-top: 0;
 }
 
 .match-columns {

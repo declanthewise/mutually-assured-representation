@@ -107,6 +107,12 @@ function App() {
 
       {started && !finished && (
         <>
+          {/* Outside the viewport, so it stays put while the columns rise into it. */}
+          <p className="match-instructions">
+            Click a state to see its best matches, then click a state in the other column to confirm a pact.
+            Your pacts are listed below.
+          </p>
+
           <div className="match-columns-viewport">
             <div className="visualization-wide match-columns">
               <BipartiteMatchGraph
