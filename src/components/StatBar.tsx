@@ -1,9 +1,20 @@
 import type { ReactNode } from 'react';
 import { EVEN_GRAY, FAIR_GREEN, GAP_GOLD, PARTY_COLORS } from '../colors';
 import { houseBalance, houseBalanceParty, nationalSeatTotals } from '../data/districtLeans';
+import {
+  baselineGaps,
+  computeNationalRepresentationGap,
+} from '../data/computeRepresentationGap';
 import { AnimatedCount } from './AnimatedCount';
 
 const TOTAL_SEATS = 435;
+
+/**
+ * The gap donut is drawn out of the gap itself, not out of the House: a full gold
+ * ring is every gerrymandered seat still standing, and green is what the pacts
+ * have already returned. Against 435 the gap was a sliver that barely moved.
+ */
+const BASELINE_GAP = computeNationalRepresentationGap(baselineGaps);
 
 /** Donut geometry, in the 100×100 viewBox both rings draw into. */
 const RADIUS = 40;
@@ -21,40 +32,48 @@ interface DonutSlice {
   label: string;
 }
 
-/** A ring of `slices` out of `TOTAL_SEATS`, with `children` centered in the hole. */
+/** A ring of `slices` out of `total` seats, with `children` centered in the hole. */
 function StatDonut({
   slices,
+  total,
   centerColor,
   ariaLabel,
   children,
 }: {
   slices: DonutSlice[];
+  total: number;
   centerColor: string;
   ariaLabel: string;
   children: ReactNode;
 }) {
+  // Every arc runs from 12 o'clock through the end of its own slice, and they are
+  // painted back to front so the earlier slices sit on top. Butting arcs end to end
+  // instead would leave two of them meeting at 12 o'clock, and a sub-pixel rounding
+  // difference there shows as a flicker while the ring animates. Stacked, each
+  // boundary is one arc's edge lying over the color beneath it, and no arc needs a
+  // dashoffset to find its start.
   let seatsDrawn = 0;
+  const arcs = slices
+    .map((slice) => ({ ...slice, seatsThrough: (seatsDrawn += slice.seats) }))
+    .reverse();
 
   return (
     <svg className="stat-donut" viewBox="0 0 100 100" role="img" aria-label={ariaLabel}>
-      {/* Rotated so the first slice starts at 12 o'clock. */}
+      {/* Rotated so every arc starts at 12 o'clock. */}
       <g transform="rotate(-90 50 50)">
-        {slices.map((slice) => {
-          const length = (slice.seats / TOTAL_SEATS) * CIRCUMFERENCE;
-          const offset = -(seatsDrawn / TOTAL_SEATS) * CIRCUMFERENCE;
-          seatsDrawn += slice.seats;
+        {arcs.map((arc) => {
+          const length = (arc.seatsThrough / total) * CIRCUMFERENCE;
           return (
             <circle
-              key={slice.key}
+              key={arc.key}
               className="stat-donut-arc"
               cx="50" cy="50" r={RADIUS}
               fill="none"
-              stroke={slice.color}
+              stroke={arc.color}
               strokeWidth={STROKE}
               strokeDasharray={`${length} ${CIRCUMFERENCE - length}`}
-              strokeDashoffset={offset}
             >
-              <title>{slice.seats} {slice.label}</title>
+              <title>{arc.seats} {arc.label}</title>
             </circle>
           );
         })}
@@ -87,10 +106,10 @@ export function StatBar({ nationalRepresentationGap }: StatBarProps) {
       label: 'seats away from proportional',
     },
     {
-      key: 'proportional',
-      seats: TOTAL_SEATS - nationalRepresentationGap,
+      key: 'closed',
+      seats: BASELINE_GAP - nationalRepresentationGap,
       color: FAIR_GREEN,
-      label: 'seats at their proportional share',
+      label: 'gerrymandered seats your pacts have returned',
     },
   ];
 
@@ -103,6 +122,7 @@ export function StatBar({ nationalRepresentationGap }: StatBarProps) {
           <div className="stat-label">U.S. House<br />Balance</div>
           <StatDonut
             slices={balanceSlices}
+            total={TOTAL_SEATS}
             centerColor={PARTY_COLORS[houseBalanceParty]}
             ariaLabel={`${nationalSeatTotals.dSeats} D-leaning, ${nationalSeatTotals.even} EVEN, ${nationalSeatTotals.rSeats} R-leaning districts`}
           >
@@ -116,8 +136,9 @@ export function StatBar({ nationalRepresentationGap }: StatBarProps) {
           <div className="stat-label">National<br />Rep. Gap</div>
           <StatDonut
             slices={gapSlices}
+            total={BASELINE_GAP}
             centerColor={GAP_GOLD}
-            ariaLabel={`${nationalRepresentationGap} of ${TOTAL_SEATS} seats away from proportional`}
+            ariaLabel={`${nationalRepresentationGap} of ${BASELINE_GAP} gerrymandered seats still away from proportional`}
           >
             <AnimatedCount value={nationalRepresentationGap} />
           </StatDonut>

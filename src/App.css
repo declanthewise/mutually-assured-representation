@@ -171,7 +171,8 @@ body {
   flex: 0 0 auto;
 }
 
-/* Keeps the gap arc in step with its counting-up number. */
+/* Keeps the gap arc in step with its counting-up number. Length is the only thing
+   that ever moves — the arcs are stacked from 12 o'clock, not butted end to end. */
 .stat-donut-arc {
   transition: stroke-dasharray 400ms ease-out;
 }
