@@ -200,7 +200,7 @@ body {
 
 .app-title-kicker {
   display: block;
-  font-size: 0.62em;
+  font-size: 0.75em;
   font-weight: 500;
   letter-spacing: 0.02em;
   margin-bottom: 0.25rem;
@@ -214,12 +214,34 @@ body {
    Action Row (Start / Clear)
    =========================== */
 
+/* The pitch, between the title and the button — narrower than the title, so the
+   three stack as one centered column. */
+.app-intro {
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  text-align: justify;
+  font-size: 0.94rem;
+  line-height: 1.6;
+  color: #444;
+}
+
+/* One block of prose: the paragraphs run on with no space between them, so the
+   indent is what marks the break. */
+.app-intro p {
+  margin: 0;
+  text-indent: 1.5em;
+}
+
+/* Start now closes the opening screen, so it carries the space to the footer.
+   Above it, the same 0.9rem the title leaves over the prose — title, prose and
+   button sit on one rhythm. */
 .action-row {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 3.75rem;
-  padding: 0.25rem 1.5rem 0.75rem;
+  padding: 0.9rem 1.5rem 1.5rem;
 }
 
 .finish-row {
@@ -571,9 +593,10 @@ body {
     font-size: 1.5rem;
   }
 
+  /* Matching the phone title's 0.6rem, the same way the desktop rule matches 0.9. */
   .action-row {
     min-height: 3.25rem;
-    padding: 0.25rem 1rem 0.5rem;
+    padding: 0.6rem 1rem 1rem;
   }
 
   .stat-bar-wrapper {

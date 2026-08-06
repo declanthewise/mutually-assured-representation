@@ -80,13 +80,29 @@ function App() {
         </header>
       )}
 
-      {/* The row exists only to hold Start; Finish lives under the columns. */}
+      {/* The pitch, then the button it argues for. Finish lives under the columns. */}
       {!started && (
-        <div className="action-row">
-          <button className="start-btn" onClick={() => setStarted(true)}>
-            Start
-          </button>
-        </div>
+        <>
+          <div className="app-intro">
+            <p>
+              Gerrymandering has turned the United States into an arms race of red states and
+              blue states. State minority parties are going extinct. The House won't vote
+              themselves out of their own districts. It is up to the states to solve this.
+            </p>
+            <p>
+              So pair them off. A state gerrymandered for the Democrats signs a pact with one
+              gerrymandered for the Republicans, and each undraws the same number of seats. The
+              trade is even by construction, so the House balance doesn't change. The only casualty
+              is gerrymandering.
+            </p>
+          </div>
+
+          <div className="action-row">
+            <button className="start-btn" onClick={() => setStarted(true)}>
+              Start
+            </button>
+          </div>
+        </>
       )}
 
       {started && !finished && (
