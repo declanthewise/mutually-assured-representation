@@ -119,7 +119,7 @@ export function StatBar({ nationalRepresentationGap }: StatBarProps) {
         <div className="stat-block stat-block-inline">
           {/* Explicit break: the label box hugs its text so the two blocks stay
               symmetric about the divider. */}
-          <div className="stat-label">U.S. House<br />Balance</div>
+          <div className="stat-label">U.S. House<br />Margin</div>
           <StatDonut
             slices={balanceSlices}
             total={TOTAL_SEATS}
@@ -133,7 +133,7 @@ export function StatBar({ nationalRepresentationGap }: StatBarProps) {
         <div className="stat-divider" />
 
         <div className="stat-block stat-block-inline">
-          <div className="stat-label">National<br />Rep. Gap</div>
+          <div className="stat-label">National<br />Representation<br />Gap</div>
           <StatDonut
             slices={gapSlices}
             total={BASELINE_GAP}

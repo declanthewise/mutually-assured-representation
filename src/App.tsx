@@ -109,8 +109,10 @@ function App() {
         <>
           {/* Outside the viewport, so it stays put while the columns rise into it. */}
           <p className="match-instructions">
-            Click a state to see its best matches, then click a state in the other column to confirm a pact.
-            Your pacts are listed below.
+            {/* Each clause holds together, so the one line the phone breaks it into
+                breaks after "column," and nowhere else. */}
+            <span>Click a state to see its best matches in the other column,</span>{' '}
+            <span>then click one of those states to confirm a pact.</span>
           </p>
 
           <div className="match-columns-viewport">
@@ -139,8 +141,7 @@ function App() {
           <ResultsPanel
             selectedMatches={selectedMatches}
             nationalRepresentationGap={nationalRepresentationGap}
-            onResume={() => setFinished(false)}
-            onStartOver={handleStartOver}
+            onRetry={handleStartOver}
           />
         </div>
       )}

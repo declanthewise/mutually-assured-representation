@@ -12,6 +12,22 @@ const BASELINE_GAP = computeNationalRepresentationGap(baselineGaps);
 
 const PARTY_NAMES = { D: 'Democrats', R: 'Republicans' } as const;
 
+/** Single-digit counts read as words in the headline; anything larger stays a numeral. */
+const SPELLED = [
+  'zero',
+  'one',
+  'two',
+  'three',
+  'four',
+  'five',
+  'six',
+  'seven',
+  'eight',
+  'nine',
+] as const;
+
+const spellCount = (n: number) => SPELLED[n] ?? String(n);
+
 /**
  * The party a state hands seats back to when it disarms. A positive gap is R
  * overrepresentation, so unwinding it returns Democrats; a negative gap returns
@@ -29,15 +45,13 @@ function PactHalf({ stateId, seats }: { stateId: string; seats: number }) {
 interface ResultsPanelProps {
   selectedMatches: MatchPair[];
   nationalRepresentationGap: number;
-  onResume: () => void;
-  onStartOver: () => void;
+  onRetry: () => void;
 }
 
 export function ResultsPanel({
   selectedMatches,
   nationalRepresentationGap,
-  onResume,
-  onStartOver,
+  onRetry,
 }: ResultsPanelProps) {
   const seatsClosed = BASELINE_GAP - nationalRepresentationGap;
 
@@ -54,15 +68,15 @@ export function ResultsPanel({
     <div className="results-panel">
       {seatsClosed > 0 ? (
         <p className="results-headline">
-          Your {pacts.length === 1 ? 'pact' : `${pacts.length} pacts`} closed{' '}
-          <span style={{ color: FAIR_GREEN }}>{seatsClosed}</span> of the{' '}
-          <span style={{ color: GAP_GOLD }}>{BASELINE_GAP}</span> seat representation gap, and the
-          House balance is unchanged.
+          Your {spellCount(pacts.length)} {pacts.length === 1 ? 'pact' : 'pacts'} returned{' '}
+          <span style={{ color: FAIR_GREEN }}>{seatsClosed}</span> of{' '}
+          <span style={{ color: GAP_GOLD }}>{BASELINE_GAP}</span> gerrymandered seats to their
+          constituents, and the U.S. House margin is unchanged.
         </p>
       ) : (
         <p className="results-headline">
-          No seats returned yet — the {BASELINE_GAP} seat gap stands, and the House balance is
-          unchanged.
+          No seats returned yet — all <span style={{ color: GAP_GOLD }}>{BASELINE_GAP}</span>{' '}
+          gerrymandered seats stand, and the U.S. House margin is unchanged.
         </p>
       )}
 
@@ -87,13 +101,11 @@ export function ResultsPanel({
         </ul>
       )}
 
-      {/* Same pair as under the columns: green goes on, gold puts the board back. */}
+      {/* The gold button from under the columns, alone: from the results there is
+          nothing to do but put the board back. */}
       <div className="finish-row">
-        <button className="finish-btn" onClick={onResume}>
-          Resume
-        </button>
-        <button className="restart-btn" onClick={onStartOver}>
-          Start Over
+        <button className="restart-btn" onClick={onRetry}>
+          Retry
         </button>
       </div>
     </div>
