@@ -117,9 +117,10 @@ export function StatBar({ nationalRepresentationGap }: StatBarProps) {
     <div className="stat-bar-wrapper">
       <div className="stat-bar">
         <div className="stat-block stat-block-inline">
-          {/* Explicit break: the label box hugs its text so the two blocks stay
-              symmetric about the divider. */}
-          <div className="stat-label">U.S. House<br />Margin</div>
+          {/* Explicit breaks: the label box hugs its text, so setting the lines by
+              hand is what keeps the two blocks symmetric about the divider — three
+              lines here against the three on the right. */}
+          <div className="stat-label">U.S. House<br />District<br />Margin</div>
           <StatDonut
             slices={balanceSlices}
             total={TOTAL_SEATS}

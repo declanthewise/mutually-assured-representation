@@ -139,15 +139,13 @@ function App() {
         <>
           <div className="app-intro">
             <p>
-              Gerrymandering has turned the United States into an arms race of red states and
-              blue states. State minority parties are going extinct. The House won't vote
-              themselves out of their own districts. It is up to the states to solve this.
+              Gerrymandering has drawn the United States into an arms race between red states and
+              blue states. State minority parties are going extinct and the House has never been
+              more divided. The only way to stop the escalation is bilateral state pacts.
             </p>
             <p>
-              So pair them off. A state gerrymandered for the Democrats signs a pact with one
-              gerrymandered for the Republicans, and each undraws the same number of seats. The
-              trade is even by construction, so the House balance doesn't change. The only casualty
-              is gerrymandering.
+              So pair them off one red state and one blue state at a time. See how many gerrymandered
+              districts you can undraw without changing the balance in the House.
             </p>
           </div>
 
@@ -163,10 +161,9 @@ function App() {
         <>
           {/* Outside the viewport, so it stays put while the columns rise into it. */}
           <p className="match-instructions">
-            {/* Each clause holds together, so the one line the phone breaks it into
-                breaks after "column," and nowhere else. */}
-            <span>Click a state to see its best matches in the other column,</span>{' '}
-            <span>then click one of those states to confirm a pact.</span>
+            {/* A line each, so the break lands after "column," and nowhere else. */}
+            <span>Click a state to see its best matches in the other column,</span>
+            <span>then click one of those states to confirm the pact.</span>
           </p>
 
           <div className="match-columns-viewport">
@@ -209,7 +206,7 @@ function App() {
 
       <footer className="article-footer">
         <p>
-          By Declan Fitzsimons. Data: 2026 district and 2025 state partisan leans come from{' '}
+          By Declan Fitzsimons. Partisan leans from{' '}
           <a href="https://www.cookpolitical.com/cook-pvi/2026-partisan-voting-index/district-map-and-list" target="_blank" rel="noopener noreferrer">The Cook Political Report</a>.
         </p>
       </footer>

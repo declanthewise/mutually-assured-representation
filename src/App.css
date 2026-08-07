@@ -50,7 +50,7 @@ body {
   margin: 0 auto;
   /* The viewBox is cropped to the geometry, so the map's breathing room under
      the stat bar has to come from here. */
-  padding: 0.75rem 1.5rem 0;
+  padding: 0.5rem 1.5rem 0;
   width: 100%;
   position: relative;
 }
@@ -189,7 +189,7 @@ body {
 .app-title {
   max-width: 760px;
   margin: 0 auto;
-  padding: 0.5rem 1.5rem 0.9rem;
+  padding: 0.4rem 1.5rem 0.7rem;
   text-align: center;
 }
 
@@ -225,9 +225,8 @@ body {
   max-width: 620px;
   margin: 0 auto;
   padding: 0 1.5rem;
-  text-align: justify;
   font-size: 0.94rem;
-  line-height: 1.6;
+  line-height: 1.55;
   color: #444;
 }
 
@@ -239,14 +238,15 @@ body {
 }
 
 /* Start now closes the opening screen, so it carries the space to the footer.
-   Above it, the same 0.9rem the title leaves over the prose — title, prose and
-   button sit on one rhythm. */
+   Above it, the same 0.7rem the title leaves over the prose — title, prose and
+   button sit on one rhythm. The button has to clear the fold on a laptop, so
+   that rhythm is as tight as it can be and still read as three blocks. */
 .action-row {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 3.75rem;
-  padding: 0.9rem 1.5rem 1.5rem;
+  min-height: 3.25rem;
+  padding: 0.7rem 1.5rem 1.5rem;
 }
 
 .finish-row {
@@ -393,10 +393,9 @@ body {
    block, and being HTML it wraps on its own — the SVG would need every line set
    by hand. */
 .match-instructions {
-  /* One line, so the sentence sets its own width rather than a max-width breaking
-     it: the size below is what lands it near the 520px the columns occupy. */
+  /* A line per clause, so the break lands after "column," at every width rather
+     than wherever the text happens to run out. */
   max-width: none;
-  white-space: nowrap;
   /* Half the 24px the graph keeps above its first row (TOP_PAD), matched above
      the text so it stays centered in its own band — the viewport below claws
      back the other half with a negative margin. */
@@ -406,6 +405,11 @@ body {
   font-size: 0.62rem;
   line-height: 1.35;
   color: #888;
+}
+
+.match-instructions span {
+  display: block;
+  white-space: nowrap;
 }
 
 .match-columns-viewport {
@@ -622,17 +626,9 @@ body {
     padding: 0 0.5rem;
   }
 
-  /* No phone is wide enough for the one-line version — let it wrap rather than
-     run off the side. The clauses inside carry the nowrap, so the break lands
-     after "column," instead of wherever the width happens to run out. */
+  /* The two lines are set in the base rule; a phone only needs them smaller. */
   .match-instructions {
-    max-width: 420px;
-    white-space: normal;
     font-size: 0.6rem;
-  }
-
-  .match-instructions span {
-    white-space: nowrap;
   }
 
   /* Less width to give up on a phone, where the map is already small. */
@@ -648,9 +644,8 @@ body {
     font-size: 1.5rem;
   }
 
-  /* Matching the phone title's 0.6rem, the same way the desktop rule matches 0.9. */
+  /* Matching the phone title's 0.6rem, the same way the desktop rule matches 0.7. */
   .action-row {
-    min-height: 3.25rem;
     padding: 0.6rem 1rem 1rem;
   }
 
