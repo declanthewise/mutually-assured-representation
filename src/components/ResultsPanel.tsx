@@ -80,26 +80,25 @@ export function ResultsPanel({
         </p>
       )}
 
-      {pacts.length > 0 && (
-        <ul className="results-pacts">
-          {pacts.map(({ a, b, seats }) => (
-            <li key={`${a}-${b}`}>
-              {/* A pair with nothing to trade keeps its names, greyed — there is
-                  no swap to show. */}
-              {seats > 0 ? (
-                <>
-                  <PactHalf stateId={a} seats={seats} /> &harr;{' '}
-                  <PactHalf stateId={b} seats={seats} />
-                </>
-              ) : (
-                <span style={{ color: '#aaa' }}>
-                  {stateDataById[a]?.name ?? a} &harr; {stateDataById[b]?.name ?? b}
-                </span>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+      {/* Finish only appears once a pact is sealed, so there is always a list. */}
+      <ul className="results-pacts">
+        {pacts.map(({ a, b, seats }) => (
+          <li key={`${a}-${b}`}>
+            {/* A pair with nothing to trade keeps its names, greyed — there is
+                no swap to show. */}
+            {seats > 0 ? (
+              <>
+                <PactHalf stateId={a} seats={seats} /> &harr;{' '}
+                <PactHalf stateId={b} seats={seats} />
+              </>
+            ) : (
+              <span style={{ color: '#aaa' }}>
+                {stateDataById[a]?.name ?? a} &harr; {stateDataById[b]?.name ?? b}
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
 
       {/* The gold button from under the columns, alone: from the results there is
           nothing to do but put the board back. */}

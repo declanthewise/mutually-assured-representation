@@ -5,7 +5,7 @@ import { DIVIDER_GRAY, EVEN_GRAY, FAIR_GREEN, GAP_GOLD, LEAN_DOMAIN, LEAN_RANGE,
 import { baselineGaps, proportionalRSeats } from '../data/computeRepresentationGap';
 import { stateSafeSeats } from '../data/districtLeans';
 import { stateData } from '../data/stateData';
-import { AnimatedCount } from './AnimatedCount';
+import { AnimatedCount, COUNT_DURATION_MS } from './AnimatedCount';
 
 /** Single-district states have no map to draw, so they never enter a pact. */
 export const matchableStates = stateData.filter(s => s.districts2022 >= 2);
@@ -90,6 +90,56 @@ const BOTTOM_PAD = 14;
 const SCROLL_MARGIN = 12;
 
 /**
+ * How long the gap row takes to swell out over its box, and later to fold back.
+ * Unhurried on purpose: at this size it reads as the row growing into the space
+ * it's being given, where a quicker one read as a jump to another layout.
+ */
+const SWELL_MS = 400;
+
+/**
+ * The count at full size, run at half the pace of an ordinary one. It's the whole
+ * reason the row swelled, and a gap of two or three seats is only that many
+ * digits — at the usual speed they'd be gone before the eye settled on them.
+ */
+const SWELL_COUNT_MS = COUNT_DURATION_MS * 2;
+
+/**
+ * A beat at full size after the count lands, before the row folds away. The
+ * figure it settled on is the one to take away, and without this it starts
+ * shrinking on the same frame it arrives at — read as part of the fall rather
+ * than as the number the fall was for.
+ */
+const SWELL_HOLD_MS = 300;
+
+/**
+ * How long a sealed pact holds its place before taking its seat under "Your
+ * Pacts": the gap row swells to fill the box, its count runs down at that size,
+ * stands there a beat, and folds back. The boxes leave the moment the row is
+ * home. The seats coming back are the point of the click, so they're spelled out
+ * on the two boxes the user is already looking at, at a size that can't be
+ * missed, before either box moves an inch.
+ */
+const PACT_LINGER_MS = SWELL_MS + SWELL_COUNT_MS + SWELL_HOLD_MS + SWELL_MS;
+
+/**
+ * The gap row at full swell, centered in everything the header line leaves — the
+ * name and its badge keep the strip above, and the row takes the rest. It stays
+ * the row it was: label left, count right, both on one center line, each keeping
+ * the edge it's anchored to. So it grows in place rather than rearranging itself
+ * on the way out and back.
+ *
+ * Source Sans 3 caps fill 0.66em, so the count's ink runs 30–49 there, about
+ * eleven units clear top and bottom. Width is what's tight: "Representation Gap"
+ * runs ~0.41 units per character per unit of font size, reaching x≈87 at 11, and
+ * a two-digit count at 28 comes back to about x=106. Whichever grows, that's the
+ * gap to keep.
+ */
+const GAP_COUNT_SIZE = 9.5;
+const SWELL_LABEL_SIZE = 11;
+const SWELL_COUNT_SIZE = 28;
+const SWELL_ROW_Y = (HEADER_HEIGHT + BOX_H) / 2;
+
+/**
  * The heading under the pact rule. Spacing is measured to the top of its ink,
  * not its em box — Source Sans 3 caps fill 0.66em, and the ~3.5 units of slack
  * above them would otherwise read as extra air under the rule.
@@ -102,6 +152,16 @@ const PACT_LABEL_GAP = 14;
 const PACT_HEADER_H = RULE_PAD * 2 + PACT_LABEL_CAP + PACT_LABEL_GAP - ROW_GAP;
 
 type Column = 'left' | 'right';
+
+/** The board as it stood when a pact was sealed, held while the counts run. */
+interface Seal {
+  /** The state the columns were ranked around, so they don't re-rank mid-count. */
+  anchorId: string | null;
+  /** The pacts parked at the time — the new one isn't among them yet. */
+  matches: MatchPair[];
+  /** The pair just sealed: the two boxes whose gaps are running down. */
+  pair: MatchPair;
+}
 
 const BRANCH_COLORS: Record<BranchControl, string> = {
   dem: PARTY_COLORS.D,
@@ -188,6 +248,148 @@ function BranchCourses({ state, inverted }: { state: StateData; inverted: boolea
           )}
         </>
       )}
+    </>
+  );
+}
+
+/** Ease-out: quick off the mark, easing into place. */
+const easeOut = (t: number) => 1 - (1 - t) ** 3;
+
+/** How far the gap row has taken over its box: 0 at rest, 1 filling it. */
+function swellAt(ms: number): number {
+  if (ms <= 0) return 0;
+  if (ms < SWELL_MS) return easeOut(ms / SWELL_MS);
+
+  const folding = ms - (SWELL_MS + SWELL_COUNT_MS + SWELL_HOLD_MS);
+  if (folding <= 0) return 1;
+  return folding >= SWELL_MS ? 0 : 1 - easeOut(folding / SWELL_MS);
+}
+
+/**
+ * Runs the swell on a box that has just signed. It drives geometry rather than a
+ * CSS animation because the row's two halves grow on different curves — the
+ * label a caption, the count filling what's left — and because the count has to
+ * be held back until there's room for it to run in.
+ */
+function useSwell(settling: boolean): number {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    if (!settling) {
+      setElapsed(0);
+      return;
+    }
+    const start = performance.now();
+    let raf = requestAnimationFrame(function tick(now) {
+      const t = now - start;
+      setElapsed(t);
+      if (t < PACT_LINGER_MS) raf = requestAnimationFrame(tick);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [settling]);
+
+  if (!settling) return 0;
+
+  // Reduced motion keeps the beat and drops the swell: the count still waits its
+  // turn and still runs, it just doesn't rear up to be looked at.
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : swellAt(elapsed);
+}
+
+interface BoxBodyProps {
+  /** The party whose squeezed districts both counts are in. */
+  minorityParty: 'D' | 'R';
+  proportional: number;
+  current: number;
+  /** Signed, so zero can be told from a gap that only narrowed. */
+  gap: number;
+  isMatched: boolean;
+  settling: boolean;
+}
+
+/**
+ * Everything below the header line: where the state's own PVI says its minority
+ * districts should sit, where they do, and the gap between them — read top to
+ * bottom.
+ *
+ * On the two boxes that have just signed, the gap row swells to take the whole
+ * space, the subtraction above it fades out of the way, the count runs down at
+ * that size, and the row folds back. The animation lives in here rather than in
+ * the parent so that a frame of it re-renders two boxes instead of forty-four.
+ */
+function BoxBody({ minorityParty, proportional, current, gap, isMatched, settling }: BoxBodyProps) {
+  const size = useSwell(settling);
+  const at = (rest: number, full: number) => rest + (full - rest) * size;
+
+  // The count runs at full size, so it waits out the swell, and takes its time
+  // once it's there. Both counts share the pace: under reduced motion the rows
+  // behind don't fade, so the two are on screen together.
+  const delay = settling ? SWELL_MS : 0;
+  const duration = settling ? SWELL_COUNT_MS : COUNT_DURATION_MS;
+
+  const seatCount = (y: number, value: React.ReactNode) => (
+    <text
+      x={BOX_W - 6} y={y}
+      textAnchor="end" dominantBaseline="central"
+      fontSize={9} fontWeight={700} fill={PARTY_COLORS[minorityParty]}
+    >
+      {value}{minorityParty}
+    </text>
+  );
+
+  return (
+    <>
+      {/* Once a pact is sealed the middle row is no longer the enacted 2026 map
+          but what the pact leaves behind, and the gap below it is what survives
+          that. */}
+      <g opacity={1 - size}>
+        <text x={6} y={EQ_ROW_Y[0]} dominantBaseline="central" fontSize={EQ_LABEL_SIZE} fill="#888">
+          Minority Districts (Proportional)
+        </text>
+        {seatCount(EQ_ROW_Y[0], proportional)}
+
+        <text x={6} y={EQ_ROW_Y[1]} dominantBaseline="central" fontSize={EQ_LABEL_SIZE} fill="#888">
+          Minority Districts ({isMatched ? 'Pact' : '2026'})
+        </text>
+        {seatCount(EQ_ROW_Y[1], <AnimatedCount value={current} delay={delay} duration={duration} />)}
+
+        <line
+          x1={6}
+          y1={EQ_RULE_Y}
+          x2={BOX_W - 6}
+          y2={EQ_RULE_Y}
+          stroke="rgba(0,0,0,0.15)"
+          strokeWidth={0.5}
+        />
+      </g>
+
+      <text
+        x={6}
+        y={at(EQ_ROW_Y[2], SWELL_ROW_Y)}
+        dominantBaseline="central"
+        fontSize={at(EQ_LABEL_SIZE, SWELL_LABEL_SIZE)}
+        fill="#888"
+      >
+        Representation Gap
+      </text>
+      <AnimatedCount value={Math.abs(gap)} delay={delay} duration={duration}>
+        {shown => (
+          <text
+            x={BOX_W - 6}
+            y={at(EQ_ROW_Y[2], SWELL_ROW_Y)}
+            textAnchor="end"
+            dominantBaseline="central"
+            fontSize={at(GAP_COUNT_SIZE, SWELL_COUNT_SIZE)}
+            fontWeight={700}
+            // Green belongs to the figure on screen, not the one being counted
+            // towards: a gap falling to zero wears gold the whole way down and
+            // turns green as it lands, and a gap that was already zero is green
+            // throughout, because nothing is falling.
+            fill={shown === 0 ? FAIR_GREEN : GAP_GOLD}
+          >
+            {shown}
+          </text>
+        )}
+      </AnimatedCount>
     </>
   );
 }
@@ -328,6 +530,22 @@ export function BipartiteMatchGraph({
   const [activeStateId, setActiveStateId] = useState<string | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
+  // A sealed pact turns its boxes green and starts their gap counts falling, but
+  // the board holds still for a beat before the pair leaves for "Your Pacts" —
+  // otherwise both boxes slide out from under the numbers they just changed.
+  // Only the layout waits: it reads the pre-pact board, the same anchor and the
+  // same list of pacts, so nothing but the counts moves.
+  const [seal, setSeal] = useState<Seal | null>(null);
+
+  useEffect(() => {
+    if (!seal) return;
+    const timeoutId = setTimeout(() => setSeal(null), PACT_LINGER_MS);
+    return () => clearTimeout(timeoutId);
+  }, [seal]);
+
+  const layoutMatches = seal ? seal.matches : selectedMatches;
+  const anchorId = seal ? seal.anchorId : activeStateId;
+
   /** stateId → the state it is currently paired with */
   const partnerById = useMemo(() => {
     const map = new Map<string, StateData>();
@@ -367,30 +585,33 @@ export function BipartiteMatchGraph({
     return { leftStates: left, rightStates: right, columnOf: column };
   }, []);
 
-  const activeState = useMemo(
-    () => (activeStateId ? matchableStates.find(s => s.id === activeStateId) ?? null : null),
-    [activeStateId],
+  const anchorState = useMemo(
+    () => (anchorId ? matchableStates.find(s => s.id === anchorId) ?? null : null),
+    [anchorId],
   );
 
   // Matched states leave the running order for good and park at the bottom,
   // both partners on the same row so their link runs flat. The unmatched half of
-  // *both* columns re-ranks against the active state, so its own column brings the
-  // nearest alternatives up beside it (the active state itself sorts first, being
-  // zero from itself) while the opposite column offers its closest partners.
+  // *both* columns re-ranks against the anchor, so its own column brings the
+  // nearest alternatives up beside it (the anchor itself sorts first, being zero
+  // from itself) while the opposite column offers its closest partners. The anchor
+  // is the active state, except during a pact's linger, when it's the state that
+  // was active when the pact was sealed.
   const { leftPlacements, rightPlacements, rowCount, pactHeader } = useMemo(() => {
-    const matchedIds = new Set(partnerById.keys());
+    const matchedIds = new Set<string>();
     const pactIndexOf = new Map<string, number>();
-    selectedMatches.forEach(([a, b], i) => {
+    layoutMatches.forEach(([a, b], i) => {
+      matchedIds.add(a).add(b);
       pactIndexOf.set(a, i);
       pactIndexOf.set(b, i);
     });
 
     const planColumn = (states: StateData[]) => {
-      const isRanking = !!activeState;
+      const isRanking = !!anchorState;
       return {
         flowing: states
           .filter(s => !matchedIds.has(s.id))
-          .sort(isRanking ? byClosenessTo(activeState) : bySize),
+          .sort(isRanking ? byClosenessTo(anchorState) : bySize),
         // Pact order, so both columns park their halves in the same sequence.
         parked: states
           .filter(s => matchedIds.has(s.id))
@@ -405,7 +626,7 @@ export function BipartiteMatchGraph({
       right.flowing.length + right.parked.length,
     );
 
-    const headed = selectedMatches.length > 0;
+    const headed = layoutMatches.length > 0;
     const offset = headed ? PACT_HEADER_H : 0;
 
     const place = (plan: { flowing: StateData[]; parked: StateData[] }): Placement[] => [
@@ -421,21 +642,18 @@ export function BipartiteMatchGraph({
       leftPlacements: place(left),
       rightPlacements: place(right),
       rowCount: rows,
-      pactHeader: headed ? { startRow: rows - selectedMatches.length } : null,
+      pactHeader: headed ? { startRow: rows - layoutMatches.length } : null,
     };
-  }, [activeState, leftStates, rightStates, partnerById, selectedMatches]);
+  }, [anchorState, leftStates, rightStates, layoutMatches]);
 
   const totalHeight =
     TOP_PAD + rowCount * ROW_H - ROW_GAP + BOTTOM_PAD + (pactHeader ? PACT_HEADER_H : 0);
 
-  /** Where each state landed, so the links know which rows to span. */
+  /** Where each state landed, so the links know which row to sit on. */
   const rowById = useMemo(() => {
-    const map = new Map<string, { row: number; yOffset: number; column: Column }>();
-    for (const { state, row, yOffset } of leftPlacements) {
-      map.set(state.id, { row, yOffset, column: 'left' });
-    }
-    for (const { state, row, yOffset } of rightPlacements) {
-      map.set(state.id, { row, yOffset, column: 'right' });
+    const map = new Map<string, { row: number; yOffset: number }>();
+    for (const { state, row, yOffset } of [...leftPlacements, ...rightPlacements]) {
+      map.set(state.id, { row, yOffset });
     }
     return map;
   }, [leftPlacements, rightPlacements]);
@@ -456,6 +674,10 @@ export function BipartiteMatchGraph({
   const handleStateClick = (state: StateData, e: React.MouseEvent) => {
     e.stopPropagation();
 
+    // Any further click ends the previous pact's linger early: the user has moved
+    // on, and the board should answer this click rather than the last one.
+    setSeal(null);
+
     if (!activeStateId) {
       setActiveStateId(state.id);
       return;
@@ -469,7 +691,14 @@ export function BipartiteMatchGraph({
       setActiveStateId(state.id);
       return;
     }
-    // Opposite side — seal the pact (overriding either state's previous one)
+    // Opposite side — seal the pact (overriding either state's previous one).
+    // The board freezes as it stands, both partners included, until the linger
+    // lapses; the gaps they return are already falling on the two boxes.
+    setSeal({
+      anchorId: activeStateId,
+      matches: selectedMatches,
+      pair: [activeStateId, state.id],
+    });
     onToggleMatch([activeStateId, state.id]);
     setActiveStateId(null);
   };
@@ -538,16 +767,6 @@ export function BipartiteMatchGraph({
     const minorityParty = isLeft ? 'R' : 'D';
     const minorityOf = (rSeats: number) => (isLeft ? rSeats : assignable - rSeats);
 
-    const seatCount = (y: number, value: React.ReactNode) => (
-      <text
-        x={BOX_W - 6} y={y}
-        textAnchor="end" dominantBaseline="central"
-        fontSize={9} fontWeight={700} fill={PARTY_COLORS[minorityParty]}
-      >
-        {value}{minorityParty}
-      </text>
-    );
-
     return (
       <g
         key={state.id}
@@ -607,40 +826,17 @@ export function BipartiteMatchGraph({
           </tspan>
         </text>
 
-        {/* Where the state's PVI says the delegation should sit, where it does,
-            and the gap between them — read top to bottom. Once a pact is sealed
-            the middle row is no longer the enacted 2026 map but what the pact
-            leaves behind, and the gap below it is what survives that. */}
-        <text x={6} y={EQ_ROW_Y[0]} dominantBaseline="central" fontSize={EQ_LABEL_SIZE} fill="#888">
-          Minority Districts (Proportional)
-        </text>
-        {seatCount(EQ_ROW_Y[0], minorityOf(proportionalR))}
-
-        <text x={6} y={EQ_ROW_Y[1]} dominantBaseline="central" fontSize={EQ_LABEL_SIZE} fill="#888">
-          Minority Districts ({isMatched ? 'Pact' : '2026'})
-        </text>
-        {seatCount(EQ_ROW_Y[1], <AnimatedCount value={minorityOf(currentR)} />)}
-
-        <line
-          x1={6}
-          y1={EQ_RULE_Y}
-          x2={BOX_W - 6}
-          y2={EQ_RULE_Y}
-          stroke="rgba(0,0,0,0.15)"
-          strokeWidth={0.5}
+        <BoxBody
+          minorityParty={minorityParty}
+          proportional={minorityOf(proportionalR)}
+          current={minorityOf(currentR)}
+          gap={signedGap}
+          isMatched={isMatched}
+          // The two boxes that just signed put their gap up in lights before
+          // going anywhere; the linger they're holding still for is the length
+          // of that.
+          settling={!!seal?.pair.includes(state.id)}
         />
-
-        <text x={6} y={EQ_ROW_Y[2]} dominantBaseline="central" fontSize={EQ_LABEL_SIZE} fill="#888">
-          {isMatched ? 'New Representation Gap' : 'Representation Gap'}
-        </text>
-        <text
-          x={BOX_W - 6} y={EQ_ROW_Y[2]}
-          textAnchor="end" dominantBaseline="central"
-          fontSize={9.5} fontWeight={700}
-          fill={signedGap === 0 ? FAIR_GREEN : GAP_GOLD}
-        >
-          <AnimatedCount value={Math.abs(signedGap)} />
-        </text>
       </g>
     );
   };
@@ -649,21 +845,31 @@ export function BipartiteMatchGraph({
     <div className="bipartite-graph-wrapper">
       <svg ref={svgRef} viewBox={`0 0 ${VIEW_W} ${totalHeight}`} className="bipartite-graph">
         {/* Links first, so the boxes sit on top of where they meet. */}
+        {/* Parked pacts only: the link is where the pair came to rest, so it waits
+            out the linger with them rather than reaching across the flowing rows. */}
         <g className="match-links">
-          {selectedMatches.map(([a, b]) => {
+          {layoutMatches.map(([a, b]) => {
             const placedA = rowById.get(a);
             const placedB = rowById.get(b);
             if (!placedA || !placedB) return null;
-            const [onLeft, onRight] = placedA.column === 'left' ? [placedA, placedB] : [placedB, placedA];
-            const leftY = rowTopY(onLeft.row, onLeft.yOffset) + BOX_H / 2;
-            const rightY = rowTopY(onRight.row, onRight.yOffset) + BOX_H / 2;
+
+            // Every pact spans the gutter, and both halves park on the same row, so
+            // the link is always flat and the whole fitting — line and button — can
+            // ride a single transform. That's what lets it travel with its boxes
+            // when a pact below it breaks and the block above slides down: a line's
+            // endpoints can't be transitioned, but a transform can.
+            const y = rowTopY(placedA.row, placedA.yOffset) + BOX_H / 2;
             return (
-              <g key={[a, b].slice().sort().join('-')}>
+              <g
+                key={[a, b].slice().sort().join('-')}
+                className="match-link"
+                style={{ transform: `translate(0px, ${y}px)` }}
+              >
                 <line
                   x1={LEFT_BOX_X + BOX_W}
-                  y1={leftY}
+                  y1={0}
                   x2={RIGHT_BOX_X}
-                  y2={rightY}
+                  y2={0}
                   stroke={FAIR_GREEN}
                   strokeWidth={2}
                   strokeLinecap="round"
@@ -672,10 +878,11 @@ export function BipartiteMatchGraph({
                     state, so the control sits on the link that joins them. */}
                 <g
                   className="pact-remove"
-                  transform={`translate(${LINK_MID_X}, ${(leftY + rightY) / 2})`}
+                  transform={`translate(${LINK_MID_X}, 0)`}
                   onClick={e => {
                     e.stopPropagation();
                     setActiveStateId(null);
+                    setSeal(null);
                     onToggleMatch([a, b]);
                   }}
                 >
@@ -694,12 +901,16 @@ export function BipartiteMatchGraph({
           })}
         </g>
 
+        {/* Hung off the top of the parked block, which moves a row whenever a pact
+            is broken. Both pieces are drawn relative to that top and carried there
+            by one transform, so the heading floats down with the block instead of
+            ratcheting to the new row ahead of it. */}
         {pactHeader && (
-          <g className="pact-heading">
-            {sectionRule(pactTopY - (RULE_PAD + PACT_LABEL_CAP + PACT_LABEL_GAP))}
+          <g className="pact-heading" style={{ transform: `translate(0px, ${pactTopY}px)` }}>
+            {sectionRule(-(RULE_PAD + PACT_LABEL_CAP + PACT_LABEL_GAP))}
             <text
               x={VIEW_W / 2}
-              y={pactTopY - PACT_LABEL_GAP}
+              y={-PACT_LABEL_GAP}
               textAnchor="middle"
               fontSize={PACT_LABEL_SIZE}
               fontWeight={700}

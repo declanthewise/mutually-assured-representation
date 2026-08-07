@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { HeroMap } from './components/HeroMap';
 import { BipartiteMatchGraph } from './components/BipartiteMatchGraph';
 import { ResultsPanel } from './components/ResultsPanel';
@@ -14,6 +14,15 @@ import { HoveredState, MatchPair } from './types';
 function pairKey(a: string, b: string): string {
   return [a, b].sort().join('-');
 }
+
+/** How long to wait for the page to reach the top before giving up on it. */
+const SCROLL_HOME_MS = 2000;
+
+/**
+ * How long a box takes to reach its new row: the transition on
+ * `.bipartite-graph .state-box` in `App.css`. Keep the two in step.
+ */
+const BOX_TRAVEL_MS = 550;
 
 function App() {
   const [hoveredState, setHoveredState] = useState<HoveredState | null>(null);
@@ -46,6 +55,51 @@ function App() {
       return [...filtered, pair];
     });
   }, []);
+
+  // The Finish button hangs below the columns, so losing it while the page is
+  // scrolled down to it takes a strip of the page away from under the reader and
+  // everything above drops into the space. Breaking the last pact is three things
+  // in a row instead: the two freed states float back up their columns, then the
+  // page rides home after them, and only then does the button go. Each waits for
+  // the one before, so there's never more than one thing to follow.
+  const [finishRow, setFinishRow] = useState(false);
+
+  useEffect(() => {
+    if (selectedMatches.length > 0) {
+      setFinishRow(true);
+      return;
+    }
+    if (!finishRow) return;
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let raf = 0;
+
+    const timeoutId = setTimeout(
+      () => {
+        window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
+
+        // No `scrollend` to lean on in every browser, so watch for the page to
+        // land — on a deadline, because a reader who scrolls back down interrupts
+        // the ride and the button can't wait on a trip that isn't happening.
+        const deadline = performance.now() + SCROLL_HOME_MS;
+        raf = requestAnimationFrame(function land(now) {
+          if (window.scrollY > 0 && now < deadline) {
+            raf = requestAnimationFrame(land);
+            return;
+          }
+          setFinishRow(false);
+        });
+      },
+      // Reduced motion has the boxes arrive at once and the page jump, so the
+      // whole sequence collapses to its end state.
+      reduced ? 0 : BOX_TRAVEL_MS,
+    );
+
+    return () => {
+      clearTimeout(timeoutId);
+      cancelAnimationFrame(raf);
+    };
+  }, [selectedMatches, finishRow]);
 
   // Back to the opening screen with an empty board — the map, the stat bar and the
   // columns all read off selectedMatches, so clearing it resets every one of them.
@@ -125,14 +179,21 @@ function App() {
             </div>
           </div>
 
-          <div className="finish-row">
-            <button className="finish-btn" onClick={() => setFinished(true)}>
-              Finish
-            </button>
-            <button className="restart-btn" onClick={handleStartOver}>
-              Start Over
-            </button>
-          </div>
+          {/* Nothing to finish with until a pact exists, so the button waits for
+              one — and outlives the last one by the length of the ride home. */}
+          {finishRow && (
+            <div className="finish-row">
+              <button
+                className="finish-btn"
+                // Inert on the way out, so the results are never reached with an
+                // empty board during those few hundred milliseconds.
+                disabled={selectedMatches.length === 0}
+                onClick={() => setFinished(true)}
+              >
+                Finish
+              </button>
+            </div>
+          )}
         </>
       )}
 

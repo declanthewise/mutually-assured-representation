@@ -252,8 +252,6 @@ body {
 .finish-row {
   display: flex;
   justify-content: center;
-  align-items: center;
-  gap: 0.75rem;
   padding: 1rem 1.5rem 0.5rem;
 }
 
@@ -295,9 +293,14 @@ body {
 }
 
 /* The label goes white only once the green fills in behind it. */
-.finish-btn:hover {
+.finish-btn:hover:enabled {
   background: #2d6a4f;
   color: #fff;
+}
+
+/* Riding out with the pact that was keeping it — nothing left to press. */
+.finish-btn:disabled {
+  cursor: default;
 }
 
 /* Gold, against Finish's green: it puts every gap back on the board. The label
@@ -432,6 +435,30 @@ body {
   stroke: #000;
 }
 
+/* Everything that hangs off the parked block rather than sitting in it: each
+   link with its ×, and the "Your Pacts" heading. They ride one transform on the
+   same curve as the boxes, so when a broken pact moves the block a row they
+   travel with it instead of jumping to the new row and waiting for it there.
+
+   A piece that has just appeared has nowhere to travel from: it belongs to the
+   row the boxes are still sliding into, so it holds at zero opacity for their
+   trip and fades in once they arrive. `backwards` is what applies that zero
+   during the delay. */
+.bipartite-graph .match-link,
+.bipartite-graph .pact-heading {
+  transition: transform 550ms cubic-bezier(0.4, 0, 0.2, 1);
+  animation: pact-settle-in 200ms ease-out 550ms backwards;
+}
+
+@keyframes pact-settle-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* Break-pact button. Presentation attributes lose to these rules, so the
    filled-in hover state needs no second set of colours in the markup. */
 .bipartite-graph .pact-remove {
@@ -454,6 +481,14 @@ body {
 
   .bipartite-graph .state-box {
     transition-duration: 1ms;
+  }
+
+  /* The boxes arrive at once, so nothing hung off them has anything to wait for. */
+  .bipartite-graph .match-link,
+  .bipartite-graph .pact-heading {
+    transition-duration: 1ms;
+    animation-duration: 1ms;
+    animation-delay: 0ms;
   }
 }
 
