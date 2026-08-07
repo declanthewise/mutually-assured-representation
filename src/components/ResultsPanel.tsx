@@ -66,17 +66,27 @@ export function ResultsPanel({
 
   return (
     <div className="results-panel">
+      {/* The three lines are set here rather than left to the wrap: the count and
+          the total lead, the districts sit together, and the House clause closes.
+          Each `headline-line` is a block, and `.results-headline` sizes itself so
+          the longest of them fits — see App.css. */}
       {seatsClosed > 0 ? (
         <p className="results-headline">
-          Your {spellCount(pacts.length)} {pacts.length === 1 ? 'pact' : 'pacts'} returned{' '}
-          <span style={{ color: FAIR_GREEN }}>{seatsClosed}</span> of{' '}
-          <span style={{ color: GAP_GOLD }}>{BASELINE_GAP}</span> gerrymandered seats to their
-          constituents, and the U.S. House margin is unchanged.
+          <span className="headline-line">
+            Your {spellCount(pacts.length)} {pacts.length === 1 ? 'pact' : 'pacts'} returned{' '}
+            <span style={{ color: FAIR_GREEN }}>{seatsClosed}</span> of{' '}
+            <span style={{ color: GAP_GOLD }}>{BASELINE_GAP}</span>
+          </span>
+          <span className="headline-line">disproportionate districts to their constituents,</span>
+          <span className="headline-line">and the U.S. House margin is unchanged.</span>
         </p>
       ) : (
         <p className="results-headline">
-          No seats returned yet — all <span style={{ color: GAP_GOLD }}>{BASELINE_GAP}</span>{' '}
-          gerrymandered seats stand, and the U.S. House margin is unchanged.
+          <span className="headline-line">
+            No seats returned yet — all <span style={{ color: GAP_GOLD }}>{BASELINE_GAP}</span>
+          </span>
+          <span className="headline-line">disproportionate districts stand,</span>
+          <span className="headline-line">and the U.S. House margin is unchanged.</span>
         </p>
       )}
 

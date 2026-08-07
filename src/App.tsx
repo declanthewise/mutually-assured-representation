@@ -198,7 +198,7 @@ function App() {
       )}
 
       {finished && (
-        <div className="visualization-wide match-columns">
+        <div className="visualization-wide results-wide match-columns">
           <ResultsPanel
             selectedMatches={selectedMatches}
             nationalRepresentationGap={nationalRepresentationGap}
