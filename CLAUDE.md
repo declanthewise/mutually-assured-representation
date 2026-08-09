@@ -54,18 +54,15 @@ into the JS bundle, which is what `?url` plus the runtime fetch exists to avoid.
 ## Key Concepts
 
 - **Color coding**: Deep orange (`GAP_ORANGE`, sampled off the mushroom cloud's column) always means
-  representation gap, warm gray (`EVEN_GRAY`) always means fair representation — a state at its
+  representation gap, black (`FAIR_BLACK`) always means fair representation — a state at its
   proportional share, the seats inside that share, and the pacts that get there (matched borders, the
-  match graph's pact links). That is the same constant an EVEN district and an uncommanded chamber
-  use, and deliberately so: both readings say no party has its thumb on this. It is the quiet half of
-  the pair — the gap is what should draw the eye, and fairness is what's left once the orange goes.
-  Being light, it can't carry small text on the near-white page; where it colors a figure, the figure
-  needs its own weight. Red/blue stay reserved for party —
-  which is why the map's pact badges are party-colored and not gray: a badge names the party the
-  pact hands seats back to, so it is a party fact, not a fairness one. The map's pact arc is neither;
-  it is white, the same white as the ring around each badge it joins, so the pair reads as one mark
-  laid over the states rather than a third color competing with them. All of it lives in
-  `src/colors.ts` (white and the map's other structural strokes excepted); don't
+  match graph's pact links). Black is also the interface's emphasis color, so the graph's hovered and
+  selected boxes outline in the same black a sealed pact does. Red/blue stay reserved for party —
+  which is why the map's pact badges are party-colored and not black: a badge names the party the
+  pact hands seats back to, so it is a party fact, not a fairness one. The arc between them is the
+  fairness half of that pair, in `FAIR_BLACK`, and so is the ring around each badge it joins — one
+  continuous mark laid over the states, saying what the two party-colored badges were got by. All of
+  it lives in `src/colors.ts` (the map's structural strokes, still white, excepted); don't
   hardcode a hex in a component. The two lean gradients in `App.css` are the exception CSS forces.
 - **Partisan Lean**: State's 2025 statewide Cook PVI, signed positive for D.
 - **Representation Gap**: A state's enacted R seats (districts whose own Cook PVI leans R) minus the

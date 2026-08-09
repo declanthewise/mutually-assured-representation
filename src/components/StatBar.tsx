@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { EVEN_GRAY, GAP_ORANGE, PARTY_COLORS } from '../colors';
+import { EVEN_GRAY, FAIR_BLACK, GAP_ORANGE, PARTY_COLORS } from '../colors';
 import { houseBalance, houseBalanceParty, nationalSeatTotals } from '../data/districtLeans';
 import {
   baselineGaps,
@@ -11,7 +11,7 @@ const TOTAL_SEATS = 435;
 
 /**
  * The gap donut is drawn out of the gap itself, not out of the House: a full
- * orange ring is every gerrymandered seat still standing, and gray is what the
+ * orange ring is every gerrymandered seat still standing, and black is what the
  * pacts have already returned. Against 435 the gap was a sliver that barely moved.
  */
 const BASELINE_GAP = computeNationalRepresentationGap(baselineGaps);
@@ -98,15 +98,15 @@ const balanceSlices: DonutSlice[] = [
 ];
 
 export function StatBar({ nationalRepresentationGap }: StatBarProps) {
-  // Gray first, so progress reads the way a ring is meant to: it starts at 12
+  // Black first, so progress reads the way a ring is meant to: it starts at 12
   // o'clock and sweeps clockwise as pacts are sealed. Orange second means orange
   // is the one drawn full and left underneath — what's still standing is whatever
-  // gray hasn't reached yet.
+  // black hasn't reached yet.
   const gapSlices: DonutSlice[] = [
     {
       key: 'closed',
       seats: BASELINE_GAP - nationalRepresentationGap,
-      color: EVEN_GRAY,
+      color: FAIR_BLACK,
       label: 'gerrymandered seats your pacts have returned',
     },
     {

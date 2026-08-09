@@ -1,4 +1,4 @@
-import { EVEN_GRAY, GAP_ORANGE, PARTY_COLORS } from '../colors';
+import { FAIR_BLACK, GAP_ORANGE, PARTY_COLORS } from '../colors';
 import {
   baselineGaps,
   computeNationalRepresentationGap,
@@ -74,7 +74,7 @@ export function ResultsPanel({
         <p className="results-headline">
           <span className="headline-line">
             Your {spellCount(pacts.length)} {pacts.length === 1 ? 'pact' : 'pacts'} returned{' '}
-            <span style={{ color: EVEN_GRAY }}>{seatsClosed}</span> of{' '}
+            <span style={{ color: FAIR_BLACK }}>{seatsClosed}</span> of{' '}
             <span style={{ color: GAP_ORANGE }}>{BASELINE_GAP}</span>
           </span>
           <span className="headline-line">disproportionate districts to their constituents,</span>

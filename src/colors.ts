@@ -3,10 +3,8 @@
  *
  * - **Deep orange** is the representation gap — seats an enacted map denies. It
  *   is never used for anything else, so any orange on screen is a gap.
- * - **Warm gray** is fair representation: a state already at its proportional
+ * - **Black** is fair representation: a state already at its proportional
  *   share, a pact that gets two states there, and the seats inside that share.
- *   It is the quiet half of the pair on purpose — the gap is the thing to look
- *   at, and fairness is what's left when the orange goes.
  *
  * Red and blue stay reserved for party, so they never compete with the
  * gap/fair reading.
@@ -18,21 +16,22 @@
  */
 export const GAP_ORANGE = '#de7128';
 
+/**
+ * Fair representation — proportional seats, and the pacts that produce them.
+ * Note that black is also the interface's own emphasis color: hovered and
+ * selected boxes in the match graph outline in it, so the two readings sit
+ * closer together than the gap/fair pair does.
+ */
+export const FAIR_BLACK = '#000000';
+
 export const PARTY_COLORS = { R: '#c93135', D: '#2e6da4' } as const;
 
 /** Section-break rules, drawn by BipartiteMatchGraph. */
 export const DIVIDER_GRAY = '#e0e0e0';
 
 /**
- * Two readings on one color, which is deliberate — both are "no party's thumb on
- * this":
- *
- * - Neither party's: a district Cook rates EVEN, and a chamber no party commands
- *   (tied, or run by a cross-party coalition).
- * - Fair representation: proportional seats, and the pacts that produce them.
- *
- * It is light, so it carries marks and fills but not small text on the page's
- * near-white — where it labels a figure, the figure needs its own weight.
+ * Neither party's: a district Cook rates EVEN, and a chamber no party commands
+ * (tied, or run by a cross-party coalition).
  */
 export const EVEN_GRAY = '#c2c0b8';
 

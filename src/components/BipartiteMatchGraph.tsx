@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { BranchControl, StateData, MatchPair } from '../types';
-import { DIVIDER_GRAY, EVEN_GRAY, GAP_ORANGE, LEAN_DOMAIN, LEAN_RANGE, PARTY_COLORS } from '../colors';
+import { DIVIDER_GRAY, EVEN_GRAY, FAIR_BLACK, GAP_ORANGE, LEAN_DOMAIN, LEAN_RANGE, PARTY_COLORS } from '../colors';
 import { baselineGaps, proportionalRSeats } from '../data/computeRepresentationGap';
 import { stateSafeSeats } from '../data/districtLeans';
 import { stateData } from '../data/stateData';
@@ -380,11 +380,11 @@ function BoxBody({ minorityParty, proportional, current, gap, isMatched, settlin
             dominantBaseline="central"
             fontSize={at(GAP_COUNT_SIZE, SWELL_COUNT_SIZE)}
             fontWeight={700}
-            // Gray belongs to the figure on screen, not the one being counted
+            // Black belongs to the figure on screen, not the one being counted
             // towards: a gap falling to zero wears orange the whole way down and
-            // turns gray as it lands, and a gap that was already zero is gray
+            // turns black as it lands, and a gap that was already zero is black
             // throughout, because nothing is falling.
-            fill={shown === 0 ? EVEN_GRAY : GAP_ORANGE}
+            fill={shown === 0 ? FAIR_BLACK : GAP_ORANGE}
           >
             {shown}
           </text>
@@ -530,7 +530,7 @@ export function BipartiteMatchGraph({
   const [activeStateId, setActiveStateId] = useState<string | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
-  // A sealed pact turns its boxes gray and starts their gap counts falling, but
+  // A sealed pact turns its boxes black and starts their gap counts falling, but
   // the board holds still for a beat before the pair leaves for "Your Pacts" —
   // otherwise both boxes slide out from under the numbers they just changed.
   // Only the layout waits: it reads the pre-pact board, the same anchor and the
@@ -782,8 +782,11 @@ export function BipartiteMatchGraph({
           width={BOX_W}
           height={BOX_H}
           fill="none"
-          stroke={isActive ? '#000' : isMatched ? EVEN_GRAY : partisanColor}
-          strokeWidth={isActive ? 3 : isMatched ? 2.5 : 2}
+          // One weight on every box, so the border says what it says by color
+          // alone: partisan lean at rest, black once the box is picked up or
+          // sealed. A thicker stroke only made the same point twice.
+          stroke={isActive || isMatched ? FAIR_BLACK : partisanColor}
+          strokeWidth={2}
           rx={3}
         />
 
@@ -870,7 +873,7 @@ export function BipartiteMatchGraph({
                   y1={0}
                   x2={RIGHT_BOX_X}
                   y2={0}
-                  stroke={EVEN_GRAY}
+                  stroke={FAIR_BLACK}
                   strokeWidth={2}
                   strokeLinecap="round"
                 />
@@ -887,7 +890,7 @@ export function BipartiteMatchGraph({
                   }}
                 >
                   <title>Break this pact</title>
-                  <circle r={REMOVE_R} fill="white" stroke={EVEN_GRAY} strokeWidth={1.5} />
+                  <circle r={REMOVE_R} fill="white" stroke={FAIR_BLACK} strokeWidth={1.5} />
                   <path
                     d={`M${-REMOVE_TICK} ${-REMOVE_TICK}L${REMOVE_TICK} ${REMOVE_TICK}
                         M${REMOVE_TICK} ${-REMOVE_TICK}L${-REMOVE_TICK} ${REMOVE_TICK}`}
@@ -915,7 +918,7 @@ export function BipartiteMatchGraph({
               fontSize={PACT_LABEL_SIZE}
               fontWeight={700}
               letterSpacing="0.1em"
-              fill={EVEN_GRAY}
+              fill={FAIR_BLACK}
             >
               YOUR PACTS
             </text>

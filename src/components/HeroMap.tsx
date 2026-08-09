@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
 import { HoveredState, MatchPair } from '../types';
-import { EVEN_GRAY, LEAN_DOMAIN, LEAN_RANGE, PARTY_COLORS } from '../colors';
+import { EVEN_GRAY, FAIR_BLACK, LEAN_DOMAIN, LEAN_RANGE, PARTY_COLORS } from '../colors';
 import { stateDataById } from '../data/stateData';
 import { baselineGaps, pactSeatsReturned } from '../data/computeRepresentationGap';
 import { fipsToState } from '../map/fipsMapping';
@@ -34,8 +34,35 @@ const MAX_BADGE_RADIUS = 30;
 /** A badge still has a number to hold when the pact returns nothing. */
 const MIN_BADGE_RADIUS = 10;
 
+/**
+ * Sealing a pact flies each badge in from its partner. The seats a badge counts
+ * are seats the other state gave up, so the badge arrives from over there rather
+ * than fading in where it lands — California's red badge sets out from Texas and
+ * Texas's blue one from California, the two crossing at the midpoint because a
+ * pact returns the same number on both sides.
+ */
+const PACT_TRAVEL_MS = 900;
+/** The clouds take 500ms to clear; the flight leaves into the space they free. */
+const PACT_TRAVEL_DELAY = 250;
+/** Short enough that the badge is solid for nearly all of its flight. */
+const PACT_FADE_MS = 250;
+/** Gentle at both ends: a thing handed over, not fired across. */
+const PACT_EASE = d3.easeCubicInOut;
+
 function featureStateId(feature: any): string {
   return fipsToState[feature.id.toString().padStart(2, '0')];
+}
+
+/** One pact badge: the seats it counts, and the flight it makes to say so. */
+interface BadgeDatum {
+  id: string;
+  gain: number;
+  /** Its pact, which is the arc it rides. */
+  key: string;
+  /** True where it runs that arc from the far end back to the near one. */
+  reverse: boolean;
+  home: [number, number];
+  from: [number, number];
 }
 
 /**
@@ -186,6 +213,10 @@ export function HeroMap({ topoData, onHoverState, selectedMatches, residualGaps 
     const path = pathRef.current!;
     const centroids = centroidsRef.current;
 
+    // Reduced motion keeps the badges and the arc and drops the journey: the
+    // pact still says what it says, it just doesn't fly across to say it.
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
     const repGapRadius = d3.scaleSqrt()
       .domain([0, MAX_REP_GAP])
       .range([0, MAX_ICON_RADIUS]);
@@ -209,10 +240,11 @@ export function HeroMap({ topoData, onHoverState, selectedMatches, residualGaps 
       .attr('x', (d: any) => path.centroid(d)[0] - cloudDiameter(d) / 2)
       .attr('y', (d: any) => path.centroid(d)[1] - cloudDiameter(d) / 2);
 
-    // The arc ties a pact's two badges together, so it is drawn in the same white
-    // as the ring around each of them — one continuous white line through both,
-    // reading over the map the way the state borders do. Full opacity for that
-    // reason: at 0.85 the map tinted it and it stopped matching the rings.
+    // The arc ties a pact's two badges together, so it is drawn in the same black
+    // as the ring around each of them — one continuous line through both. Black
+    // is the fair-representation color, which is what the arc is reporting: two
+    // party-colored badges, joined by the pact that got them there. Full opacity,
+    // so the map underneath can't tint it out of the match with the rings.
     const arcData = selectedMatches
       .map(([a, b]) => ({ key: [a, b].slice().sort().join('-'), c1: centroids.get(a), c2: centroids.get(b) }))
       .filter((d): d is { key: string; c1: [number, number]; c2: [number, number] } => !!d.c1 && !!d.c2);
@@ -229,17 +261,63 @@ export function HeroMap({ topoData, onHoverState, selectedMatches, residualGaps 
       .selectAll<SVGPathElement, any>('path')
       .data(arcData, (d: any) => d.key)
       .join(
-        enter => enter.append('path')
-          .attr('fill', 'none')
-          .attr('stroke', '#fff')
-          .attr('stroke-width', 2.5)
-          .attr('stroke-linecap', 'round')
-          .attr('opacity', 0)
-          .attr('d', arcPath)
-          .call(s => s.transition().duration(450).attr('opacity', 1)),
+        enter => {
+          const arc = enter.append('path')
+            .attr('fill', 'none')
+            .attr('stroke', FAIR_BLACK)
+            .attr('stroke-width', 2.5)
+            .attr('stroke-linecap', 'round')
+            .attr('d', arcPath);
+
+          if (reduceMotion) {
+            return arc.attr('opacity', 0).call(s => s.transition().duration(450).attr('opacity', 1));
+          }
+
+          // The line exists only where a badge has already been: two tails, each
+          // growing from the end its badge left from, at exactly the badge's pace.
+          // They meet in the middle, which is where the badges cross, so the arc
+          // completes on the frame the two pass each other and the second half of
+          // the flight is flown over a finished line.
+          //
+          // One path draws both, as a dash pattern: a dash of the distance the
+          // forward badge has covered, the untravelled gap, then a dash of the
+          // same length for the badge coming the other way. Past the midpoint the
+          // two tails overlap and it is simply solid.
+          return arc
+            .attr('stroke-dasharray', function () {
+              return `0 ${this.getTotalLength()} 0`;
+            })
+            .call(s => s.transition()
+              .delay(PACT_TRAVEL_DELAY)
+              .duration(PACT_TRAVEL_MS)
+              .ease(PACT_EASE)
+              .attrTween('stroke-dasharray', function () {
+                const len = this.getTotalLength();
+                return (t: number) => {
+                  if (t >= 0.5) return `${len}`;
+                  const tail = t * len;
+                  return `${tail} ${len - 2 * tail} ${tail}`;
+                };
+              })
+              // Back to a plain solid line, so nothing downstream has to reason
+              // about a dash pattern that has finished saying what it had to say.
+              .on('end', function () {
+                d3.select(this).attr('stroke-dasharray', null);
+              }));
+        },
         update => update.attr('d', arcPath),
         exit => exit.transition().duration(200).attr('opacity', 0).remove(),
       );
+
+    // Sampled for the flight below: the badges ride the arc their pact just drew,
+    // so they read their positions off the same geometry rather than a second copy
+    // of the curve that could drift from it.
+    const arcNodes = new Map<string, SVGPathElement>();
+    svg.select('.match-arcs')
+      .selectAll<SVGPathElement, any>('path')
+      .each(function (d: any) {
+        arcNodes.set(d.key, this);
+      });
 
     // Badges: seats a pact hands back in each state, drawn in the color of the
     // party receiving them and sized by how many. Both partners return the same
@@ -250,39 +328,87 @@ export function HeroMap({ topoData, onHoverState, selectedMatches, residualGaps 
       .clamp(true);
     const radiusFor = (gain: number) => Math.max(MIN_BADGE_RADIUS, badgeRadius(gain));
 
+    // Each badge lands on its own state and sets out from its partner's, so the
+    // pair runs the one arc in opposite directions. The arc is drawn from the
+    // pair's first state to its second, which is what `reverse` reads: the badge
+    // that belongs to the first travels the curve back to front.
     const badgeData = selectedMatches
       .flatMap(([a, b]) => {
         const gain = pactSeatsReturned(a, b);
-        return [a, b].map(id => ({ id, gain, centroid: centroids.get(id) }));
+        const key = [a, b].slice().sort().join('-');
+        return [
+          { id: a, gain, key, reverse: true, home: centroids.get(a), from: centroids.get(b) },
+          { id: b, gain, key, reverse: false, home: centroids.get(b), from: centroids.get(a) },
+        ];
       })
-      .filter((d): d is { id: string; gain: number; centroid: [number, number] } => !!d.centroid);
+      .filter((d): d is BadgeDatum => !!d.home && !!d.from);
+
+    /** Where a badge sits at eased progress `t` of its flight. */
+    const flightAt = (d: BadgeDatum) => {
+      const arc = arcNodes.get(d.key);
+      if (!arc) return () => `translate(${d.home[0]}, ${d.home[1]})`;
+      const len = arc.getTotalLength();
+      return (t: number) => {
+        const point = arc.getPointAtLength((d.reverse ? 1 - t : t) * len);
+        return `translate(${point.x}, ${point.y})`;
+      };
+    };
 
     // Keyed by state, so re-pairing one updates a badge in place rather than
     // replacing it. Size and color have to be set on the merged selection for
     // that reason — an enter-only assignment would strand the old partner's.
     const badges = svg.select('.match-badges')
-      .selectAll<SVGGElement, any>('g.match-badge')
+      .selectAll<SVGGElement, BadgeDatum>('g.match-badge')
       .data(badgeData, (d: any) => d.id)
       .join(
         enter => {
           const g = enter.append('g')
             .attr('class', 'match-badge')
-            .attr('opacity', 0);
+            .attr('opacity', 0)
+            .attr('transform', d =>
+              reduceMotion
+                ? `translate(${d.home[0]}, ${d.home[1]})`
+                : `translate(${d.from[0]}, ${d.from[1]})`);
           g.append('circle')
-            .attr('stroke', '#fff')
+            .attr('stroke', FAIR_BLACK)
             .attr('stroke-width', 2.5);
           g.append('text')
             .attr('text-anchor', 'middle')
             .attr('dominant-baseline', 'central')
             .attr('fill', '#fff')
             .attr('font-weight', 700);
-          g.call(s => s.transition().duration(400).delay(250).attr('opacity', 1));
+
+          if (reduceMotion) {
+            g.transition().duration(400).delay(PACT_TRAVEL_DELAY).attr('opacity', 1);
+            return g;
+          }
+
+          // Two named transitions, so they run alongside each other: the badge
+          // has to be solid early to be worth watching cross, but the flight is
+          // what takes the time. Same delay, duration and easing as the arc, which
+          // is what keeps each tail pinned to the badge laying it down.
+          g.transition('fade').delay(PACT_TRAVEL_DELAY).duration(PACT_FADE_MS).attr('opacity', 1);
+          g.transition('travel')
+            .delay(PACT_TRAVEL_DELAY)
+            .duration(PACT_TRAVEL_MS)
+            .ease(PACT_EASE)
+            .attrTween('transform', d => flightAt(d))
+            // Sampling the curve lands within a rounding error of the centroid;
+            // this puts the badge exactly on the state it belongs to.
+            .on('end', function (d) {
+              d3.select(this).attr('transform', `translate(${d.home[0]}, ${d.home[1]})`);
+            });
           return g;
         },
-        update => update,
+        update => update.each(function (d) {
+          // A badge still in the air keeps flying — writing its home position here
+          // would snap it there mid-arc, with its tail already drawn behind it.
+          if (!d3.active(this, 'travel')) {
+            d3.select(this).attr('transform', `translate(${d.home[0]}, ${d.home[1]})`);
+          }
+        }),
         exit => exit.transition().duration(200).attr('opacity', 0).remove(),
-      )
-      .attr('transform', d => `translate(${d.centroid[0]}, ${d.centroid[1]})`);
+      );
 
     badges.select('circle')
       .attr('r', d => radiusFor(d.gain))

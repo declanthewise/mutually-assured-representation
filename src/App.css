@@ -281,35 +281,38 @@ body {
   transition: background 0.15s ease, transform 0.15s ease;
 }
 
-/* The button used to fill with the fair-representation color on hover. That
-   color is now a light gray, which this dark button cannot fill with and stay
-   legible, so the hover lifts the surface instead of changing what it means. */
+/* The button used to fill green on hover. Now that fair representation *is*
+   black, it is already wearing that color at rest, so the hover lifts the
+   surface instead of changing what it means. */
 .start-btn:hover {
   background: #333;
   transform: translateY(-1px);
 }
 
+/* Built like Start: solid black, white type. The two are the ends of the same
+   action — one opens the board, the other closes it — so they read as one kind
+   of button rather than a filled one and an outlined one. */
 .finish-btn {
   display: inline-block;
   padding: 0.5rem 2rem;
-  background: #fff;
-  border: 1.5px solid #c2c0b8; /* EVEN_GRAY — see src/colors.ts */
+  background: #000000; /* FAIR_BLACK — see src/colors.ts */
+  border: none;
   border-radius: 999px;
   font-family: inherit;
   font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #111;
+  color: #fff;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, transform 0.15s ease;
 }
 
-/* The fill is light enough now that the label has to stay dark to survive it —
-   white on this gray is barely 1.7:1. The background alone carries the hover. */
+/* Wearing its color at rest now, so the hover lifts the surface instead of
+   changing what it means — the same answer Start gives. */
 .finish-btn:hover:enabled {
-  background: #c2c0b8;
-  color: #111;
+  background: #333;
+  transform: translateY(-1px);
 }
 
 /* Riding out with the pact that was keeping it — nothing left to press. */
@@ -317,26 +320,29 @@ body {
   cursor: default;
 }
 
-/* Orange, against Finish's gray: it puts every gap back on the board. The
-   label stays dark either way, so the filled and unfilled states read alike. */
+/* Filled orange against Finish's black: pressing it puts every gap back on the
+   board, so it wears the gap's own color. */
 .restart-btn {
   display: inline-block;
   padding: 0.5rem 1.5rem;
-  background: #fff;
-  border: 1.5px solid #de7128; /* GAP_ORANGE — see src/colors.ts */
+  background: #de7128; /* GAP_ORANGE — see src/colors.ts */
+  border: none;
   border-radius: 999px;
   font-family: inherit;
   font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #333;
+  color: #fff;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: filter 0.15s ease, transform 0.15s ease;
 }
 
+/* The palette holds one orange, and a second, darker one would be a hex with no
+   constant behind it — so the hover darkens the orange there is. */
 .restart-btn:hover {
-  background: #de7128;
+  filter: brightness(0.92);
+  transform: translateY(-1px);
 }
 
 /* ===========================
@@ -475,8 +481,10 @@ body {
   pointer-events: none;
 }
 
+/* Hover previews the black an active box wears, at the same weight — the border
+   only ever changes color. */
 .bipartite-graph .state-box:not(.matched):hover > rect:nth-child(2) {
-  stroke: #000;
+  stroke: #000000; /* FAIR_BLACK — see src/colors.ts */
 }
 
 /* Everything that hangs off the parked block rather than sitting in it: each
@@ -515,7 +523,7 @@ body {
 
 /* The ring fills in; the orange × rides on top of it either way. */
 .bipartite-graph .pact-remove:hover circle {
-  fill: #c2c0b8; /* EVEN_GRAY — see src/colors.ts */
+  fill: #000000; /* FAIR_BLACK — see src/colors.ts */
 }
 
 @media (prefers-reduced-motion: reduce) {
