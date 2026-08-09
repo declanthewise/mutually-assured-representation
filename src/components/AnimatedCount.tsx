@@ -14,6 +14,12 @@ export const COUNT_DURATION_MS = 400;
  * Pass a function as the child to render the running figure yourself — for
  * anything that has to answer to the number actually on screen rather than the
  * one being counted towards, such as the colour it's drawn in.
+ *
+ * A run picks up from the figure on screen, not from the last value asked for,
+ * so changing `duration` or `delay` mid-count carries on from there at the new
+ * pace instead of stranding the count part-way. That's what happens when a pact
+ * is sealed over a previous one that is still counting down: its boxes stop
+ * settling, the count loses its swelled pace, and it has to finish anyway.
  */
 export function AnimatedCount({
   value,
@@ -27,12 +33,12 @@ export function AnimatedCount({
   children?: (shown: number) => ReactNode;
 }) {
   const [display, setDisplay] = useState(value);
-  const prev = useRef(value);
+  /** The figure on screen, which is where the next run starts from. */
+  const shown = useRef(value);
 
   useEffect(() => {
-    const from = prev.current;
+    const from = shown.current;
     const to = value;
-    prev.current = value;
     if (from === to) return;
 
     let raf: number;
@@ -41,7 +47,8 @@ export function AnimatedCount({
       const start = performance.now();
       const tick = (now: number) => {
         const t = Math.min((now - start) / duration, 1);
-        setDisplay(Math.round(from + (to - from) * t));
+        shown.current = Math.round(from + (to - from) * t);
+        setDisplay(shown.current);
         if (t < 1) raf = requestAnimationFrame(tick);
       };
       raf = requestAnimationFrame(tick);
