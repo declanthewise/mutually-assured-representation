@@ -139,13 +139,14 @@ function App() {
         <>
           <div className="app-intro">
             <p>
-              Gerrymandering has drawn the United States into an arms race between red states and
+              Gerrymandering has pulled the United States into an arms race between red states and
               blue states. State minority parties are going extinct and the House has never been
-              more divided. The only way to stop the escalation is bilateral state pacts.
+              more divided. The only way to stop the escalation is for pairs of red states and blue
+              states to draw down their arms in unison.
             </p>
             <p>
-              So pair them off one red state and one blue state at a time. See how many gerrymandered
-              districts you can undraw without changing the balance in the House.
+              So pair them off. Each pact will give the minority parties in those states their representation
+              back. See how many gerrymandered districts you can undraw!
             </p>
           </div>
 
