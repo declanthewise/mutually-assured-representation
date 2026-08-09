@@ -2,9 +2,9 @@ import { useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
 import { HoveredState, MatchPair } from '../types';
-import { FAIR_GREEN, LEAN_DOMAIN, LEAN_RANGE } from '../colors';
+import { EVEN_GRAY, LEAN_DOMAIN, LEAN_RANGE, PARTY_COLORS } from '../colors';
 import { stateDataById } from '../data/stateData';
-import { pactSeatsReturned } from '../data/computeRepresentationGap';
+import { baselineGaps, pactSeatsReturned } from '../data/computeRepresentationGap';
 import { fipsToState } from '../map/fipsMapping';
 import cloudUrl from '../map/mushroom-cloud.png';
 
@@ -17,15 +17,38 @@ interface HeroMapProps {
 
 const WIDTH = 960;
 const HEIGHT = 600;
-/** Breathing room left around the cropped map bounds. */
+/** Breathing room left above and below the cropped map bounds. */
 const VIEW_PAD = 4;
 
 const MAX_REP_GAP = 16;
 const MAX_ICON_RADIUS = 70;
-const BADGE_RADIUS = 17;
+
+/**
+ * Badges are sized against the largest trade on the board rather than the largest
+ * gap: a pact is capped by its smaller partner, so nine is the most any state can
+ * win — California's 16 against Texas's or Florida's 9. Sizing against 16 would
+ * leave every badge in the bottom half of the scale.
+ */
+const MAX_PACT_GAIN = 9;
+const MAX_BADGE_RADIUS = 30;
+/** A badge still has a number to hold when the pact returns nothing. */
+const MIN_BADGE_RADIUS = 10;
 
 function featureStateId(feature: any): string {
   return fipsToState[feature.id.toString().padStart(2, '0')];
+}
+
+/**
+ * The party a pact hands seats to in a given state — the one the enacted map
+ * shorted, so the opposite of whoever its gap favors. Texas is drawn R+9, so a
+ * pact there returns seats to D; California is drawn D−16, so it returns R.
+ * Read off the baseline gap, not the residual: sealing a pact would otherwise
+ * repaint the badge it just drew.
+ */
+function gainingPartyColor(stateId: string): string {
+  const gap = baselineGaps[stateId] ?? 0;
+  if (gap === 0) return EVEN_GRAY;
+  return gap > 0 ? PARTY_COLORS.D : PARTY_COLORS.R;
 }
 
 export function HeroMap({ topoData, onHoverState, selectedMatches, residualGaps }: HeroMapProps) {
@@ -66,23 +89,33 @@ export function HeroMap({ topoData, onHoverState, selectedMatches, residualGaps 
     const path = d3.geoPath().projection(projection);
     pathRef.current = path;
 
-    // The AlbersUsa fit is width-bound, so it leaves ~19 units of dead space
-    // above and below the geometry. Crop to what's actually drawn — clouds stay
-    // inside these bounds, since they're centered on state centroids.
-    const [[, minY], [, maxY]] = path.bounds(states as any);
-    const viewTop = Math.max(0, minY - VIEW_PAD);
-    const viewBottom = Math.min(HEIGHT, maxY + VIEW_PAD);
-    svg.attr('viewBox', `0 ${viewTop} ${WIDTH} ${viewBottom - viewTop}`);
-
     const centroids = new Map<string, [number, number]>();
+    let californiaLeft = 0;
     for (const feature of (states as any).features) {
       const stateId = featureStateId(feature);
       const centroid = path.centroid(feature);
       if (stateId && centroid[0] && centroid[1]) {
         centroids.set(stateId, centroid as [number, number]);
       }
+      if (stateId === 'CA') californiaLeft = path.bounds(feature)[0][0];
     }
     centroidsRef.current = centroids;
+
+    // The AlbersUsa fit is width-bound, so it leaves ~19 units of dead space
+    // above and below the geometry. Crop to what's actually drawn — clouds stay
+    // inside those bounds, since they're centered on state centroids.
+    const [[, minY], [, maxY]] = path.bounds(states as any);
+    const viewTop = Math.max(0, minY - VIEW_PAD);
+    const viewBottom = Math.min(HEIGHT, maxY + VIEW_PAD);
+
+    // Sideways the fit is bound by Alaska's Aleutian tail: three dozen islands
+    // too small to read, the westernmost of them a good 26 units past Alaska's
+    // own mainland. Take California's coast as the left edge instead — the
+    // furthest west anyone can actually see — and set it flush against the
+    // frame, the way the fit already leaves Maine's easternmost point. No pad
+    // on this side: the pad exists to keep a coast off the edge, and here the
+    // coast on the edge is the point.
+    svg.attr('viewBox', `${californiaLeft} ${viewTop} ${WIDTH - californiaLeft} ${viewBottom - viewTop}`);
 
     svg.append('g')
       .attr('class', 'state-shapes')
@@ -176,7 +209,10 @@ export function HeroMap({ topoData, onHoverState, selectedMatches, residualGaps 
       .attr('x', (d: any) => path.centroid(d)[0] - cloudDiameter(d) / 2)
       .attr('y', (d: any) => path.centroid(d)[1] - cloudDiameter(d) / 2);
 
-    // Green arcs tie each pact together
+    // The arc ties a pact's two badges together, so it is drawn in the same white
+    // as the ring around each of them — one continuous white line through both,
+    // reading over the map the way the state borders do. Full opacity for that
+    // reason: at 0.85 the map tinted it and it stopped matching the rings.
     const arcData = selectedMatches
       .map(([a, b]) => ({ key: [a, b].slice().sort().join('-'), c1: centroids.get(a), c2: centroids.get(b) }))
       .filter((d): d is { key: string; c1: [number, number]; c2: [number, number] } => !!d.c1 && !!d.c2);
@@ -195,17 +231,25 @@ export function HeroMap({ topoData, onHoverState, selectedMatches, residualGaps 
       .join(
         enter => enter.append('path')
           .attr('fill', 'none')
-          .attr('stroke', FAIR_GREEN)
+          .attr('stroke', '#fff')
           .attr('stroke-width', 2.5)
           .attr('stroke-linecap', 'round')
           .attr('opacity', 0)
           .attr('d', arcPath)
-          .call(s => s.transition().duration(450).attr('opacity', 0.85)),
+          .call(s => s.transition().duration(450).attr('opacity', 1)),
         update => update.attr('d', arcPath),
         exit => exit.transition().duration(200).attr('opacity', 0).remove(),
       );
 
-    // Badges: seats a pact hands back to the under-represented party in each state
+    // Badges: seats a pact hands back in each state, drawn in the color of the
+    // party receiving them and sized by how many. Both partners return the same
+    // number, so a pact reads as two circles of one size in the two party colors.
+    const badgeRadius = d3.scaleSqrt()
+      .domain([0, MAX_PACT_GAIN])
+      .range([0, MAX_BADGE_RADIUS])
+      .clamp(true);
+    const radiusFor = (gain: number) => Math.max(MIN_BADGE_RADIUS, badgeRadius(gain));
+
     const badgeData = selectedMatches
       .flatMap(([a, b]) => {
         const gain = pactSeatsReturned(a, b);
@@ -213,7 +257,10 @@ export function HeroMap({ topoData, onHoverState, selectedMatches, residualGaps 
       })
       .filter((d): d is { id: string; gain: number; centroid: [number, number] } => !!d.centroid);
 
-    svg.select('.match-badges')
+    // Keyed by state, so re-pairing one updates a badge in place rather than
+    // replacing it. Size and color have to be set on the merged selection for
+    // that reason — an enter-only assignment would strand the old partner's.
+    const badges = svg.select('.match-badges')
       .selectAll<SVGGElement, any>('g.match-badge')
       .data(badgeData, (d: any) => d.id)
       .join(
@@ -222,15 +269,12 @@ export function HeroMap({ topoData, onHoverState, selectedMatches, residualGaps 
             .attr('class', 'match-badge')
             .attr('opacity', 0);
           g.append('circle')
-            .attr('r', BADGE_RADIUS)
-            .attr('fill', FAIR_GREEN)
             .attr('stroke', '#fff')
             .attr('stroke-width', 2.5);
           g.append('text')
             .attr('text-anchor', 'middle')
             .attr('dominant-baseline', 'central')
             .attr('fill', '#fff')
-            .attr('font-size', 17)
             .attr('font-weight', 700);
           g.call(s => s.transition().duration(400).delay(250).attr('opacity', 1));
           return g;
@@ -238,8 +282,14 @@ export function HeroMap({ topoData, onHoverState, selectedMatches, residualGaps 
         update => update,
         exit => exit.transition().duration(200).attr('opacity', 0).remove(),
       )
-      .attr('transform', d => `translate(${d.centroid[0]}, ${d.centroid[1]})`)
-      .select('text')
+      .attr('transform', d => `translate(${d.centroid[0]}, ${d.centroid[1]})`);
+
+    badges.select('circle')
+      .attr('r', d => radiusFor(d.gain))
+      .attr('fill', d => gainingPartyColor(d.id));
+
+    badges.select('text')
+      .attr('font-size', d => Math.round(radiusFor(d.gain) * 0.95))
       .text(d => (d.gain > 0 ? `+${d.gain}` : '0'));
   }, [topoData, selectedMatches, matchedStateIds, residualGaps]);
 

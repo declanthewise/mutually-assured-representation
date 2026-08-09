@@ -1,4 +1,4 @@
-import { FAIR_GREEN, GAP_GOLD, PARTY_COLORS } from '../colors';
+import { EVEN_GRAY, GAP_ORANGE, PARTY_COLORS } from '../colors';
 import {
   baselineGaps,
   computeNationalRepresentationGap,
@@ -74,8 +74,8 @@ export function ResultsPanel({
         <p className="results-headline">
           <span className="headline-line">
             Your {spellCount(pacts.length)} {pacts.length === 1 ? 'pact' : 'pacts'} returned{' '}
-            <span style={{ color: FAIR_GREEN }}>{seatsClosed}</span> of{' '}
-            <span style={{ color: GAP_GOLD }}>{BASELINE_GAP}</span>
+            <span style={{ color: EVEN_GRAY }}>{seatsClosed}</span> of{' '}
+            <span style={{ color: GAP_ORANGE }}>{BASELINE_GAP}</span>
           </span>
           <span className="headline-line">disproportionate districts to their constituents,</span>
           <span className="headline-line">and the U.S. House margin is unchanged.</span>
@@ -83,7 +83,7 @@ export function ResultsPanel({
       ) : (
         <p className="results-headline">
           <span className="headline-line">
-            No seats returned yet — all <span style={{ color: GAP_GOLD }}>{BASELINE_GAP}</span>
+            No seats returned yet — all <span style={{ color: GAP_ORANGE }}>{BASELINE_GAP}</span>
           </span>
           <span className="headline-line">disproportionate districts stand,</span>
           <span className="headline-line">and the U.S. House margin is unchanged.</span>
@@ -110,7 +110,7 @@ export function ResultsPanel({
         ))}
       </ul>
 
-      {/* The gold button from under the columns, alone: from the results there is
+      {/* The orange button from under the columns, alone: from the results there is
           nothing to do but put the board back. */}
       <div className="finish-row">
         <button className="restart-btn" onClick={onRetry}>

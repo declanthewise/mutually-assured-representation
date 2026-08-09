@@ -61,6 +61,12 @@ body {
   height: auto;
   display: block;
   margin: 0 auto;
+  /* The states carry a pointer cursor but nothing to click, so a press only ever
+     gets the browser's own answer: a selection flash on a desktop drag, a tinted
+     box on a phone tap. Neither means anything here. */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
   /* Shrinking max-width scales the whole SVG, so the columns can ride up.
      Eased in and out, rather than the columns' fast-out curve, so the map
      starts moving gently instead of snapping. */
@@ -101,7 +107,10 @@ body {
   top: 0;
   z-index: 10;
   background: #fafaf7;
-  padding: 0.75rem 1.5rem;
+  /* Tight above and below: this padding is the only air around the rings, and the
+     bar rides sticky over the map, so it is charged against the map's height all
+     the way down the page. The sides keep their full measure. */
+  padding: 0.375rem 1.5rem;
   border-bottom: 1px solid #e0e0e0;
 }
 
@@ -176,8 +185,9 @@ body {
   flex: 0 0 auto;
 }
 
-/* Keeps the gap arc in step with its counting-up number. Length is the only thing
-   that ever moves — the arcs are stacked from 12 o'clock, not butted end to end. */
+/* Keeps the returned-seats arc in step with the number counting down beside it.
+   Length is the only thing that ever moves — the arcs are stacked from 12 o'clock,
+   not butted end to end. */
 .stat-donut-arc {
   transition: stroke-dasharray 400ms ease-out;
 }
@@ -271,8 +281,11 @@ body {
   transition: background 0.15s ease, transform 0.15s ease;
 }
 
+/* The button used to fill with the fair-representation color on hover. That
+   color is now a light gray, which this dark button cannot fill with and stay
+   legible, so the hover lifts the surface instead of changing what it means. */
 .start-btn:hover {
-  background: #2d6a4f; /* FAIR_GREEN — see src/colors.ts */
+  background: #333;
   transform: translateY(-1px);
 }
 
@@ -280,7 +293,7 @@ body {
   display: inline-block;
   padding: 0.5rem 2rem;
   background: #fff;
-  border: 1.5px solid #2d6a4f; /* FAIR_GREEN — see src/colors.ts */
+  border: 1.5px solid #c2c0b8; /* EVEN_GRAY — see src/colors.ts */
   border-radius: 999px;
   font-family: inherit;
   font-size: 0.8rem;
@@ -292,10 +305,11 @@ body {
   transition: background 0.15s ease, color 0.15s ease;
 }
 
-/* The label goes white only once the green fills in behind it. */
+/* The fill is light enough now that the label has to stay dark to survive it —
+   white on this gray is barely 1.7:1. The background alone carries the hover. */
 .finish-btn:hover:enabled {
-  background: #2d6a4f;
-  color: #fff;
+  background: #c2c0b8;
+  color: #111;
 }
 
 /* Riding out with the pact that was keeping it — nothing left to press. */
@@ -303,13 +317,13 @@ body {
   cursor: default;
 }
 
-/* Gold, against Finish's green: it puts every gap back on the board. The label
-   stays dark either way — gold on white is too faint to read at this size. */
+/* Orange, against Finish's gray: it puts every gap back on the board. The
+   label stays dark either way, so the filled and unfilled states read alike. */
 .restart-btn {
   display: inline-block;
   padding: 0.5rem 1.5rem;
   background: #fff;
-  border: 1.5px solid #e8b31f; /* GAP_GOLD — see src/colors.ts */
+  border: 1.5px solid #de7128; /* GAP_ORANGE — see src/colors.ts */
   border-radius: 999px;
   font-family: inherit;
   font-size: 0.8rem;
@@ -322,7 +336,7 @@ body {
 }
 
 .restart-btn:hover {
-  background: #e8b31f;
+  background: #de7128;
 }
 
 /* ===========================
@@ -499,9 +513,9 @@ body {
   transition: fill 150ms ease;
 }
 
-/* The ring fills in; the gold × rides on top of it either way. */
+/* The ring fills in; the orange × rides on top of it either way. */
 .bipartite-graph .pact-remove:hover circle {
-  fill: #2d6a4f; /* FAIR_GREEN — see src/colors.ts */
+  fill: #c2c0b8; /* EVEN_GRAY — see src/colors.ts */
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -631,9 +645,11 @@ body {
     font-size: 0.6rem;
   }
 
-  /* Less width to give up on a phone, where the map is already small. */
+  /* No width to give up on a phone. The desktop shrink buys room for the columns
+     to ride up into; here the map is already inside the fold, so shrinking it
+     costs legibility and buys a few pixels nobody needed. */
   .hero-section.compact .hero-map {
-    max-width: 92%;
+    max-width: 100%;
   }
 
   .app-title {
@@ -650,7 +666,7 @@ body {
   }
 
   .stat-bar-wrapper {
-    padding: 0.5rem 0.75rem;
+    padding: 0.25rem 0.75rem;
   }
 
   .stat-bar {
