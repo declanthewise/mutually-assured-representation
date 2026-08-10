@@ -75,10 +75,20 @@ into the JS bundle, which is what `?url` plus the runtime fetch exists to avoid.
   national party balance — only the gap closes.
 - **MAR Matching**: The user pairs states manually. Clicking a state pins it to the head of its own
   column and re-ranks *both* columns around it: closest delegation size, then closest proportional
-  minority share (the box's top row), then alphabetical. The representation gap is deliberately not
-  a ranking key — a state can redraw its way out of its gap but not out of its size or its lean, so
-  the durable pact is between alike states and matched gaps are a benefit of that rather than the
-  thing being sorted on. It is, however, what splits the columns: the side a state sits on is the
+  minority share (the box's top row), then closest representation gap, then alphabetical. The durable
+  terms lead: a state can redraw its way out of its gap but not out of its size or its lean, so size
+  and share rank first and the gap only settles states already alike in both. Where it does settle
+  them it settles them usefully, since the pact spends the lesser of the two gaps and the
+  nearest-sized gap leaves fewest seats on the table. It's compared by magnitude — the sign is
+  already spent on the columns — and read off the baseline, not the residual, like the split below.
+  Size is compared as a ratio rather than a seat difference — delegations run 2 to 52, so one seat is
+  half a state at the bottom and rounding at the top. That differs from a nominal difference only
+  where candidates straddle the anchor, and over the 44 matchable states it moves one column head:
+  Texas leads with California rather than New York, which also stops the marquee pair from
+  disagreeing about each other (California already led with Texas).
+  With nothing selected the columns fall back to `bySize`: biggest delegation, then biggest gap, then
+  alphabetical. That one is weight rather than closeness, since there's no anchor to be near.
+  The gap's other job is the split itself: the side a state sits on is the
   direction of its *baseline* gap, D-drawn left and R-drawn right, so every pairing across the gutter
   has seats to trade. Statewide lean is a close proxy — 43 of the 44 multi-district states sit on the
   side their own PVI names — and reading the gap instead only moves Nevada, which is R+1 with a

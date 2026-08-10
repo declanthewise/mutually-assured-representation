@@ -470,39 +470,96 @@ function inDomOrder(placements: Placement[]): Placement[] {
   return placements.slice().sort((a, b) => a.state.id.localeCompare(b.state.id));
 }
 
+/**
+ * How many seats a state's gerrymander holds, whichever way it leans. Magnitude,
+ * because the sign is already spent on the columns: it's what put the state on
+ * its side of the gutter, so within a side every gap points the same way and only
+ * the size is left to say anything. It's also what a pact spends —
+ * `2 × min(|gapA|, |gapB|)` — so the sizes are what want to match.
+ *
+ * Baseline, never the residual, for the same reason the column split is: a
+ * sealed pact must not re-rank the states still choosing partners.
+ */
+function gapSizeOf(state: StateData): number {
+  return Math.abs(baselineGaps[state.id] ?? 0);
+}
+
+/**
+ * The resting order, with nothing selected: biggest delegation first, then the
+ * biggest gerrymander, then alphabetical.
+ *
+ * There's no anchor to be near, so this isn't closeness — it's weight. The board
+ * opens with the states that carry the most, and a size on its own doesn't settle
+ * that: eight districts drawn straight and eight drawn three seats off are not
+ * equally worth reading first. Alphabetical is left to settle states alike in
+ * both, which is all it was ever fit to decide.
+ */
 function bySize(a: StateData, b: StateData): number {
-  return b.districts2022 - a.districts2022 || a.name.localeCompare(b.name);
+  return (
+    b.districts2022 - a.districts2022 ||
+    gapSizeOf(b) - gapSizeOf(a) ||
+    a.name.localeCompare(b.name)
+  );
+}
+
+/**
+ * How far apart two delegations are, as a ratio rather than a seat count: 38 and
+ * 52 are 1.37 apart, 3 and 2 are 1.5. Sizes here run 2 to 52, and across that
+ * range a fixed seat difference means nothing consistent — at the bottom one seat
+ * is half the delegation, at the top it's rounding. So "alike in size" has to be
+ * scale-free or it isn't one test.
+ *
+ * It only differs from a nominal difference when candidates straddle the anchor;
+ * where every candidate is smaller (or every one larger) both are monotone in
+ * size and rank identically. Across the 44 matchable states it moves exactly one
+ * column head, and moves it right: nominal gave Texas(38) New York(26) over
+ * California(52), on 12 seats against 14, while California's own column headed
+ * with Texas — the two sides of the marquee pairing disagreeing about each other.
+ */
+function sizeRatio(target: StateData) {
+  const targetSize = target.districts2022;
+  return (state: StateData): number => {
+    const r = state.districts2022 / targetSize;
+    return r >= 1 ? r : 1 / r;
+  };
 }
 
 /**
  * Closest delegation size first, then closest proportional minority share, then
- * alphabetical.
+ * closest representation gap, then alphabetical.
  *
- * The representation gap deliberately isn't a key. The durable pact is between
- * alike states — a state can redraw its way out of its gap, but not out of its
- * size or its lean, so those are the terms that hold. Matched gaps are a benefit
- * of a good pairing rather than the thing being ranked, and the box prints the
- * gap anyway for whoever wants to weigh it.
+ * The gap ranks last of the real keys, which is the whole of what it's allowed to
+ * say. The durable pact is between alike states — a state can redraw its way out
+ * of its gap, but not out of its size or its lean — so those terms lead, and the
+ * gap only settles states already alike in both. Where it does settle them, it
+ * settles them usefully: the pact spends the lesser of the two gaps, so the
+ * nearest-sized gap is the one that leaves fewest seats on the table.
  */
 function byClosenessTo(target: StateData) {
-  const targetSize = target.districts2022;
+  const sizeApart = sizeRatio(target);
   const targetMinority = minorityProportionalOf(target);
+  const targetGap = gapSizeOf(target);
   return (a: StateData, b: StateData): number => {
     // The state that was clicked heads its own column. It scores zero on every key
-    // below, but so does any state of the same size and share — three 2-district
+    // below, but so does any state of the same size, share and gap — three 2-district
     // states would otherwise settle it alphabetically, which is how Rhode Island
     // ended up below Hawaii and New Hampshire.
     if (a.id === target.id) return -1;
     if (b.id === target.id) return 1;
 
-    const sizeDiff =
-      Math.abs(a.districts2022 - targetSize) - Math.abs(b.districts2022 - targetSize);
+    // Equal ratios compare equal: IEEE division is correctly rounded, so two
+    // mathematically identical ratios (12/9 and 16/12, say) land on the same
+    // double however they were reached.
+    const sizeDiff = sizeApart(a) - sizeApart(b);
     if (sizeDiff !== 0) return sizeDiff;
 
     const minorityDiff =
       Math.abs(minorityProportionalOf(a) - targetMinority) -
       Math.abs(minorityProportionalOf(b) - targetMinority);
     if (minorityDiff !== 0) return minorityDiff;
+
+    const gapDiff = Math.abs(gapSizeOf(a) - targetGap) - Math.abs(gapSizeOf(b) - targetGap);
+    if (gapDiff !== 0) return gapDiff;
 
     return a.name.localeCompare(b.name);
   };
