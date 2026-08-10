@@ -71,9 +71,14 @@ interface BadgeDatum {
  * pact there returns seats to D; California is drawn D−16, so it returns R.
  * Read off the baseline gap, not the residual: sealing a pact would otherwise
  * repaint the badge it just drew.
+ *
+ * A pact capped at zero hands nothing to anybody, so both its badges go gray
+ * however their states are drawn — a party color on a `0` would name a winner
+ * of a trade that never happened.
  */
-function gainingPartyColor(stateId: string): string {
-  const gap = baselineGaps[stateId] ?? 0;
+function badgeColor(d: BadgeDatum): string {
+  if (d.gain === 0) return EVEN_GRAY;
+  const gap = baselineGaps[d.id] ?? 0;
   if (gap === 0) return EVEN_GRAY;
   return gap > 0 ? PARTY_COLORS.D : PARTY_COLORS.R;
 }
@@ -412,7 +417,7 @@ export function HeroMap({ topoData, onHoverState, selectedMatches, residualGaps 
 
     badges.select('circle')
       .attr('r', d => radiusFor(d.gain))
-      .attr('fill', d => gainingPartyColor(d.id));
+      .attr('fill', badgeColor);
 
     badges.select('text')
       .attr('font-size', d => Math.round(radiusFor(d.gain) * 0.95))
