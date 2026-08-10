@@ -183,24 +183,12 @@ const BRANCH_LABELS: Record<BranchControl, string> = {
  * stacked bars. The chambers always sit senate-left, house-right, so the same
  * branch is in the same place on every box.
  *
- * Every state gets one. Orientation carries the only other thing the mark says:
- * upright where the governor can veto the congressional map, inverted where they
- * can't, so the executive is the point the structure rests on rather than the
- * weight on top. An inverted state draws the identical geometry through a
- * vertical flip, so the two orientations can never drift apart — and the flip is
- * y-only, which leaves senate and house on the sides they occupy everywhere else.
+ * Every state gets one, and every one stands the same way up. The mark says who
+ * holds each branch and nothing else — it used to invert where the governor has
+ * no veto over the congressional map, which asked one small shape to carry two
+ * unrelated facts. `governorCanVeto` is still in the data; nothing draws it.
  */
 function ControlPyramid({ state }: { state: StateData }) {
-  const inverted = !state.governorCanVeto;
-
-  return (
-    <g transform={inverted ? `translate(0, ${PYRAMID_H}) scale(1, -1)` : undefined}>
-      <BranchCourses state={state} inverted={inverted} />
-    </g>
-  );
-}
-
-function BranchCourses({ state, inverted }: { state: StateData; inverted: boolean }) {
   const mid = PYRAMID_W / 2;
   const halfWidthAt = (y: number) => (y / PYRAMID_H) * mid;
 
@@ -221,7 +209,7 @@ function BranchCourses({ state, inverted }: { state: StateData; inverted: boolea
       {piece(
         state.governorParty,
         `${mid},0 ${mid + apexHalf},${apexY} ${mid - apexHalf},${apexY}`,
-        inverted ? 'Governor — no veto over the congressional map' : 'Governor',
+        'Governor',
       )}
 
       {state.houseParty === null ? (

@@ -137,12 +137,13 @@ below, one course for Nebraska's unicameral. They replaced a single `stateContro
 threw away the useful half: *which* branch is the holdout. A trifecta is just all three agreeing, and
 `'split'` on a chamber means nobody commands it (Minnesota's tied House, Alaska's coalitions).
 
-Every state shows a pyramid; `governorCanVeto` only sets its orientation. **Inverted** means the
-governor has no veto over the congressional map — CT and NC by joint resolution, the other nine
-because a commission draws and the governor isn't in the process. That's all the orientation claims,
-which is what lets those two different situations share a mark honestly.
+Every state shows a pyramid, and every pyramid stands upright. It used to invert where
+`governorCanVeto` was false — the governor having no veto over the congressional map, CT and NC by
+joint resolution and nine more because a commission draws and the governor isn't in the process —
+but that asked one small shape to carry two unrelated facts, so the mark now says only who holds
+each branch.
 
-`independentCommission`, `districts2032` and `hasBallotInitiative` have no reader — keep them: a pact
+`governorCanVeto`, `independentCommission`, `districts2032` and `hasBallotInitiative` have no reader — keep them: a pact
 has to survive whoever holds the pen, and a ballot initiative is a route around a hostile
 legislature. `independentCommission` is deliberately strict, true only where a commission holds the
 pen outright (AZ, CO, ID, MI, MT, WA); politician and advisory commissions and New York's overridable

@@ -96,20 +96,16 @@ match graph — `governorParty` on top, `senateParty` and `houseParty` as the co
   pyramid shows *which* branch is the holdout, and that's the part that decides whether a state can
   actually enter a pact.
 
-**Every state shows its pyramid.** `governorCanVeto` sets the orientation, and that's the only other
-thing the mark says:
+**Every state shows its pyramid, and every pyramid stands upright.** Who holds each branch is all
+the mark says.
 
-| Orientation | Condition | States |
-|---|---|---|
-| Upright | The governor can veto the congressional map | 39 states |
-| Upside-down | The governor **cannot** | AZ, CO, CT, HI, ID, MI, MT, NC, NJ, VA, WA |
+`governorCanVeto` is recorded but **nothing reads it**. It used to flip the pyramid upside-down for
+the eleven states whose governor can't veto the congressional map (AZ, CO, CT, HI, ID, MI, MT, NC,
+NJ, VA, WA — CT and NC set their lines by joint resolution, the other nine use commissions that
+leave the governor out of the process). That made one small shape carry two unrelated facts, so the
+orientation is gone and the field joins the other map-drawing ones kept for pact-feasibility work.
 
-Inverted means the executive can't block the map, so the structure rests on that point rather than
-being weighed down by it. Two routes lead there and the mark claims only what they share: CT and NC
-set their lines by joint resolution, which the governor has no power over; the other nine use
-commissions that leave the governor out of the process entirely.
-
-`independentCommission` is recorded but **nothing reads it** — it's kept for pact-feasibility work,
+`independentCommission` is likewise recorded but **unread** — it's kept for pact-feasibility work,
 like the other map-drawing fields. It's deliberately strict: true only where a commission holds the
 pen outright, which is six states (AZ, CO, ID, MI, MT, WA). Politician commissions (HI, NJ, VA),
 advisory commissions (AK, IA, ME, MD, NM, RI, UT) and New York's overridable one are all false,
