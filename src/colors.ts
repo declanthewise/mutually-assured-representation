@@ -35,6 +35,16 @@ export const DIVIDER_GRAY = '#e0e0e0';
  */
 export const EVEN_GRAY = '#c2c0b8';
 
+/**
+ * The gap donut's empty track — the arc the orange has already been pulled off.
+ * Warm, to sit with the page's off-white rather than against it, and light enough
+ * to read as bare ring rather than as a slice of its own. Deliberately not
+ * `FAIR_BLACK`: the seats a pact returns are fair representation, but the ring is
+ * counting the gap, and what is left there is the gap's absence, not a mark
+ * claiming anything.
+ */
+export const TRACK_GRAY = '#e8e8e4';
+
 /** Endpoints of the partisan-lean ramp: R at −20, neutral at 0, D at +20. */
 export const LEAN_RANGE = [PARTY_COLORS.R, '#f0f0f0', PARTY_COLORS.D];
 export const LEAN_DOMAIN = [-20, 0, 20];
