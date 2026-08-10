@@ -173,8 +173,8 @@ function App() {
               states to draw down their arms in unison.
             </p>
             <p>
-              So pair them off. Each pact will give the minority parties in those states their representation
-              back. See how many gerrymandered districts you can undraw!
+              So pair them off in bilateral pacts. Each pact will give the minority party in those
+              states their representation back. See how many disproportionate districts you can undraw!
             </p>
           </div>
 
