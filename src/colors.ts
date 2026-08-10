@@ -26,9 +26,6 @@ export const FAIR_BLACK = '#000000';
 
 export const PARTY_COLORS = { R: '#c93135', D: '#2e6da4' } as const;
 
-/** Section-break rules, drawn by BipartiteMatchGraph. */
-export const DIVIDER_GRAY = '#e0e0e0';
-
 /**
  * Neither party's: a district Cook rates EVEN, and a chamber no party commands
  * (tied, or run by a cross-party coalition).

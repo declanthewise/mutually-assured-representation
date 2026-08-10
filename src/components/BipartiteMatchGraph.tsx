@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { BranchControl, StateData, MatchPair } from '../types';
-import { DIVIDER_GRAY, EVEN_GRAY, FAIR_BLACK, GAP_ORANGE, LEAN_DOMAIN, LEAN_RANGE, PARTY_COLORS } from '../colors';
+import { EVEN_GRAY, FAIR_BLACK, GAP_ORANGE, LEAN_DOMAIN, LEAN_RANGE, PARTY_COLORS } from '../colors';
 import { baselineGaps, proportionalRSeats } from '../data/computeRepresentationGap';
 import { stateSafeSeats } from '../data/districtLeans';
 import { stateData } from '../data/stateData';
@@ -69,21 +69,21 @@ const REMOVE_R = 8;
 const REMOVE_TICK = 3;
 
 /**
- * The section rule above "Your Pacts": 160px wide, 1px, with 24px of air on each
- * side. It's drawn in a viewBox that renders at `max-width: 420px`, so the px
- * figures convert at that scale.
+ * Air around a section heading: 24px, in a viewBox that renders at
+ * `max-width: 420px`, so the px figure converts at that scale. "Your Pacts"
+ * takes two of them above it — with no rule to break the run, the gap itself is
+ * what tells the parked block from the flowing rows, so it has to be plainly
+ * wider than the one between two rows.
  */
 const UNITS_PER_PX = VIEW_W / 420;
-const RULE_W = 160 * UNITS_PER_PX;
-const RULE_PAD = 24 * UNITS_PER_PX;
-const RULE_STROKE = 1 * UNITS_PER_PX;
+const SECTION_PAD = 24 * UNITS_PER_PX;
 
 /**
  * Air above the first row. The columns are headed by the instructions in
  * `App.tsx`, which are HTML and keep their own spacing; this is only the gap
  * between them and the boxes.
  */
-const TOP_PAD = RULE_PAD;
+const TOP_PAD = SECTION_PAD;
 const BOTTOM_PAD = 14;
 
 /** Air kept around the active box when the view follows it, in CSS px. */
@@ -140,16 +140,16 @@ const SWELL_COUNT_SIZE = 28;
 const SWELL_ROW_Y = (HEADER_HEIGHT + BOX_H) / 2;
 
 /**
- * The heading under the pact rule. Spacing is measured to the top of its ink,
- * not its em box — Source Sans 3 caps fill 0.66em, and the ~3.5 units of slack
- * above them would otherwise read as extra air under the rule.
+ * The "Your Pacts" heading. Spacing is measured to the top of its ink, not its
+ * em box — Source Sans 3 caps fill 0.66em, and the ~3.5 units of slack above
+ * them would otherwise read as extra air over the heading.
  */
 const PACT_LABEL_SIZE = 9;
 const PACT_LABEL_CAP = PACT_LABEL_SIZE * 0.66;
 const PACT_LABEL_GAP = 14;
 
-/** Room above the parked block: the rule, its padding, and that heading. */
-const PACT_HEADER_H = RULE_PAD * 2 + PACT_LABEL_CAP + PACT_LABEL_GAP - ROW_GAP;
+/** Room above the parked block: that heading and the air it stands in. */
+const PACT_HEADER_H = SECTION_PAD * 2 + PACT_LABEL_CAP + PACT_LABEL_GAP - ROW_GAP;
 
 type Column = 'left' | 'right';
 
@@ -468,20 +468,6 @@ function minorityProportionalOf(state: StateData): number {
  */
 function inDomOrder(placements: Placement[]): Placement[] {
   return placements.slice().sort((a, b) => a.state.id.localeCompare(b.state.id));
-}
-
-/** The section rule, centered on the columns. */
-function sectionRule(y: number) {
-  return (
-    <line
-      x1={(VIEW_W - RULE_W) / 2}
-      x2={(VIEW_W + RULE_W) / 2}
-      y1={y}
-      y2={y}
-      stroke={DIVIDER_GRAY}
-      strokeWidth={RULE_STROKE}
-    />
-  );
 }
 
 function bySize(a: StateData, b: StateData): number {
@@ -905,12 +891,11 @@ export function BipartiteMatchGraph({
         </g>
 
         {/* Hung off the top of the parked block, which moves a row whenever a pact
-            is broken. Both pieces are drawn relative to that top and carried there
-            by one transform, so the heading floats down with the block instead of
+            is broken. It's drawn relative to that top and carried there by a
+            transform, so the heading floats down with the block instead of
             ratcheting to the new row ahead of it. */}
         {pactHeader && (
           <g className="pact-heading" style={{ transform: `translate(0px, ${pactTopY}px)` }}>
-            {sectionRule(-(RULE_PAD + PACT_LABEL_CAP + PACT_LABEL_GAP))}
             <text
               x={VIEW_W / 2}
               y={-PACT_LABEL_GAP}
