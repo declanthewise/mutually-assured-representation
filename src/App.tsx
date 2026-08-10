@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { HeroMap } from './components/HeroMap';
 import { BipartiteMatchGraph } from './components/BipartiteMatchGraph';
 import { ResultsPanel } from './components/ResultsPanel';
@@ -23,6 +23,33 @@ const SCROLL_HOME_MS = 2000;
  * `.bipartite-graph .state-box` in `App.css`. Keep the two in step.
  */
 const BOX_TRAVEL_MS = 550;
+
+/**
+ * Ride the page to the top and run `then` once it lands — for anything that
+ * would otherwise shorten the page under a reader who is scrolled down it. Go
+ * home first and the swap happens at the top, where there is nothing above to
+ * fall into the gap; do it the other way round and the browser clamps the
+ * scroll to whatever the shorter page allows, dropping the reader mid-page.
+ *
+ * There's no `scrollend` to lean on in every browser, so watch for the page to
+ * land — on a deadline, because a reader who scrolls back down interrupts the
+ * ride and `then` can't wait on a trip that isn't happening. Returns a cancel.
+ */
+function rideHome(then: () => void): () => void {
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
+
+  const deadline = performance.now() + SCROLL_HOME_MS;
+  let raf = requestAnimationFrame(function land(now) {
+    if (window.scrollY > 0 && now < deadline) {
+      raf = requestAnimationFrame(land);
+      return;
+    }
+    then();
+  });
+
+  return () => cancelAnimationFrame(raf);
+}
 
 function App() {
   const [hoveredState, setHoveredState] = useState<HoveredState | null>(null);
@@ -72,23 +99,11 @@ function App() {
     if (!finishRow) return;
 
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let raf = 0;
+    let cancelRide = () => {};
 
     const timeoutId = setTimeout(
       () => {
-        window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
-
-        // No `scrollend` to lean on in every browser, so watch for the page to
-        // land — on a deadline, because a reader who scrolls back down interrupts
-        // the ride and the button can't wait on a trip that isn't happening.
-        const deadline = performance.now() + SCROLL_HOME_MS;
-        raf = requestAnimationFrame(function land(now) {
-          if (window.scrollY > 0 && now < deadline) {
-            raf = requestAnimationFrame(land);
-            return;
-          }
-          setFinishRow(false);
-        });
+        cancelRide = rideHome(() => setFinishRow(false));
       },
       // Reduced motion has the boxes arrive at once and the page jump, so the
       // whole sequence collapses to its end state.
@@ -97,9 +112,22 @@ function App() {
 
     return () => {
       clearTimeout(timeoutId);
-      cancelAnimationFrame(raf);
+      cancelRide();
     };
   }, [selectedMatches, finishRow]);
+
+  // Finish trades the columns for the results panel, which is a fraction of
+  // their height, so it takes the same ride home first — otherwise the page
+  // shortens under a reader standing at the button, which is as far down as the
+  // page goes. Cancelled on a second click so two rides never run at once.
+  const cancelFinishRide = useRef(() => {});
+
+  const handleFinish = useCallback(() => {
+    cancelFinishRide.current();
+    cancelFinishRide.current = rideHome(() => setFinished(true));
+  }, []);
+
+  useEffect(() => () => cancelFinishRide.current(), []);
 
   // Back to the opening screen with an empty board — the map, the stat bar and the
   // columns all read off selectedMatches, so clearing it resets every one of them.
@@ -186,7 +214,7 @@ function App() {
                 // Inert on the way out, so the results are never reached with an
                 // empty board during those few hundred milliseconds.
                 disabled={selectedMatches.length === 0}
-                onClick={() => setFinished(true)}
+                onClick={handleFinish}
               >
                 Finish
               </button>
