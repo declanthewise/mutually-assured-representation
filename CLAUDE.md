@@ -36,6 +36,10 @@ src/
 │   ├── fipsMapping.ts       # FIPS code → state abbreviation, for the TopoJSON
 │   ├── us-states-10m.json   # TopoJSON state boundaries — imported `?url`, never inlined
 │   └── mushroom-cloud.png   # Cloud icon sized by representation gap
+├── branding/                # Assets nothing in `src/` imports — the browser and the crawler read them
+│   ├── favicon.png          # 64px cloud, cropped to its own edges — linked from index.html
+│   ├── apple-touch-icon.png # The same crop at 180px
+│   └── og-card.png          # 1200×630 share card — see below
 ├── colors.ts                # The whole palette; every component imports from here
 └── types.ts                 # TypeScript interfaces
 ```
@@ -50,6 +54,24 @@ components rather than beside the geometry they draw.
 
 The topology is imported as `./us-states-10m.json?url` — a plain JSON import would inline all 112 KB
 into the JS bundle, which is what `?url` plus the runtime fetch exists to avoid. Keep the suffix.
+
+`src/branding/` is the head of the document rather than the body. The two icons are ordinary hashed
+assets: `index.html` links them by source path and Vite rewrites a `link` `href` like any other.
+The share card can't be, because Vite never rewrites a `meta` tag's `content`, and `og:image` has to
+be an absolute URL written before the hash exists — a crawler reads the HTML off a host the app can't
+ask about. So `index.html` writes the production URL out in full and the `ogCard` plugin in
+`vite.config.ts` emits the card at that fixed path, `/og-card.png`. The plugin reads the file with
+`readFileSync`, so a missing card still fails the build — which is the whole point of having no
+`public/` directory. Changing the domain means editing the two absolute URLs in `index.html`.
+
+The card is a screenshot of the app itself: run `npm run preview`, capture the landing view in
+headless Chrome, crop it to the map's own ink, and set that beside the title in a 1200×630 frame.
+The map takes whatever width the title leaves rather than a measured one, so it can't overflow the
+frame and lose Maine off the right edge. Reshoot it when the map or the title changes, since a stale
+card is a promise the page no longer keeps.
+
+There is no `description` or `og:description`, by choice: the card and the title say it, and a
+paragraph under them says it again. The absence is the design, not an oversight — don't add one back.
 
 ## Key Concepts
 

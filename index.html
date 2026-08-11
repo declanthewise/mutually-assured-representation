@@ -4,10 +4,28 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mutually Assured Representation</title>
+
+    <!-- Icons and the share card resolve through Vite: a link href gets hashed like
+         any other asset, so these paths are the source paths, not public/ ones. -->
+    <link rel="icon" type="image/png" href="/src/branding/favicon.png" />
+    <link rel="apple-touch-icon" href="/src/branding/apple-touch-icon.png" />
+
+    <!-- Absolute, because a crawler reads this file off a host we can't ask about.
+         The card is emitted under this exact name by the og-card plugin in
+         vite.config.ts. No description tag, by choice: the card says it. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://mutually-assured-representation.vercel.app/" />
+    <meta property="og:title" content="Mutually Assured Representation" />
+    <meta property="og:image" content="https://mutually-assured-representation.vercel.app/og-card.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="A US map with a mushroom cloud over each state, sized by its representation gap." />
+    <meta name="twitter:card" content="summary_large_image" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="preload" as="image" href="/mushroom-cloud.png">
+    <link rel="preload" as="image" href="/src/map/mushroom-cloud.png">
   </head>
   <body>
     <div id="root"></div>
