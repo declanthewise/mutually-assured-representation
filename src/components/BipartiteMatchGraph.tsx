@@ -27,6 +27,27 @@ const ROW_GAP = 6;
 const ROW_H = BOX_H + ROW_GAP;
 const HEADER_HEIGHT = 19;
 
+/** Source Sans 3 caps fill 0.66em — the figure every cap measure here is taken at. */
+const CAP_RATIO = 0.66;
+
+/**
+ * The header line: the state name, the district count trailing it, the control
+ * pyramid and the lean badge, all standing on one midline.
+ *
+ * The name is placed by its alphabetic baseline rather than by
+ * `dominant-baseline`, because the name and the count are two runs of different
+ * sizes that have to share a baseline. `central` centers each run on its own em
+ * box, which leaves the smaller count's baseline about a third of a unit above
+ * the name's — it resets the baseline table's font size along with the baseline.
+ * SVG 1.1 spares a `dominant-baseline: auto` tspan that, by having it keep the
+ * parent's baseline table *and* font size, and Chrome obliges; WebKit resolves
+ * `auto` to `alphabetic` and drops the count a whole baseline instead. So neither
+ * reading of the shorthand is any use, and the baseline is stated outright.
+ */
+const HEADER_MID_Y = 10;
+const NAME_SIZE = 9.5;
+const NAME_BASELINE_Y = HEADER_MID_Y + (NAME_SIZE * CAP_RATIO) / 2;
+
 /** Baselines of the three equation rows, and the rule above the total. */
 const EQ_ROW_Y = [29, 40, 52];
 const EQ_RULE_Y = 46;
@@ -145,7 +166,7 @@ const SWELL_ROW_Y = (HEADER_HEIGHT + BOX_H) / 2;
  * them would otherwise read as extra air over the heading.
  */
 const PACT_LABEL_SIZE = 9;
-const PACT_LABEL_CAP = PACT_LABEL_SIZE * 0.66;
+const PACT_LABEL_CAP = PACT_LABEL_SIZE * CAP_RATIO;
 const PACT_LABEL_GAP = 14;
 
 /** Room above the parked block: that heading and the air it stands in. */
@@ -830,14 +851,23 @@ export function BipartiteMatchGraph({
           strokeWidth={0.5}
         />
 
-        <g transform={`translate(${badgeX - PYRAMID_GAP - PYRAMID_W}, ${10 - PYRAMID_H / 2})`}>
+        <g
+          transform={`translate(${badgeX - PYRAMID_GAP - PYRAMID_W}, ${HEADER_MID_Y - PYRAMID_H / 2})`}
+        >
           <ControlPyramid state={state} />
         </g>
 
-        <rect x={badgeX} y={10 - badgeH / 2} width={badgeW} height={badgeH} fill={partisanColor} rx={2.5} />
+        <rect
+          x={badgeX}
+          y={HEADER_MID_Y - badgeH / 2}
+          width={badgeW}
+          height={badgeH}
+          fill={partisanColor}
+          rx={2.5}
+        />
         <text
           x={badgeX + badgeW / 2}
-          y={10}
+          y={HEADER_MID_Y}
           textAnchor="middle"
           dominantBaseline="central"
           fontSize={8.5}
@@ -848,13 +878,13 @@ export function BipartiteMatchGraph({
         </text>
         <text
           x={6}
-          y={10}
-          dominantBaseline="central"
-          fontSize={9.5}
+          y={NAME_BASELINE_Y}
+          fontSize={NAME_SIZE}
           fill="#333"
           fontWeight={isActive ? 600 : 500}
         >
           {state.name}
+          {/* No baseline of its own: it inherits the line's, which is the point. */}
           <tspan dx={3} fontSize={8.5} fontWeight={500} fill="#999">
             ({state.districts2022})
           </tspan>

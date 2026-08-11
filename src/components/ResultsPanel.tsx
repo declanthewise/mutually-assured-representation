@@ -78,7 +78,7 @@ export function ResultsPanel({
             <span style={{ color: GAP_ORANGE }}>{BASELINE_GAP}</span>
           </span>
           <span className="headline-line">disproportionate districts to their constituents,</span>
-          <span className="headline-line">and the U.S. House margin is unchanged.</span>
+          <span className="headline-line">and the U.S. House district margin is unchanged.</span>
         </p>
       ) : (
         <p className="results-headline">
@@ -86,7 +86,7 @@ export function ResultsPanel({
             No seats returned yet — all <span style={{ color: GAP_ORANGE }}>{BASELINE_GAP}</span>
           </span>
           <span className="headline-line">disproportionate districts stand,</span>
-          <span className="headline-line">and the U.S. House margin is unchanged.</span>
+          <span className="headline-line">and the U.S. House district margin is unchanged.</span>
         </p>
       )}
 
