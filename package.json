@@ -10,6 +10,7 @@
     "check:control": "tsx src/data/checkBranchControl.ts"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
     "d3": "^7.9.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
