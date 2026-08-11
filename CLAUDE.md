@@ -23,6 +23,7 @@ src/
 │   ├── HeroMap.tsx          # D3-based interactive US map — clouds, pact badges and arcs
 │   ├── StateTooltip.tsx     # Hover tooltip, driven by HeroMap
 │   ├── BipartiteMatchGraph.tsx  # Two re-sorting columns of state boxes
+│   ├── ResultsPanel.tsx     # What the pacts returned, once Finish replaces the board
 │   ├── StatBar.tsx          # House balance + national rep. gap (sticky, above the map)
 │   └── AnimatedCount.tsx    # Count-up number, used by StatBar and the match graph
 ├── data/                    # Data plus the math over it; nothing generated
