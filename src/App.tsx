@@ -175,9 +175,9 @@ function App() {
             </p>
             <p>
               So pair up the red states and blue states into bipartisan pacts. Each pact will give
-              the minority party in those two states their representation back. States with similar
-              size delegations make the best pacts. See how many disproportionate districts you can
-              undraw in total!
+              the minority party in each of those two states their representation back. States with
+              similar size delegations make the best pacts. See how many disproportionate districts
+              you can undraw in total!
             </p>
           </div>
 
