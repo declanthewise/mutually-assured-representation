@@ -660,8 +660,37 @@ body {
     max-width: 100%;
   }
 
+  /* Both title lines are centered and short, so the side padding does nothing but
+     decide when they wrap: at 1.5rem the name sets 364px wide in Playfair and the
+     kicker 336px, and every pixel of padding costs two of viewport. 0.25rem a
+     side puts the name's wrap point at 373px, taking in the 375px iPhones and
+     everything above them. It can't reach the 360px Androids — the line itself is
+     364px, so no padding at all would still wrap them; that would take a smaller
+     title.
+
+     The prose takes the same padding, not because it wraps but because it sits
+     directly under the title: two different insets would read as one block set
+     crooked. */
+  .app-title,
+  .app-intro {
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+  }
+
+  /* Equal padding isn't equal width here. The title's box shrink-wraps its
+     longest line and centers, so it stops at the 364px the name sets, while the
+     prose fills the viewport and runs wider — 380px at 393, 419px at 430 — which
+     reads as the prose overhanging a title that is merely short. Capping it at
+     that same 364px plus the padding either side (border-box) puts the two text
+     bands on one pair of edges at every width the title still fits on one line.
+     The 620px of the base rule is the desktop measure and takes over above. */
+  .app-intro {
+    max-width: 23.25rem;
+  }
+
   .app-title {
-    padding: 0.4rem 1rem 0.6rem;
+    padding-top: 0.4rem;
+    padding-bottom: 0.6rem;
   }
 
   .app-title h1 {

@@ -170,11 +170,13 @@ function App() {
               Gerrymandering has pulled the United States into an arms race between red states and
               blue states. State minority parties are going extinct and the House has never been
               more divided. The only way to stop the escalation is for pairs of red states and blue
-              states to draw down their arms in unison.
+              states to draw down their arms in unison by drawing new Congressional district maps
+              that are equally proportional.
             </p>
             <p>
-              So pair the states off into bilateral pacts. Each pact will give the minority party in those
-              states their representation back. See how many disproportionate districts you can undraw!
+              So pair the states off into bilateral pacts. Each pact will give the minority party in
+              those states their representation back. See how many disproportionate districts you can
+              undraw in total!
             </p>
           </div>
 
