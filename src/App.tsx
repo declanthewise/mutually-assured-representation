@@ -171,13 +171,13 @@ function App() {
               blue states. State minority parties are going extinct and the House has never been
               more divided. The only way to stop the escalation is to concurrently implement new
               Congressional district maps that are equally less disproportionate, one red state
-              and one blue state at a time, so the balance of power in Congress remains unchanged.
+              and one blue state at a time, so the margin in Congress remains unchanged.
             </p>
             <p>
               So pair up the red states and blue states into bipartisan pacts. Each pact will give
               the minority party in each of those two states their representation back. States with
               similar size delegations make the best pacts. See how many disproportionate districts
-              you can undraw in total!
+              you can undraw!
             </p>
           </div>
 
