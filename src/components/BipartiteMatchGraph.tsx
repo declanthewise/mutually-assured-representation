@@ -582,6 +582,14 @@ export function BipartiteMatchGraph({
   const [activeStateId, setActiveStateId] = useState<string | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
+  // Which box the pointer is over, tracked here rather than left to CSS `:hover`.
+  // A click re-ranks both columns, so the box under the cursor slides away without
+  // the cursor moving — and a browser leaves `:hover` where it was until the
+  // pointer next moves. A deselected box would sit there still wearing the black
+  // it had just given up, indistinguishable from the active box it no longer was.
+  // A tap does the same on touch, where nothing moves the pointer afterwards at all.
+  const [hoveredStateId, setHoveredStateId] = useState<string | null>(null);
+
   // A sealed pact turns its boxes black and starts their gap counts falling, but
   // the board holds still for a beat before the pair leaves for "Your Pacts" —
   // otherwise both boxes slide out from under the numbers they just changed.
@@ -726,6 +734,11 @@ export function BipartiteMatchGraph({
   const handleStateClick = (state: StateData, e: React.MouseEvent) => {
     e.stopPropagation();
 
+    // The click is about to move this box, so whatever the pointer was over it is
+    // no longer over. The next pointer move re-establishes it; until then the
+    // border says only what the click made it.
+    setHoveredStateId(null);
+
     // Any further click ends the previous pact's linger early: the user has moved
     // on, and the board should answer this click rather than the last one.
     setSeal(null);
@@ -786,6 +799,7 @@ export function BipartiteMatchGraph({
 
   const renderStateBox = (state: StateData, index: number, column: Column, yOffset: number) => {
     const isActive = state.id === activeStateId;
+    const isHovered = state.id === hoveredStateId;
     const partner = partnerById.get(state.id);
     const isMatched = !!partner;
     const partisanColor = leanColorScale(state.partisanLean);
@@ -826,6 +840,13 @@ export function BipartiteMatchGraph({
         style={{ transform: `translate(${boxX}px, ${boxY}px)` }}
         // A parked pact is settled: the only move left on it is the × that breaks it.
         onClick={isMatched ? undefined : e => handleStateClick(state, e)}
+        // `move` as well as `enter`, so a pointer left inside the box by a click
+        // takes the hover back on its next twitch rather than waiting to cross the
+        // border again. It sets the same id it already holds, which React drops
+        // without a render, so the stream of moves costs nothing.
+        onPointerEnter={() => setHoveredStateId(state.id)}
+        onPointerMove={() => setHoveredStateId(id => (id === state.id ? id : state.id))}
+        onPointerLeave={() => setHoveredStateId(id => (id === state.id ? null : id))}
       >
         <rect x={0} y={0} width={BOX_W} height={BOX_H} fill="white" rx={3} />
         <rect
@@ -836,8 +857,9 @@ export function BipartiteMatchGraph({
           fill="none"
           // One weight on every box, so the border says what it says by color
           // alone: partisan lean at rest, black once the box is picked up or
-          // sealed. A thicker stroke only made the same point twice.
-          stroke={isActive || isMatched ? FAIR_BLACK : partisanColor}
+          // sealed, and black under the pointer to say it can be. A thicker
+          // stroke only made the same point twice.
+          stroke={isActive || isMatched || isHovered ? FAIR_BLACK : partisanColor}
           strokeWidth={2}
           rx={3}
         />
@@ -946,6 +968,10 @@ export function BipartiteMatchGraph({
                   onClick={e => {
                     e.stopPropagation();
                     setActiveStateId(null);
+                    // A parked box takes no pointer events, so one that was hovered
+                    // when it parked never got its `leave`. Freed here, it would
+                    // rejoin the flowing rows still wearing the pact's black.
+                    setHoveredStateId(null);
                     setSeal(null);
                     onToggleMatch([a, b]);
                   }}

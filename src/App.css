@@ -482,10 +482,11 @@ body {
 }
 
 /* Hover previews the black an active box wears, at the same weight — the border
-   only ever changes color. */
-.bipartite-graph .state-box:not(.matched):hover > rect:nth-child(2) {
-  stroke: #000000; /* FAIR_BLACK — see src/colors.ts */
-}
+   only ever changes color. It's painted from the box's own stroke rather than
+   from `:hover` here, because the columns re-rank under a still cursor: a
+   deselected box slides out from under the pointer, and a browser doesn't
+   re-evaluate `:hover` until the pointer moves, so the box kept wearing the
+   black it had just given up. See hoveredStateId in BipartiteMatchGraph.tsx. */
 
 /* Everything that hangs off the parked block rather than sitting in it: each
    link with its ×, and the "Your Pacts" heading. They ride one transform on the
