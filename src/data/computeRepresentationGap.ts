@@ -11,24 +11,65 @@ export interface FairSplit {
 }
 
 /**
- * What the state's own Cook PVI says its delegation should look like, in whole
- * districts: `districts × R share of the two-party vote`, rounded.
+ * How far into the last district a party has to reach before the fair map hands it
+ * over outright, as hundredths. A remainder of 75 or more claims it for R, 25 or
+ * less concedes it to D, and anything between leaves it undecided.
  *
- * Where that lands exactly on a half, the odd district is a toss-up rather than a
- * rounding: Michigan is EVEN with 13 districts, so the fair map is 6R, 6D and one
- * district neither party is owed. Rounding to 7R would hand it to Republicans on
- * nothing but the tie-breaking rule inside Math.round. Michigan is the only state
- * this reaches.
+ * These are the midpoints of the two halves of the last district — the point at
+ * which one party's claim on it is twice the other's. Below that neither claim is
+ * strong enough to name an owner.
+ */
+const FAIR_CLAIM = 75;
+const FAIR_CONCEDE = 25;
+
+/**
+ * What the state's own Cook PVI says its delegation should look like, in whole
+ * districts: `districts × R share of the two-party vote`, with the leftover
+ * fraction deciding who gets the last one.
+ *
+ * That leftover used to be settled by rounding, which is a knife edge — the last
+ * district went to whichever party held more than half of it, however little more.
+ * New Mexico is 3 districts at D+4, an ideal of 1.38, and the 0.38 Republicans were
+ * owed vanished into a second Democratic seat because 0.38 < 0.5. Michigan, at
+ * exactly 6.50, was the one state in the country where the knife edge was visible,
+ * and it got a toss-up while every other state's remainder was rounded away in
+ * silence.
+ *
+ * So the remainder gets a band, the same way a district does (see EVEN_BAND in
+ * districtLeans.ts). A party has to clear the midpoint of the last district's half
+ * — three quarters of it — to be handed it outright. Short of that the fair map
+ * leaves it undecided, which is what it is: a seat neither side has earned.
+ *
+ * This is also what keeps the gap unambiguous. The band lines the fair map's
+ * undecided districts up against the enacted map's, so the two parties' shortfalls
+ * no longer both come out positive — Arizona used to read one short on each side,
+ * with the sign decided by a `>=`.
  */
 export function fairSplit(state: StateData): FairSplit {
-  // Integer arithmetic: districts × (50 − lean) is the ideal × 100 exactly, so a
-  // remainder of 50 is a true half and not a float artifact. Computing in floating
-  // point first would miss some and invent others, since a lean like 10 makes
-  // (50 − lean) / 100 inexact in binary.
+  // Integer arithmetic: districts × (50 − lean) is the ideal × 100 exactly, so the
+  // remainder is the last district's share in hundredths with no float error.
+  // Computing the ideal as a float first would put a remainder of exactly 25 or 75
+  // on the wrong side of the comparison.
   const scaled = state.districts2022 * (50 - state.partisanLean);
-  const even = scaled % 100 === 50 ? 1 : 0;
-  const rSeats = even ? (scaled - 50) / 100 : Math.round(scaled / 100);
-  return { rSeats, dSeats: state.districts2022 - rSeats - even, even };
+  const whole = Math.floor(scaled / 100);
+  const remainder = scaled % 100;
+
+  // A single-district state has no marginal seat: its only district *is* the whole
+  // delegation, so the band would be asking a party to clear 75% of the state to be
+  // owed its one representative. Wyoming at R+23 came out 0R 0D 1E. The seat goes to
+  // whoever leads, which is what rounding did and what the band is not for.
+  if (state.districts2022 === 1) {
+    const rSeats = Math.round(scaled / 100);
+    return { rSeats, dSeats: 1 - rSeats, even: 0 };
+  }
+
+  if (remainder >= FAIR_CLAIM) {
+    return { rSeats: whole + 1, dSeats: state.districts2022 - whole - 1, even: 0 };
+  }
+  if (remainder <= FAIR_CONCEDE) {
+    return { rSeats: whole, dSeats: state.districts2022 - whole, even: 0 };
+  }
+  return { rSeats: whole, dSeats: state.districts2022 - whole - 1, even: 1 };
 }
 
 /**
