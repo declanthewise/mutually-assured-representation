@@ -97,9 +97,14 @@ paragraph under them says it again. The absence is the design, not an oversight 
   arithmetic (`districts × (50 − lean)`, remainder 50 being a true half); Michigan is the only state
   it reaches.
   The gap is then `max(R short, D short)`, signed positive when D is the short one (R overrepresented).
-  A district rated exactly EVEN is **not** counted for either party and **not** taken out of the
-  delegation the ideal divides, so it surfaces as the squeezed party being one district short — which
-  is what it is. Virginia should have 5R, has 4R drawn and one district left undecided: a gap of 1.
+  A district inside `EVEN_BAND` (`|PVI| <= 1`, in `districtLeans.ts`) is **not** counted for either
+  party and **not** taken out of the delegation the ideal divides, so it surfaces as the squeezed party
+  being one district short — which is what it is. Virginia should have 5R, has 4R drawn and one
+  district left undecided: a gap of 1. The band is a point wide rather than exactly EVEN because that
+  is where competitiveness actually sits: Cook rates 7 districts EVEN, the band takes 17 across 12
+  states, and of the 10 it adds, 4 are rated Toss Up, 3 Lean, 3 Likely and none Solid. See the comment
+  on `EVEN_BAND` — and note the ratings are only the sanity check on where the line goes, never an
+  input, since they fold in incumbency and this is an argument about districts.
   The two shortfalls sum to the enacted EVEN districts beyond the ideal's own, which is why the larger
   is the gap: it's the side that has to be made whole. Where the ideal carries a toss-up too — only
   Michigan — the two cancel and the gap is the difference of the party counts alone.
@@ -112,7 +117,7 @@ paragraph under them says it again. The absence is the design, not an oversight 
   how the last of the gap closes, so Virginia's `1E 4R` becomes a flat `5R`. It survives a pact that
   only closes part of the gap, where a district already drawn for the other party changes hands
   instead — New Jersey goes `1E 2R` → `1E 3R`.
-  National baseline gap: **101**. Four states carry none (ME, MN, NE, PA).
+  National baseline gap: **103**. Three states carry none (ME, MN, NE).
 - **Pacts**: A pact converts the same number of districts in both partners, so its national effect is
   `2 × returned`. Whatever gap survives stays on the map.
   **The House balance must not move** — that is the argument the whole tool makes, and it decides
@@ -132,11 +137,11 @@ paragraph under them says it again. The absence is the design, not an oversight 
   what the fair map asks for — **Michigan's is not surplus**, its fair map calling for a toss-up, so
   Michigan trades on its party gap alone like a state with no EVEN district at all. The other six EVEN
   states carry one surplus apiece.
-  Consequence worth knowing: **Arizona is the only surplus-EVEN state on the R-drawn side.** CO, NJ,
-  NM, NY and VA are all D-drawn, so every EVEN-for-EVEN trade on the board runs through Arizona, and
-  only one of them can have it. CO, NM and VA have a party gap of zero — their whole gap is that one
-  undecided district — so Arizona is the only partner that returns them anything at all. Pair them
-  with anyone else and the pact pays out zero, which the badges show honestly as `0`.
+  Surplus undecided districts sit on both sides — seven states D-drawn (CA, CO, NV, NJ, NM, NY, VA)
+  against five R-drawn (AZ, IN, MI, OH, PA) — so 35 of the 468 cross-gutter pairings trade one.
+  Consequence worth knowing: six states (AZ, CO, MI, NV, NM, PA) have a party gap of **zero**, their
+  whole gap being undecided districts, so their only productive partners are the surplus states across
+  the gutter. Pair one with anyone else and the pact pays out zero, which the badges show as `0`.
 - **MAR Matching**: The user pairs states manually. Clicking a state pins it to the head of its own
   column and re-ranks *both* columns around it: closest delegation size, then closest proportional
   minority share (the box's top row), then closest representation gap, then alphabetical. The durable
@@ -158,8 +163,8 @@ paragraph under them says it again. The absence is the design, not an oversight 
   side their own PVI names — and reading the gap instead only moves Nevada, which is R+1 with a
   D-drawn map and belongs with the states it can actually disarm. The gap must be the baseline and
   not the residual, or sealing a pact would move its own partners' columns.
-  Four states carry no gap and so no side (ME, MN, NE, PA); they fall back to lean, which settles all
-  four. A third test, on who holds the branches, sits below that for a state that is gap 0 *and* lean
+  Three states carry no gap and so no side (ME, MN, NE); they fall back to lean, which settles all
+  three. A third test, on who holds the branches, sits below that for a state that is gap 0 *and* lean
   EVEN — the signatory read off the government instead of a rounded margin, with D having to win the
   branches outright so an even split stays right. Nothing reaches it today: it was there for Michigan,
   whose fair map of 6R, 6D and a toss-up against an enacted 7R and 5D leaves its Democrats a district

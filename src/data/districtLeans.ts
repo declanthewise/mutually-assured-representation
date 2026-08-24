@@ -3,6 +3,25 @@ import districtPviRaw from './cook2026DistrictPVI.tsv?raw';
 /** A district this far from even is treated as locked for its party. */
 export const SAFE_SEAT_THRESHOLD = 8;
 
+/**
+ * A district within this much of even counts as undecided — drawn for neither
+ * party, and so held out of both party tallies.
+ *
+ * Cook rates exactly seven districts EVEN, but a band of one takes in seventeen,
+ * and the ones it adds are the ones nobody has called: of the ten R+1 and D+1
+ * districts, four are rated Toss Up and three Lean, three are Likely, and none is
+ * Solid. In a midterm, on a neutral national environment, a seat a point off even
+ * is a seat in play. Drawing the line at exactly EVEN made the band an artifact of
+ * where Cook's rounding fell rather than a claim about competitiveness.
+ *
+ * The ratings and the PVI are not the same measure and shouldn't be conflated — the
+ * ratings fold in incumbency and candidate quality, which is why PA-01 is D+1 and
+ * still Likely R, and why OH-09 is R+5 and still a Toss Up. This tool is an argument
+ * about districts rather than about races, so PVI stays the input; the ratings are
+ * only the sanity check on where the line sits.
+ */
+export const EVEN_BAND = 1;
+
 export interface SafeSeatCounts {
   safeR: number;
   safeD: number;
@@ -30,16 +49,18 @@ function parseLeanString(leanStr: string): number {
 function categorizeLeans(leans: number[]): SafeSeatCounts {
   let safeR = 0, safeD = 0, leanR = 0, even = 0, leanD = 0;
   for (const lean of leans) {
-    if (lean >= SAFE_SEAT_THRESHOLD) {
+    // The band is tested first: a district inside it belongs to neither party,
+    // whichever way the last point of its margin happens to fall.
+    if (Math.abs(lean) <= EVEN_BAND) {
+      even++;
+    } else if (lean >= SAFE_SEAT_THRESHOLD) {
       safeR++;
     } else if (lean <= -SAFE_SEAT_THRESHOLD) {
       safeD++;
     } else if (lean > 0) {
       leanR++;
-    } else if (lean < 0) {
-      leanD++;
     } else {
-      even++;
+      leanD++;
     }
   }
   return {

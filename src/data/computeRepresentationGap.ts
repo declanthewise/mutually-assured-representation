@@ -40,7 +40,7 @@ export function fairSplit(state: StateData): FairSplit {
  *   gap     = whichever party is shorter, signed positive when that party is D
  *             (i.e. positive → R overrepresented, negative → D overrepresented)
  *
- * A district rated exactly EVEN is one Cook declined to call. It is **not** counted
+ * A district inside EVEN_BAND is one the map hasn't decided. It is **not** counted
  * for either party and it is **not** taken out of the delegation the ideal divides —
  * so it shows up as the squeezed party being one district short, which is exactly
  * what it is. Virginia should have 5R and has 4R drawn, with one district left
@@ -76,11 +76,11 @@ export const baselineGaps: Record<string, number> = Object.fromEntries(
 /**
  * EVEN districts a state holds beyond the ones its fair map wants left undecided.
  *
- * Michigan's fair map is 6R, 6D and a toss-up, so the EVEN district it holds is the
- * one it is supposed to have — nothing surplus, nothing to trade. The other six
- * EVEN states have fair maps with no toss-up in them, so their EVEN district is a
- * district that ought to have been drawn for somebody, and it is the part of their
- * gap that a pact can reach.
+ * Michigan's fair map is 6R, 6D and a toss-up, so one of the two EVEN districts it
+ * holds is the one it is supposed to have — that one is not surplus and cannot be
+ * traded. Every other EVEN state has a fair map with no toss-up in it, so all of its
+ * EVEN districts ought to have been drawn for somebody, and they are the part of its
+ * gap that an EVEN-for-EVEN trade can reach.
  */
 export function surplusEvenOf(stateId: string): number {
   const counts = stateSafeSeats[stateId];

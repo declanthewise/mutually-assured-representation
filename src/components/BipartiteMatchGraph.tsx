@@ -315,7 +315,7 @@ interface BoxBodyProps {
   minorityParty: 'D' | 'R';
   /** EVEN districts inside the ideal — 1 only where the state's PVI splits exactly. */
   fairEven: number;
-  /** EVEN districts in the enacted map — zero for all but seven states. */
+  /** EVEN districts in the enacted map — zero for all but twelve states. */
   currentEven: number;
   proportional: number;
   current: number;
@@ -452,10 +452,10 @@ interface Placement {
 }
 
 /**
- * EVEN districts the state carries. Seven states have exactly one apiece and the
- * other forty-three have none, so this is zero almost everywhere — but where it
- * isn't, it's a district the enacted map hasn't decided — counted for neither party
- * and listed as itself beside the count on the box.
+ * EVEN districts the state carries — those inside EVEN_BAND, not only the ones Cook
+ * rates exactly EVEN. Twelve states hold at least one and thirty-eight hold none, so
+ * this is zero more often than not; where it isn't, it's a district the enacted map
+ * hasn't decided, counted for neither party and listed as itself beside the count.
  */
 function evenDistrictsOf(state: StateData): number {
   return stateSafeSeats[state.id]?.even ?? 0;
@@ -479,8 +479,8 @@ function formatLean(lean: number): string {
  * that doesn't, R+1 with a D-drawn map, and reading the gap directly puts it with
  * the states it can actually disarm.
  *
- * Four states carry no gap and so hold no gerrymander to name a side (ME, MN, NE,
- * PA). They fall back to the lean, which settles all four — none of them is EVEN.
+ * Three states carry no gap and so hold no gerrymander to name a side (ME, MN, NE).
+ * They fall back to the lean, which settles all three — none of them is EVEN.
  *
  * The third test, on who holds the branches, is currently unexercised. It's there
  * for a state that is gap 0 *and* exactly EVEN, which Michigan no longer is: its
