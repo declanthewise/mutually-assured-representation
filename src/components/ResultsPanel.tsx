@@ -77,8 +77,7 @@ export function ResultsPanel({
           <span className="headline-line">
             Your {spellCount(pacts.length)} {pacts.length === 1 ? 'pact' : 'pacts'} returned{' '}
             <span style={{ color: FAIR_BLACK }}>{seatsClosed}</span> of{' '}
-            <span style={{ color: GAP_ORANGE }}>{BASELINE_GAP}</span> districts to their
-            constituents,
+            <span style={{ color: GAP_ORANGE }}>{BASELINE_GAP}</span> districts,
           </span>
           <span className="headline-line">and the U.S. House district margin is unchanged.</span>
         </p>
