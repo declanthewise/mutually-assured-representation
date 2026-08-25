@@ -358,28 +358,33 @@ body {
 }
 
 /* The results run wider than the columns they replace. The headline is the
-   reason — it reaches full size in a 533px box and the shared measure leaves
-   472px — and the pact list is happy to follow it out. */
+   reason — its long line is 30em, so every pixel here is a pixel of type — and the
+   pact list is happy to follow it out. 740 rather than more because past this the
+   panel stops looking like part of the same page. */
 .results-wide {
-  max-width: 660px;
+  max-width: 740px;
 }
 
-/* The line breaks are in the markup (see ResultsPanel), so this sets no measure
-   and does no balancing — its whole job is to keep the longest of the three
-   lines on one line. That line is "disproportionate districts to their
-   constituents,", 21.5em of Playfair at 600, so it fits whenever the font is at
-   most a 21.5th of the box: 100 / 21.5 = 4.65cqi, taken down to 4.5 for margin.
-   Above a 533px box that reaches the 1.5rem cap and the type stops growing — a
-   516px line, which the 660px panel is wide enough to hold. Below it the
-   headline shrinks with the panel rather than wrapping, which is what holds the
-   three lines from the widest desktop to the narrowest phone.
+/* The line break is in the markup (see ResultsPanel), so this sets no measure and
+   does no balancing — its whole job is to keep the longer of the two lines on one
+   line. That line is the first, and its width moves with the numbers in it: the
+   widest it ever runs is "Your seven pacts returned 104 of 104 districts to their
+   constituents,", 30.25em of Playfair at 600. It fits whenever the font is at most
+   a 30.25th of the box: 100 / 30.25 = 3.3cqi, taken down to 3.25 for margin.
+   The headline shrinks with the panel rather than wrapping, which is what holds
+   the two lines from the widest desktop to the narrowest phone. The 740px panel
+   leaves a 692px box once .visualization-wide takes its 1.5rem, so the type tops
+   out at 22.5px and the 1.5rem cap is a ceiling it never reaches — the cap is
+   there for a wider panel, not for this one. At the other end a 320px phone gets
+   about 10px of headline, which is the price of a 30em line on a screen that
+   narrow: the line is what's long, and the type is what gives.
    Nothing here says `nowrap` on purpose: Georgia stands in about 13% wider
    until the webfont lands, and for that moment a wrapped line beats one run off
    the side. Measure in the browser, not from a probe — a probe that is empty at
    parse time never triggers the webfont, and reports Georgia's width instead. */
 .results-headline {
   font-family: 'Playfair Display', Georgia, serif;
-  font-size: min(4.5cqi, 1.5rem);
+  font-size: min(3.25cqi, 1.5rem);
   font-weight: 600;
   line-height: 1.3;
   color: #111;

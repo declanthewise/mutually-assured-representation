@@ -66,26 +66,28 @@ export function ResultsPanel({
 
   return (
     <div className="results-panel">
-      {/* The three lines are set here rather than left to the wrap: the count and
-          the total lead, the districts sit together, and the House clause closes.
-          Each `headline-line` is a block, and `.results-headline` sizes itself so
-          the longest of them fits — see App.css. */}
+      {/* Two lines, set here rather than left to the wrap: what the pacts returned
+          is one clause, and the claim the whole tool makes closes on a line of its
+          own. Each `headline-line` is a block, and `.results-headline` sizes itself
+          so the longer of the two stays on one line — see App.css, which is where
+          the arithmetic for that lives and where it has to be redone if this
+          wording changes. */}
       {seatsClosed > 0 ? (
         <p className="results-headline">
           <span className="headline-line">
             Your {spellCount(pacts.length)} {pacts.length === 1 ? 'pact' : 'pacts'} returned{' '}
             <span style={{ color: FAIR_BLACK }}>{seatsClosed}</span> of{' '}
-            <span style={{ color: GAP_ORANGE }}>{BASELINE_GAP}</span>
+            <span style={{ color: GAP_ORANGE }}>{BASELINE_GAP}</span> districts to their
+            constituents,
           </span>
-          <span className="headline-line">disproportionate districts to their constituents,</span>
           <span className="headline-line">and the U.S. House district margin is unchanged.</span>
         </p>
       ) : (
         <p className="results-headline">
           <span className="headline-line">
-            No seats returned yet — all <span style={{ color: GAP_ORANGE }}>{BASELINE_GAP}</span>
+            No seats returned yet — all <span style={{ color: GAP_ORANGE }}>{BASELINE_GAP}</span>{' '}
+            districts stand,
           </span>
-          <span className="headline-line">disproportionate districts stand,</span>
           <span className="headline-line">and the U.S. House district margin is unchanged.</span>
         </p>
       )}
