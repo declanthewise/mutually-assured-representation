@@ -10,7 +10,7 @@ gives back nine, the national party balance doesn't move at all — only the dis
 
 ## The numbers
 
-- **National representation gap: 90 of 435 districts.** The sum of every state's distance from
+- **National representation gap: 104 of 435 districts.** The sum of every state's distance from
   proportional.
 - **House balance: R+24** (221 R-leaning districts, 197 D-leaning, 17 undecided). This never moves
   when a pact is signed, which is the entire argument.
@@ -22,8 +22,8 @@ party against the seats a proportional split of that state's own partisan lean w
 
 ```
 exact ideal      = districts × (50 − statePVI) / 100
-fair R districts = the whole part, plus the last one if R clears 75% of it
-fair D districts = the rest, less the last one if neither party clears 75%
+fair R districts = the whole part, plus the last one if R holds more than half of it
+fair D districts = the rest
 gap              = how far the squeezed party falls short of its fair number
 ```
 
@@ -34,54 +34,37 @@ A district within a point of even — `EVEN_BAND`, so `|PVI| <= 1` — is one th
 Cook rates seven districts exactly `EVEN`, but the band takes in seventeen, and the ten it adds are
 the ones nobody has called: four are rated Toss Up, three Lean, three Likely, none Solid. In a
 midterm on a neutral environment, a seat a point off even is a seat in play, and drawing the line at
-exactly `EVEN` made the boundary an artifact of where Cook's rounding fell. Such a district counts for
-neither party, and it is not taken out of the delegation the fair split divides — so it shows up as
-the squeezed party being a district short, which is exactly what it is. **Virginia should have 5R. It has 4R drawn and
-one district left undecided. Its gap is 1.** The matching view lists that district beside the enacted
-count rather than folding it into either tally, so Virginia's 2026 row reads `1E 4R` against a fair
-`5R`.
+exactly `EVEN` made the boundary an artifact of where Cook's rounding fell. How those districts behave
+says the same thing: over the 2010s maps, 64% of districts within a point of even were held by both
+parties at some point, against 3% of districts 8 points out or more.
 
-The fair map has toss-ups of its own, for the same reason. A state's exact ideal almost never lands on
-a whole number of districts, and the leftover fraction used to be rounded away — whichever party held
-more than half of the last district got all of it, however little more. New Mexico's ideal is 1.38 of
-3 districts, and the 0.38 Republicans were owed vanished into a second Democratic seat because
-0.38 < 0.5.
+Such a district counts for neither party, and it is not taken out of the delegation the fair split
+divides — so it shows up as the squeezed party being a district short, which is exactly what it is.
+**Virginia should have 5R. It has 4R drawn and one district left undecided. Its gap is 1.**
 
-So the leftover gets a band too. A party has to clear the midpoint of the last district's half — three
-quarters of it — to be handed the seat outright; short of that the fair map leaves it undecided, which
-is what it is. New Mexico's fair map becomes 1R, 1D and a toss-up. 22 states carry one. Where a state
-has a toss-up on both sides of the comparison the two cancel and the gap is read off the party counts
-alone: Michigan is `1E 6D` fair against `2E 5D` enacted, a gap of 1.
+The fair map has no undecided districts of its own. A state's exact ideal almost never lands on a
+whole number, and the last district goes to whichever party holds more than half of it. That is a
+knife edge, but it's the knife edge a real negotiation falls off: the side that wins the argument over
+a state's last district is the side with the majority of it.
 
-Which states get one has nothing to do with how partisan they are — it turns on where the leftover
-fraction happens to fall. West Virginia at R+21 has an ideal of 1.42 and gets a toss-up; Nevada at R+1
-has an ideal of 2.04 and doesn't. Single-district states are exempt, since their only seat *is* the
-whole delegation and the band would ask a party to clear 75% of the state to be owed its one
-representative.
+Michigan is the one state the rounding can't settle. Thirteen districts at `EVEN` is exactly 6.50, so
+its two parties have identical claims on the last one, and it goes to whoever holds the state
+government — the party that would be signing. Democrats hold two of Michigan's three branches, so its
+fair map is 6R, 7D, against an enacted 6R, 5D and two undecided: a gap of 2.
+
+Because the fair map allocates every district and the enacted map doesn't, the two parties' shortfalls
+add up to the state's undecided districts, and a state holding one can read short on both sides at
+once. The gap is the larger of the two — the side that has to be made whole. Arizona and Pennsylvania
+are one short either way, and the tie goes to the Democrats.
 
 **Pacts** — a pact converts the same number of districts in **both** partners, so its national effect
 is double what either one gives up. The smaller partner sets the price: a state with a 3-district gap
 can only buy 3 districts of disarmament from a partner with 9, and the remaining 6 stays on the map.
 
-What can trade for what is decided by a single rule: **the House balance must not move.** Two party
-districts trade cleanly — one state draws a D district R, the other draws an R district D, and both
-columns end where they started. Two undecided districts trade cleanly for the same reason: one state
-draws its EVEN district R, the other draws its own D, and each column gains one.
-
-An EVEN district cannot be traded against a party district. Drawing an undecided district R adds to
-the R column without taking anything from D, while the partner flipping an R district to D moves one
-across — R comes out level, D a seat ahead, and the balance has moved. That trade is refused rather
-than allowed to cost the thing the pacts exist to protect.
-
-So each state's gap has two parts, and they settle separately: party districts drawn the wrong way,
-and surplus EVEN districts. Michigan's EVEN district is not surplus — its fair map calls for a
-toss-up — so Michigan trades on its party gap alone, like a state with no EVEN district at all.
-
-Four states carry a surplus undecided district on the D-drawn side (CA, NV, NY, VA) and four on the
-R-drawn side (AZ, MI, OH, PA), so undecided districts have somewhere to go. A state whose whole gap is
-undecided districts has no party gap at all, and its only productive partners are those surplus states
-across the gutter. Pair one of them with anyone else and the pact pays out zero, which the badges show
-honestly as `0`.
+The trade is shaped by a single rule: **the House balance must not move.** That is what makes it
+symmetric — one state draws a D district R, the other draws an R district D, and both columns end
+where they started. So a pact only pays out between states gerrymandered in opposite directions, and
+a pairing that has nothing to trade shows `0` on its badge rather than a number it can't honor.
 
 Columns in the matching view are split by **which way each state's map is drawn** — the direction of
 its representation gap, D-drawn on the left and R-drawn on the right. That's the thing a pact trades,
@@ -89,14 +72,13 @@ so every pairing across the gutter has seats in it. A state's own partisan lean 
 of the 44 multi-district states sit on the side their statewide PVI names. Nevada is the exception,
 R+1 but D-gerrymandered by a seat, and it sits with the states it can actually disarm.
 
-Ten states carry no gap and so no side — Colorado, Hawaii, Idaho, Kansas, Maine, Minnesota,
-Mississippi, Nebraska, Utah and West Virginia. They fall back to their lean, which settles all ten. Below that sits a third test, on **who holds
-the branches**, for a state that has no gap *and* an exactly EVEN lean: the signatory is the state
+Three states with a map to draw carry no gap and so no side — Maine, Minnesota and Nebraska. They
+fall back to their lean, which settles all three. Below that sits a third test, on **who holds the
+branches**, for a state that has no gap *and* an exactly EVEN lean: the signatory is the state
 government, so its party is better read off the government than off a rounded statewide margin, and
 Democrats have to win the branches outright so a state that split them evenly would stay on the
-right. Nothing reaches that test today. It was there for Michigan, whose fair map of 6R, 6D and a
-toss-up against an enacted 7R and 5D leaves its Democrats a district short; the code keeps it,
-because the data moves.
+right. Nothing reaches that test today — Michigan is EVEN but carries a gap of 2 — though the same
+question, asked of the same states, is what settles Michigan's last fair district above.
 
 ## Running it
 
@@ -256,12 +238,12 @@ proportional ideal and the enacted allocation sit on the same scale.
 Two rounding choices are worth knowing:
 
 - The fair R district count is the whole part of `districts × (50 − statePVI) / 100`, with the last
-  district awarded only to a party clearing 75% of it and left as a toss-up otherwise. 22 states carry
-  such a toss-up; single-district states are exempt and fall back to rounding.
+  district going to whichever party holds more than half of it. Michigan is exactly halved and falls
+  to whichever party holds its state government.
 - Districts within `EVEN_BAND` of even — `|PVI| <= 1`, which is 17 districts across 12 states — count
   for neither party and stay in the delegation the fair split divides, so each one shows up as its
   state's squeezed party being a district short. Every gap is a whole number, and the national
-  baseline is 90.
+  baseline is 104.
 
 One known limitation: proportionality from statewide PVI ignores political geography. Democratic
 voters are concentrated in cities, so a state can land far from its PVI-proportional ideal without

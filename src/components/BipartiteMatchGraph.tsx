@@ -2,9 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { BranchControl, StateData, MatchPair } from '../types';
 import { EVEN_GRAY, FAIR_BLACK, GAP_ORANGE, LEAN_DOMAIN, LEAN_RANGE, PARTY_COLORS } from '../colors';
-import { baselineGaps, fairSplit, pactTrade } from '../data/computeRepresentationGap';
-import { stateSafeSeats } from '../data/districtLeans';
-import { stateData } from '../data/stateData';
+import { baselineGaps, fairSplit } from '../data/computeRepresentationGap';
+import { holdsDemocraticBranches, stateData } from '../data/stateData';
 import { AnimatedCount, COUNT_DURATION_MS } from './AnimatedCount';
 
 /** Single-district states have no map to draw, so they never enter a pact. */
@@ -58,13 +57,9 @@ const EQ_RULE_Y = 46;
  * runs ~0.41 units per character per unit of font size, and a two-digit count
  * ("13D") leaves it about 108 units of the row. That puts the ceiling near 8.3.
  *
- * "(Fair)" replaced "(Proportional)" and gave eight characters back, which is what
- * pays for the EVEN count now sitting to the left of the widest counts.
+ * "(Fair)" replaced "(Proportional)" and gave eight characters back.
  */
 const EQ_LABEL_SIZE = 8;
-
-/** Air between the EVEN count and the party count, since SVG strips a space. */
-const EVEN_COUNT_GAP = 3;
 
 /**
  * The control pyramid: the governor as the apex, the two chambers as the course
@@ -313,10 +308,6 @@ function useSwell(settling: boolean): number {
 interface BoxBodyProps {
   /** The party whose squeezed districts both counts are in. */
   minorityParty: 'D' | 'R';
-  /** EVEN districts inside the ideal — 1 only where the state's PVI splits exactly. */
-  fairEven: number;
-  /** EVEN districts in the enacted map — zero for all but twelve states. */
-  currentEven: number;
   proportional: number;
   current: number;
   /** Signed, so zero can be told from a gap that only narrowed. */
@@ -337,8 +328,6 @@ interface BoxBodyProps {
  */
 function BoxBody({
   minorityParty,
-  fairEven,
-  currentEven,
   proportional,
   current,
   gap,
@@ -354,33 +343,19 @@ function BoxBody({
   const delay = settling ? SWELL_MS : 0;
   const duration = settling ? SWELL_COUNT_MS : COUNT_DURATION_MS;
 
-  // The EVEN districts, listed beside the party count they stand apart from: "1E 3D"
-  // is three districts drawn D and one Cook wouldn't call. Same size and weight as
-  // the figure next to it, because it counts the same thing — districts — with only
-  // the color differing, EVEN_GRAY for the seat that went to neither party.
-  //
-  // Each row carries its own. On the 2026 row that's the EVEN districts the map
-  // holds. On the Fair row it's the district an exactly-EVEN state's odd delegation
-  // leaves unowed — Michigan's 13 are six apiece and one to play for. Where a state
-  // has one on both rows they cancel, and the gap is the difference of the party
-  // counts alone; where only the enacted row has one, the squeezed party is short
-  // by it, which is what Virginia's gap of 1 against a drawn 4R is saying.
-  const seatCount = (y: number, value: React.ReactNode, evenSeats: number) => {
-    const marked = evenSeats > 0;
-    return (
-      <text
-        x={BOX_W - 6} y={y}
-        textAnchor="end" dominantBaseline="central"
-        fontSize={9} fontWeight={700} fill={PARTY_COLORS[minorityParty]}
-      >
-        {/* An end anchor lays its runs out left to right and lands the last one on
-            the anchor, so the EVEN count sits to the left without being placed.
-            The space after it is a dx: SVG strips trailing whitespace. */}
-        {marked && <tspan fill={EVEN_GRAY}>{evenSeats}E</tspan>}
-        <tspan dx={marked ? EVEN_COUNT_GAP : 0}>{value}{minorityParty}</tspan>
-      </text>
-    );
-  };
+  // Both rows count the same thing in the same party, so they share a mark. The
+  // districts the enacted map has drawn for nobody are not among them: they belong
+  // to neither count, and the box says so by the squeezed party coming up short.
+  // The national tally of them is on the stat bar, which is where they read.
+  const seatCount = (y: number, value: React.ReactNode) => (
+    <text
+      x={BOX_W - 6} y={y}
+      textAnchor="end" dominantBaseline="central"
+      fontSize={9} fontWeight={700} fill={PARTY_COLORS[minorityParty]}
+    >
+      {value}{minorityParty}
+    </text>
+  );
 
   return (
     <>
@@ -391,7 +366,7 @@ function BoxBody({
         <text x={6} y={EQ_ROW_Y[0]} dominantBaseline="central" fontSize={EQ_LABEL_SIZE} fill="#888">
           Minority Districts (Fair)
         </text>
-        {seatCount(EQ_ROW_Y[0], proportional, fairEven)}
+        {seatCount(EQ_ROW_Y[0], proportional)}
 
         <text x={6} y={EQ_ROW_Y[1]} dominantBaseline="central" fontSize={EQ_LABEL_SIZE} fill="#888">
           Minority Districts ({isMatched ? 'Pact' : '2026'})
@@ -399,7 +374,6 @@ function BoxBody({
         {seatCount(
           EQ_ROW_Y[1],
           <AnimatedCount value={current} delay={delay} duration={duration} />,
-          currentEven,
         )}
 
         <line
@@ -451,16 +425,6 @@ interface Placement {
   yOffset: number;
 }
 
-/**
- * EVEN districts the state carries — those inside EVEN_BAND, not only the ones Cook
- * rates exactly EVEN. Twelve states hold at least one and thirty-eight hold none, so
- * this is zero more often than not; where it isn't, it's a district the enacted map
- * hasn't decided, counted for neither party and listed as itself beside the count.
- */
-function evenDistrictsOf(state: StateData): number {
-  return stateSafeSeats[state.id]?.even ?? 0;
-}
-
 function formatLean(lean: number): string {
   if (lean === 0) return 'EVEN';
   const dir = lean > 0 ? 'D' : 'R';
@@ -482,14 +446,12 @@ function formatLean(lean: number): string {
  * Three states carry no gap and so hold no gerrymander to name a side (ME, MN, NE).
  * They fall back to the lean, which settles all three — none of them is EVEN.
  *
- * The third test, on who holds the branches, is currently unexercised. It's there
- * for a state that is gap 0 *and* exactly EVEN, which Michigan no longer is: its
- * fair map is 6R, 6D and a toss-up against an enacted 7R and 5D, leaving its
- * Democrats a district short, so the gap places it. It stays because the data moves —
- * and when a state does fall this far, the surer reading of a government's party
- * is its branches, not a rounded statewide margin, since it's the state government
- * that signs a pact. D has to win the branches outright, so a state that splits
- * them evenly stays on the right, where every non-positive lean already lands.
+ * The third test, on who holds the branches, is currently unexercised: it's there
+ * for a state that is gap 0 *and* exactly EVEN, and no state is both. Michigan is
+ * EVEN but its fair map of 6R and 7D against an enacted 6R and 5D leaves its
+ * Democrats two districts short, so the gap places it. The test stays because the
+ * data moves, and because fairSplit() asks the same question of the same states —
+ * see holdsDemocraticBranches(), which is where the reasoning lives now.
  *
  * The gap read here is the baseline, never the residual: sealing a pact must not
  * move its own partners out from under it.
@@ -499,14 +461,6 @@ function isDemocraticSide(state: StateData): boolean {
   if (gap !== 0) return gap < 0;
   if (state.partisanLean !== 0) return state.partisanLean > 0;
   return holdsDemocraticBranches(state);
-}
-
-/** Whether Democrats hold more of the three branches than Republicans do. */
-function holdsDemocraticBranches(state: StateData): boolean {
-  const branches = [state.governorParty, state.senateParty, state.houseParty];
-  const dem = branches.filter(b => b === 'dem').length;
-  const rep = branches.filter(b => b === 'rep').length;
-  return dem > rep;
 }
 
 /**
@@ -542,9 +496,6 @@ function inDomOrder(placements: Placement[]): Placement[] {
  * its side of the gutter, so within a side every gap points the same way and only
  * the size is left to say anything. It's also roughly what a pact spends, since
  * each trade is capped by the lesser partner, so the sizes are what want to match.
- * Only roughly: a gap is party districts plus surplus EVEN ones and the two settle
- * separately, so two states alike in total can still trade less than that — see
- * pactTrade(). Ranking on the total is the right coarse signal even so.
  *
  * Baseline, never the residual, for the same reason the column split is: a
  * sealed pact must not re-rank the states still choosing partners.
@@ -889,20 +840,6 @@ export function BipartiteMatchGraph({
     const fairMinority = isLeft ? fair.rSeats : fair.dSeats;
     const currentMinority = fairMinority - Math.abs(signedGap);
 
-    // The EVEN districts each row is holding. On the 2026 row it's what the map
-    // holds; on the Fair row it's the odd district an exactly-EVEN state can't
-    // split, which only Michigan has — and where a state has one on both rows they
-    // cancel, leaving the gap to be read off the party counts alone.
-    //
-    // A pact drops one from the 2026 row only when it actually traded it, which it
-    // can do only against another state's undecided district: Virginia's "1E 4R"
-    // becomes "5R" when its partner is drawing an EVEN district of its own the other
-    // way. A pact that trades party districts alone leaves the EVEN district exactly
-    // where it was — see pactTrade(), and the House balance it is protecting.
-    const evenSeats = evenDistrictsOf(state);
-    const evenTraded = partner ? pactTrade(state.id, partner.id).even : 0;
-    const currentEven = evenSeats - evenTraded;
-
     return (
       <g
         key={state.id}
@@ -984,8 +921,6 @@ export function BipartiteMatchGraph({
 
         <BoxBody
           minorityParty={minorityParty}
-          fairEven={fair.even}
-          currentEven={currentEven}
           proportional={fairMinority}
           current={currentMinority}
           gap={signedGap}

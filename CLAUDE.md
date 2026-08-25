@@ -91,65 +91,47 @@ paragraph under them says it again. The absence is the design, not an oversight 
 - **Representation Gap**: How far the **squeezed party** falls short of the districts the state's own
   Cook PVI says it should hold. Everything is whole districts.
   `fairSplit()` gives the ideal: `districts × (50 − statePVI) / 100`, with the whole part allocated to
-  R and **the leftover fraction banded** rather than rounded. A party must clear the midpoint of the
-  last district's half to be handed it outright — remainder ≥ 75 claims it for R, ≤ 25 concedes it to
-  D, anything between leaves it a **toss-up in the ideal**. Rounding was a knife edge: New Mexico's
-  1.38 lost the 0.38 Republicans were owed to a second D seat because 0.38 < 0.5, while Michigan's
-  exact 6.50 was the one state in the country where the edge was visible. 22 states now carry a
-  toss-up in their fair map. Computed in integer arithmetic (`districts × (50 − lean)`, remainder in
-  hundredths) so a remainder of exactly 25 or 75 can't land on the wrong side of the comparison.
-  **Single-district states are exempt** and fall back to rounding: their only seat *is* the whole
-  delegation, so the band would ask a party to clear 75% of the state to be owed its one
-  representative — Wyoming at R+23 came out `0R 0D 1E`. It changes no gap, only the fair map.
-  The band is also what keeps the gap unambiguous: it lines the ideal's toss-ups up against the
-  enacted map's, so the two shortfalls no longer both come out positive. Arizona used to read one
-  short on *each* side, with the sign settled by the `>=` in the comparison below.
+  R and **the last district rounded** to whichever party holds the larger claim on it. Rounding is a
+  knife edge, but it's the knife edge a real negotiation falls off — the party that wins the argument
+  over a state's last district is the one with the majority of it. So the fair map names an owner for
+  every district and has no undecided category of its own. Computed in integer arithmetic
+  (`districts × (50 − lean)`, remainder in hundredths) so a remainder of exactly 50 can't land on the
+  wrong side of the comparison — which is **Michigan**, the one state rounding can't settle: 13
+  districts at EVEN is exactly 6.50, so the two parties' claims on the last one are identical. It falls
+  to whoever holds the state government, the party that would actually be signing.
+  `holdsDemocraticBranches()` in `stateData.ts` reads that — two branches to one, so Michigan's last
+  district is D and its fair map is 6R 7D against an enacted 6R 5D and 2 undecided: a gap of 2.
   The gap is then `max(R short, D short)`, signed positive when D is the short one (R overrepresented).
   A district inside `EVEN_BAND` (`|PVI| <= 1`, in `districtLeans.ts`) is **not** counted for either
   party and **not** taken out of the delegation the ideal divides, so it surfaces as the squeezed party
   being one district short — which is what it is. Virginia should have 5R, has 4R drawn and one
   district left undecided: a gap of 1. The band is a point wide rather than exactly EVEN because that
   is where competitiveness actually sits: Cook rates 7 districts EVEN, the band takes 17 across 12
-  states, and of the 10 it adds, 4 are rated Toss Up, 3 Lean, 3 Likely and none Solid. See the comment
-  on `EVEN_BAND` — and note the ratings are only the sanity check on where the line goes, never an
-  input, since they fold in incumbency and this is an argument about districts.
-  The two shortfalls sum to the enacted EVEN districts beyond the ideal's own, which is why the larger
-  is the gap: it's the side that has to be made whole. Where the ideal carries a toss-up too — only
-  Michigan — the two cancel and the gap is the difference of the party counts alone.
+  states, and of the 10 it adds, 4 are rated Toss Up, 3 Lean, 3 Likely and none Solid. It also matches
+  how districts behave — see the comment on `EVEN_BAND` for the flip rates, and note the ratings are
+  only a sanity check on where the line goes, never an input, since they fold in incumbency and this is
+  an argument about districts.
+  The two shortfalls sum to the state's undecided districts, so a state holding one can read short on
+  **both** sides at once. The larger is the gap: it's the side that has to be made whole. A tie needs an
+  even number of undecided districts splitting evenly, and falls to D through the `>=` in the
+  comparison — today that's Arizona and Pennsylvania, each one short either way.
   Gaps and pacts are whole numbers throughout. There is no half-seat arithmetic anywhere; it was tried
   and pulled out, because it put fractions into the gap, the badges, the national total and the counts
-  a pact leaves behind, and the EVEN districts read more clearly listed than divided.
-  The box lists the EVEN districts beside the party count rather than folding them in — `1E 4R`, in
-  `EVEN_GRAY`, at the same size and weight as the figure because it counts the same thing and only the
-  allegiance differs. A pact **spends** the surplus one: drawing that district for the shorted party is
-  how the last of the gap closes, so Virginia's `1E 4R` becomes a flat `5R`. It survives a pact that
-  only closes part of the gap, where a district already drawn for the other party changes hands
-  instead — New Jersey goes `1E 2R` → `1E 3R`.
-  National baseline gap: **90**. Ten states carry none (CO, HI, ID, KS, ME, MN, MS, NE, UT, WV).
+  a pact leaves behind.
+  **The state boxes don't mention undecided districts at all.** They are a national fact and the stat
+  bar is the only place they appear. That was tried the other way — `1E 4R` beside the count, an `even`
+  field on `FairSplit`, and a pact that spent surplus undecided districts against each other — and
+  pulled back out for being three ideas where the argument wants one. The gap absorbs them instead,
+  which is what a real pact would do with them anyway.
+  National baseline gap: **104**. Nine states carry none: the six single-district states, plus ME, MN
+  and NE.
 - **Pacts**: A pact converts the same number of districts in both partners, so its national effect is
   `2 × returned`. Whatever gap survives stays on the map.
-  **The House balance must not move** — that is the argument the whole tool makes, and it decides
-  which districts can trade for which. `pactTrade()` in `computeRepresentationGap.ts` settles two
-  trades in one handshake, each capped by the lesser partner:
-  - **party districts against party districts** — one state draws a D district R, the other draws an
-    R district D, and both columns end where they started;
-  - **surplus EVEN districts against surplus EVEN districts** — one state draws its undecided district
-    R, the other draws its own D, and again each column gains one.
-
-  An EVEN district can **not** trade against a party district. Drawing an undecided district R adds to
-  the R column without taking anything from D, while the partner flipping R→D moves one across: R
-  comes out level, D a seat ahead, and the balance has moved. So the trade is refused rather than
-  allowed to cost the thing pacts exist to protect. `ResultsPanel.tsx` can therefore say the margin is
-  unchanged without qualification.
-  A state's gap splits into `partyGapOf()` and `surplusEvenOf()`. Surplus means EVEN districts beyond
-  what the fair map asks for — **Michigan's is not surplus**, its fair map calling for a toss-up, so
-  Michigan trades on its party gap alone like a state with no EVEN district at all. The other six EVEN
-  states carry one surplus apiece.
-  Surplus undecided districts sit on both sides — four states D-drawn (CA, NV, NY, VA) against four
-  R-drawn (AZ, MI, OH, PA) — so 16 of the 468 cross-gutter pairings trade one.
-  Consequence worth knowing: some states have a party gap of **zero**, their whole gap being undecided
-  districts, so their only productive partners are the surplus states across the gutter. Pair one with
-  anyone else and the pact pays out zero, which the badges show as `0`.
+  **The House balance must not move** — that is the argument the whole tool makes, and it is what keeps
+  the trade symmetric: one state draws a D district R, the other draws an R district D, and both
+  columns end where they started. So `pactSeatsReturned()` pays out only between states gerrymandered
+  in opposite directions, and only up to the lesser of the two gaps. `ResultsPanel.tsx` can therefore
+  say the margin is unchanged without qualification.
 - **MAR Matching**: The user pairs states manually. Clicking a state pins it to the head of its own
   column and re-ranks *both* columns around it: closest delegation size, then closest proportional
   minority share (the box's top row), then closest representation gap, then alphabetical. The durable
@@ -174,9 +156,9 @@ paragraph under them says it again. The absence is the design, not an oversight 
   Three states carry no gap and so no side (ME, MN, NE); they fall back to lean, which settles all
   three. A third test, on who holds the branches, sits below that for a state that is gap 0 *and* lean
   EVEN — the signatory read off the government instead of a rounded margin, with D having to win the
-  branches outright so an even split stays right. Nothing reaches it today: it was there for Michigan,
-  whose fair map of 6R, 6D and a toss-up against an enacted 7R and 5D leaves its Democrats a district
-  short, so the gap places it. Keep it; the data moves.
+  branches outright so an even split stays right. Nothing reaches it today: Michigan is EVEN but has a
+  gap of 2, so the gap places it. Keep it; the data moves, and `fairSplit()` now asks the same question
+  of the same states through the same predicate.
   One predicate, `isDemocraticSide()` in
   `BipartiteMatchGraph.tsx`, decides both the column and which party the box's minority rows count —
   they must not disagree.

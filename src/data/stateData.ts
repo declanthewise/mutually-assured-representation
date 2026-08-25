@@ -696,3 +696,20 @@ export const stateData: StateData[] = [
 export const stateDataById: Record<string, StateData> = Object.fromEntries(
   stateData.map(s => [s.id, s])
 );
+
+/**
+ * Whether Democrats hold more of the three branches than Republicans do.
+ *
+ * The tiebreaker of last resort, for a state whose numbers won't name a side: an
+ * exactly halved fair map (see fairSplit) and, if the data ever moves that way, a
+ * state with no gap and no lean at all (see isDemocraticSide). Both are asking the
+ * same question — which party would be signing — and the surer reading of that is
+ * the government rather than a rounded margin. D has to win the branches outright,
+ * so a state that splits them evenly reads R.
+ */
+export function holdsDemocraticBranches(state: StateData): boolean {
+  const branches = [state.governorParty, state.senateParty, state.houseParty];
+  const dem = branches.filter(b => b === 'dem').length;
+  const rep = branches.filter(b => b === 'rep').length;
+  return dem > rep;
+}
