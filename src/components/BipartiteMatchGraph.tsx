@@ -601,6 +601,24 @@ export function BipartiteMatchGraph({
   // A tap does the same on touch, where nothing moves the pointer afterwards at all.
   const [hoveredStateId, setHoveredStateId] = useState<string | null>(null);
 
+  // Where the pointer last actually was, which is what tells a hover from a
+  // re-ranking. Moving the board under a still cursor raises the same enter and
+  // move events a real pointer would, and each box the board drags past claims the
+  // hover and gives it up a frame later — a run of black borders flickering down
+  // the column behind a click, ending on whichever box the scroll happened to
+  // leave under the cursor. Those synthetic events carry the coordinates the
+  // pointer already had, so comparing against them separates the two cases: same
+  // point means the content moved and the hover isn't the pointer's to give.
+  const pointerAt = useRef<{ x: number; y: number } | null>(null);
+
+  /** Take the hover, but only if the pointer moved here under its own steam. */
+  const takeHover = (stateId: string, e: React.PointerEvent) => {
+    const last = pointerAt.current;
+    if (last && last.x === e.clientX && last.y === e.clientY) return;
+    pointerAt.current = { x: e.clientX, y: e.clientY };
+    setHoveredStateId(id => (id === stateId ? id : stateId));
+  };
+
   // A sealed pact turns its boxes black and starts their gap counts falling, but
   // the board holds still for a beat before the pair leaves for "Your Pacts" —
   // otherwise both boxes slide out from under the numbers they just changed.
@@ -851,8 +869,13 @@ export function BipartiteMatchGraph({
         // takes the hover back on its next twitch rather than waiting to cross the
         // border again. It sets the same id it already holds, which React drops
         // without a render, so the stream of moves costs nothing.
-        onPointerEnter={() => setHoveredStateId(state.id)}
-        onPointerMove={() => setHoveredStateId(id => (id === state.id ? id : state.id))}
+        //
+        // Both go through takeHover, which turns away the enters the board raises
+        // by moving. Leaving needs no such test: a box the board carries out from
+        // under the cursor really has stopped being under it, and dropping the
+        // hover is the whole reason this isn't `:hover`.
+        onPointerEnter={e => takeHover(state.id, e)}
+        onPointerMove={e => takeHover(state.id, e)}
         onPointerLeave={() => setHoveredStateId(id => (id === state.id ? null : id))}
       >
         <rect x={0} y={0} width={BOX_W} height={BOX_H} fill="white" rx={3} />
