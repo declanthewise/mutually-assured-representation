@@ -1,16 +1,11 @@
 import type { ReactNode } from 'react';
-import { EVEN_GRAY, GAP_ORANGE, PARTY_COLORS, TRACK_GRAY } from '../colors';
+import { EVEN_GRAY, FAIR_BLACK, GAP_ORANGE, PARTY_COLORS, TRACK_GRAY } from '../colors';
 import { houseBalance, houseBalanceParty, nationalSeatTotals } from '../data/districtLeans';
 import {
   baselineGaps,
   computeNationalRepresentationGap,
 } from '../data/computeRepresentationGap';
-import {
-  baseline2032Gap,
-  houseBalance2032,
-  houseBalanceParty2032,
-  nationalSeatTotals2032,
-} from '../data/plan2032';
+import { baseline2032Gap } from '../data/plan2032';
 import type { EraId } from './BipartiteMatchGraph';
 import { AnimatedCount } from './AnimatedCount';
 
@@ -29,11 +24,31 @@ const RADIUS = 40;
 const STROKE = 13;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
+/**
+ * Both readouts run the opposite way on the two boards, because the boards start from
+ * opposite places.
+ *
+ * 2026 measures enacted maps, so both figures are full at the outset and the pacts
+ * work them down: 104 of gap draining toward nothing, against a House already drawn
+ * and a margin of R+24 that no pact may move.
+ *
+ * 2032 starts from a clean sheet, so both start at **0 and fill**. Nothing is drawn,
+ * so no district belongs to anybody and the margin is EVEN; each pact draws the same
+ * number for each party, so the ring fills red and blue in lockstep and the centre
+ * never leaves zero — the tool's whole claim, shown rather than asserted. The gap
+ * likewise counts only what the pacts have left behind, so it climbs from nothing as
+ * states sign, matching the boxes, whose gap rows are blank until they do.
+ */
 interface StatBarProps {
-  /** Which board is on screen — both readouts follow it. */
   era: EraId;
-  /** The gap that board has left standing, measured against that board's baseline. */
+  /** 2026: the gap still standing. 2032: the gap the pacts have left behind. */
   nationalRepresentationGap: number;
+  /**
+   * 2032 only — districts the pacts have settled, by party. Equal only where every
+   * pact was evenly matched; what a pact leaves short is drawn by that state's own
+   * majority and tilts the House. See computeDrawn2032.
+   */
+  drawn: { rSeats: number; dSeats: number };
 }
 
 interface DonutSlice {
@@ -101,43 +116,34 @@ function StatDonut({
   );
 }
 
-/** Slices in seating order: D, the even districts, then R. */
-const balanceSlicesFor = (totals: typeof nationalSeatTotals): DonutSlice[] => [
-  { key: 'D', seats: totals.dSeats, color: PARTY_COLORS.D, label: 'D-leaning' },
-  { key: 'EVEN', seats: totals.even, color: EVEN_GRAY, label: 'EVEN' },
-  { key: 'R', seats: totals.rSeats, color: PARTY_COLORS.R, label: 'R-leaning' },
+/** Slices in seating order: D, the districts neither party holds, then R. */
+const enactedBalanceSlices: DonutSlice[] = [
+  { key: 'D', seats: nationalSeatTotals.dSeats, color: PARTY_COLORS.D, label: 'D-leaning' },
+  { key: 'EVEN', seats: nationalSeatTotals.even, color: EVEN_GRAY, label: 'EVEN' },
+  { key: 'R', seats: nationalSeatTotals.rSeats, color: PARTY_COLORS.R, label: 'R-leaning' },
 ];
 
-/**
- * Both readouts belong to a board, so both switch with it. The margin is the enacted
- * House either way — today's, or today's carried to the projected apportionment — and
- * neither version moves when a pact is signed, which is the claim the whole tool
- * makes. The gap is that board's own baseline counting down.
- *
- * The two boards are 104/R+24 and 97/R+40. Reapportionment costs the minority parties
- * slightly less than the maps already do, and hands Republicans sixteen points of
- * margin without a single line being redrawn differently — which is the argument for
- * showing the second board at all.
- */
-const BOARDS = {
-  '2026': {
-    baseline: BASELINE_GAP,
-    slices: balanceSlicesFor(nationalSeatTotals),
-    totals: nationalSeatTotals,
-    balance: houseBalance,
-    party: houseBalanceParty,
-  },
-  '2032': {
-    baseline: baseline2032Gap,
-    slices: balanceSlicesFor(nationalSeatTotals2032),
-    totals: nationalSeatTotals2032,
-    balance: houseBalance2032,
-    party: houseBalanceParty2032,
-  },
-} as const;
+export function StatBar({ era, nationalRepresentationGap, drawn }: StatBarProps) {
+  const is2032 = era === '2032';
+  const baseline = is2032 ? baseline2032Gap : BASELINE_GAP;
 
-export function StatBar({ era, nationalRepresentationGap }: StatBarProps) {
-  const board = BOARDS[era];
+  // The undrawn remainder is bare track, not an EVEN district: nobody has decided it
+  // either way, where an EVEN district is one a map drew and left competitive.
+  const balanceSlices: DonutSlice[] = is2032
+    ? [
+        { key: 'D', seats: drawn.dSeats, color: PARTY_COLORS.D, label: 'districts your pacts have drawn D' },
+        {
+          key: 'UNDRAWN',
+          seats: TOTAL_SEATS - drawn.dSeats - drawn.rSeats,
+          color: TRACK_GRAY,
+          label: 'districts no pact has drawn yet',
+        },
+        { key: 'R', seats: drawn.rSeats, color: PARTY_COLORS.R, label: 'districts your pacts have drawn R' },
+      ]
+    : enactedBalanceSlices;
+
+  const balance = is2032 ? drawn.rSeats - drawn.dSeats : houseBalance;
+  const balanceParty = is2032 ? (balance >= 0 ? 'R' : 'D') : houseBalanceParty;
   // Orange first, so the ring closes counter-clockwise: the orange arc runs from
   // 12 o'clock and each pact pulls its end back toward 12, bare track following
   // behind it. The track is drawn full and left underneath — what has come home is
@@ -147,13 +153,15 @@ export function StatBar({ era, nationalRepresentationGap }: StatBarProps) {
       key: 'gap',
       seats: nationalRepresentationGap,
       color: GAP_ORANGE,
-      label: 'seats away from proportional',
+      label: is2032 ? 'seats your pacts have left short' : 'seats away from proportional',
     },
     {
       key: 'closed',
-      seats: board.baseline - nationalRepresentationGap,
+      seats: baseline - nationalRepresentationGap,
       color: TRACK_GRAY,
-      label: 'gerrymandered seats your pacts have returned',
+      label: is2032
+        ? 'seats no pact has left short'
+        : 'gerrymandered seats your pacts have returned',
     },
   ];
 
@@ -166,17 +174,18 @@ export function StatBar({ era, nationalRepresentationGap }: StatBarProps) {
               lines here against the three on the right. */}
           <div className="stat-label">U.S. House<br />District<br />Margin</div>
           <StatDonut
-            slices={board.slices}
+            slices={balanceSlices}
             total={TOTAL_SEATS}
-            centerColor={PARTY_COLORS[board.party]}
-            ariaLabel={`${board.totals.dSeats} D-leaning, ${board.totals.even} EVEN, ${board.totals.rSeats} R-leaning districts`}
+            // A tie is nobody's, so it isn't drawn in either party's colour. Black,
+            // not the EVEN gray, because a margin held at zero across every pact is
+            // the fair-representation claim and not an undecided district.
+            centerColor={balance === 0 ? FAIR_BLACK : PARTY_COLORS[balanceParty]}
+            ariaLabel={balanceSlices.map(s => `${s.seats} ${s.label}`).join(', ')}
           >
-            {/* Counted rather than swapped: the sixteen points between the two boards
-                are the census moving seats, and a figure that runs there says so where
-                one that simply changed would read as a different statistic. */}
-            <AnimatedCount value={Math.abs(board.balance)}>
-              {shown => <>{board.party}+{shown}</>}
-            </AnimatedCount>
+            {/* Computed rather than hardcoded to EVEN, even though the 2032 board can
+                only ever produce a tie: if the pact math ever stops balancing, the bar
+                should say so instead of holding at zero on trust. */}
+            {balance === 0 ? 'EVEN' : `${balanceParty}+${Math.abs(balance)}`}
           </StatDonut>
         </div>
 
@@ -186,9 +195,9 @@ export function StatBar({ era, nationalRepresentationGap }: StatBarProps) {
           <div className="stat-label">National<br />Representation<br />Gap</div>
           <StatDonut
             slices={gapSlices}
-            total={board.baseline}
+            total={baseline}
             centerColor={GAP_ORANGE}
-            ariaLabel={`${nationalRepresentationGap} of ${board.baseline} gerrymandered seats still away from proportional`}
+            ariaLabel={`${nationalRepresentationGap} of ${baseline} gerrymandered seats still away from proportional`}
           >
             <AnimatedCount value={nationalRepresentationGap} />
           </StatDonut>

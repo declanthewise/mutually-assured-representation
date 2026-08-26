@@ -107,22 +107,14 @@ const EQ_RULE_Y = 46;
  * runs ~0.41 units per character per unit of font size, and a two-digit count
  * ("13D") leaves it about 108 units of the row. That puts the ceiling near 8.3.
  *
- * "(Fair)" replaced "(Proportional)" and gave eight characters back. The longest
- * label now is the 2032 board's "Minority Districts (2032 proj.)", which measures
- * 95.8 units at 8 and ends at x=102 against a count starting at x=119 — 17 clear.
+ * "(Fair)" replaced "(Proportional)" and gave eight characters back. The three that
+ * remain — "(Fair)", "(2026)" and the 2032 board's "(Pact)" — are all within a
+ * character of each other, so the row that sets the budget is whichever carries the
+ * widest count.
  */
 const EQ_LABEL_SIZE = 8;
 
-/**
- * How each board names the map its middle row counts. The 2032 one says outright that
- * it is projected; the gap below it doesn't repeat that, since a gap measured off a
- * projected map is a projection whether or not it says so, and the qualifier is a
- * poor fit for a row that swells to fill the box.
- */
-const ERA_MAP_LABEL: Record<EraId, string> = {
-  '2026': '2026',
-  '2032': '2032 proj.',
-};
+
 
 /**
  * The control pyramid: the governor as the apex, the two chambers as the course
@@ -182,29 +174,64 @@ const SCROLL_MARGIN = 12;
 const SWELL_MS = 400;
 
 /**
- * The count at full size, run at half the pace of an ordinary one. It's the whole
- * reason the row swelled, and a gap of two or three seats is only that many
- * digits — at the usual speed they'd be gone before the eye settled on them.
+ * How long a count runs while a pact is being sealed: half the pace of an ordinary
+ * one. A gap of two or three seats is only that many digits, and at the usual speed
+ * they'd be gone before the eye settled on them.
+ *
+ * **Both boards run at this pace**, though only 2026 swells. On that board it is the
+ * figure the row grew to show; on 2032 the row stays put and the same pace carries two
+ * counts in sequence. A count means the same thing on either board, so it should take
+ * the same time to say it — the ordinary pace read as a flicker there, with nothing
+ * growing to explain why the number had moved.
  */
-const SWELL_COUNT_MS = COUNT_DURATION_MS * 2;
+const SEAL_COUNT_MS = COUNT_DURATION_MS * 2;
 
 /**
- * A beat at full size after the count lands, before the row folds away. The
- * figure it settled on is the one to take away, and without this it starts
- * shrinking on the same frame it arrives at — read as part of the fall rather
- * than as the number the fall was for.
+ * A beat after the count lands, before the box gives up its place. The figure it
+ * settled on is the one to take away, and without this the row starts shrinking on
+ * the same frame it arrives at — read as part of the fall rather than as the number
+ * the fall was for. The 2032 board keeps it for the same reason, to let the pair of
+ * figures be read before the boxes go.
  */
-const SWELL_HOLD_MS = 300;
+const SEAL_HOLD_MS = 300;
 
 /**
- * How long a sealed pact holds its place before taking its seat under "Your
+ * One row's turn in the spotlight: rise, count, beat, fold. Every swell on either
+ * board is one of these, and a row's place in the sequence is just an offset into it.
+ */
+const SWELL_CYCLE_MS = SWELL_MS + SEAL_COUNT_MS + SEAL_HOLD_MS + SWELL_MS;
+
+/**
+ * How long a sealed 2026 pact holds its place before taking its seat under "Your
  * Pacts": the gap row swells to fill the box, its count runs down at that size,
  * stands there a beat, and folds back. The boxes leave the moment the row is
  * home. The seats coming back are the point of the click, so they're spelled out
  * on the two boxes the user is already looking at, at a size that can't be
  * missed, before either box moves an inch.
  */
-const PACT_LINGER_MS = SWELL_MS + SWELL_COUNT_MS + SWELL_HOLD_MS + SWELL_MS;
+const PACT_LINGER_MS = SWELL_CYCLE_MS;
+
+/**
+ * The 2032 board's linger: **two full swells, one after the other**. The pact row
+ * rears up and counts to what was traded, folds away, and then the gap row does the
+ * same with what that left behind. Read in that order they are cause and consequence,
+ * which is the sentence the box is making.
+ *
+ * They cannot overlap, and that is a geometric fact rather than a preference: both
+ * rows swell toward `SWELL_ROW_Y`, the middle of the box, so a fold running into the
+ * next rise would put two magnified rows on the same line. Each waits for the last to
+ * be fully home.
+ *
+ * It comes to 3800ms, which is a long time to hold a board still — twice the 2026
+ * linger, because there are two figures to show rather than one to change.
+ */
+const SEQUENCE_LINGER_MS = SWELL_CYCLE_MS * 2;
+
+/** How long a sealed pact holds the board still, per board. */
+const LINGER_MS: Record<EraId, number> = {
+  '2026': PACT_LINGER_MS,
+  '2032': SEQUENCE_LINGER_MS,
+};
 
 /**
  * The gap row at full swell, centered in everything the header line leaves — the
@@ -223,6 +250,39 @@ const GAP_COUNT_SIZE = 9.5;
 const SWELL_LABEL_SIZE = 11;
 const SWELL_COUNT_SIZE = 28;
 const SWELL_ROW_Y = (HEADER_HEIGHT + BOX_H) / 2;
+
+/**
+ * The 2032 pact row at full swell. Its label grows like the gap row's, but not as far,
+ * and the party letter is what pays for it.
+ *
+ * "Minority Districts (Pact)" is much longer than "Representation Gap" — 106 units
+ * against 91 at a size of 11 — so it simply cannot be set at 11 in this box: the label
+ * alone would end at x=112, leaving a two-digit count 8.3 units to live in, smaller
+ * than the 9 it rests at. The gap row's 11 is not available here at any count size.
+ *
+ * 10 is, and only because the count sheds its "R"/"D" on the way up. The letter costs
+ * 0.63 units per unit of font size, which at 21 is thirteen units of row — with it,
+ * a label at 10 and a count at 21 overlap by 3; without it they clear by 10. Held to
+ * `PARTY_FADE_SWELL` the letter is gone before that bites, and at the moment it goes
+ * the pair still clear by 8.4, which is exactly the margin the gap row lives on.
+ *
+ * Losing it costs nothing that isn't said elsewhere: the row rests as "14R", the fair
+ * row above it names the same party, and the box's border and badge are that party's
+ * colour. What it buys is the two swells reading alike — a caption growing over a bare
+ * figure — which is the whole point of matching them.
+ */
+const PACT_SWELL_LABEL_SIZE = 10;
+const PACT_SWELL_COUNT_SIZE = 21;
+
+/**
+ * How far into the pact row's swell its party letter has gone entirely.
+ *
+ * It shrinks rather than merely fading, so the number slides right into full alignment
+ * as it goes instead of leaving a thirteen-unit hole against the row's right edge. The
+ * slide happens inside the first third of the rise, while the whole row is growing
+ * anyway, so it reads as the row consolidating onto one figure.
+ */
+const PARTY_FADE_SWELL = 0.7;
 
 /**
  * The "Your Pacts" heading. Spacing is measured to the top of its ink, not its
@@ -333,18 +393,21 @@ function swellAt(ms: number): number {
   if (ms <= 0) return 0;
   if (ms < SWELL_MS) return easeOut(ms / SWELL_MS);
 
-  const folding = ms - (SWELL_MS + SWELL_COUNT_MS + SWELL_HOLD_MS);
+  const folding = ms - (SWELL_MS + SEAL_COUNT_MS + SEAL_HOLD_MS);
   if (folding <= 0) return 1;
   return folding >= SWELL_MS ? 0 : 1 - easeOut(folding / SWELL_MS);
 }
 
 /**
- * Runs the swell on a box that has just signed. It drives geometry rather than a
- * CSS animation because the row's two halves grow on different curves — the
- * label a caption, the count filling what's left — and because the count has to
- * be held back until there's room for it to run in.
+ * The clock a settling box runs on, in milliseconds since the pact was sealed.
+ *
+ * Rows read their own swell off it at their own offset, which is what lets the 2032
+ * board run two of them back to back from one timer. It drives geometry rather than a
+ * CSS animation because a row's two halves grow on different curves — the label a
+ * caption, the count filling what's left — and because each count has to be held back
+ * until there is room for it to run in.
  */
-function useSwell(settling: boolean): number {
+function useSettleElapsed(settling: boolean, totalMs: number): number {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
@@ -356,16 +419,12 @@ function useSwell(settling: boolean): number {
     let raf = requestAnimationFrame(function tick(now) {
       const t = now - start;
       setElapsed(t);
-      if (t < PACT_LINGER_MS) raf = requestAnimationFrame(tick);
+      if (t < totalMs) raf = requestAnimationFrame(tick);
     });
     return () => cancelAnimationFrame(raf);
-  }, [settling]);
+  }, [settling, totalMs]);
 
-  if (!settling) return 0;
-
-  // Reduced motion keeps the beat and drops the swell: the count still waits its
-  // turn and still runs, it just doesn't rear up to be looked at.
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : swellAt(elapsed);
+  return settling ? elapsed : 0;
 }
 
 interface BoxBodyProps {
@@ -383,13 +442,28 @@ interface BoxBodyProps {
 
 /**
  * Everything below the header line: where the state's own PVI says its minority
- * districts should sit, where they do, and the gap between them — read top to
- * bottom.
+ * districts should sit, where they actually do, and the gap between them — read top
+ * to bottom.
  *
- * On the two boxes that have just signed, the gap row swells to take the whole
- * space, the subtraction above it fades out of the way, the count runs down at
- * that size, and the row folds back. The animation lives in here rather than in
- * the parent so that a frame of it re-renders two boxes instead of forty-four.
+ * **A pact plays out differently on the two boards**, because they are answering
+ * different questions. The 2026 box already holds all three figures, so what a pact
+ * changes is the gap: that row swells to fill the box, the subtraction above it fades
+ * out of the way, and the count runs *down* to whatever survives. One figure changes,
+ * so it is magnified to be watched.
+ *
+ * The 2032 box has nothing to change — its lower two rows start blank, since there is
+ * no 2032 map until a pact draws one — so it has two figures to fill instead. They run
+ * **in sequence and at rest**: the pact row counts up to what was traded, then the gap
+ * row counts up to what that left behind. Read in that order they are cause and
+ * consequence, which is the sentence the box is making. Neither needs magnifying,
+ * because neither is displacing a figure already on screen.
+ *
+ * A blank rather than a zero, on both of those rows. Zero is a measurement, and before
+ * a pact there is nothing measured; a column of `0R` down an untouched board would
+ * read as forty-three states that had been looked at and found empty.
+ *
+ * The animation lives in here rather than in the parent so that a frame of it
+ * re-renders two boxes instead of forty-four.
  */
 function BoxBody({
   eraId,
@@ -400,87 +474,153 @@ function BoxBody({
   isMatched,
   settling,
 }: BoxBodyProps) {
-  const size = useSwell(settling);
-  const at = (rest: number, full: number) => rest + (full - rest) * size;
+  const is2032 = eraId === '2032';
+  const elapsed = useSettleElapsed(settling, LINGER_MS[eraId]);
 
-  // The count runs at full size, so it waits out the swell, and takes its time
-  // once it's there. Both counts share the pace: under reduced motion the rows
-  // behind don't fade, so the two are on screen together.
-  const delay = settling ? SWELL_MS : 0;
-  const duration = settling ? SWELL_COUNT_MS : COUNT_DURATION_MS;
+  // Reduced motion keeps the beat and drops the swell: the counts still wait their
+  // turn and still run, they just don't rear up to be looked at.
+  const reduced =
+    settling && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // Both rows count the same thing in the same party, so they share a mark. The
-  // districts the enacted map has drawn for nobody are not among them: they belong
-  // to neither count, and the box says so by the squeezed party coming up short.
-  // The national tally of them is on the stat bar, which is where they read.
-  const seatCount = (y: number, value: React.ReactNode) => (
-    <text
-      x={BOX_W - 6} y={y}
-      textAnchor="end" dominantBaseline="central"
-      fontSize={9} fontWeight={700} fill={PARTY_COLORS[minorityParty]}
-    >
-      {value}{minorityParty}
-    </text>
-  );
+  /** How far the row starting at `offset` into the sequence has taken the box over. */
+  const swellOf = (offset: number) =>
+    settling && !reduced ? swellAt(elapsed - offset) : 0;
+
+  // 2026 changes one figure, so only the gap row rears up and it goes first. 2032
+  // fills two, so the pact row takes its turn and the gap row follows a whole cycle
+  // later — they share a centre line and cannot be up at once.
+  const gapOffset = is2032 ? SWELL_CYCLE_MS : 0;
+  const midSize = is2032 ? swellOf(0) : 0;
+  const gapSize = swellOf(gapOffset);
+
+  const atMid = (rest: number, full: number) => rest + (full - rest) * midSize;
+  const atGap = (rest: number, full: number) => rest + (full - rest) * gapSize;
+
+  // Each count waits for its own row to finish rising. On 2026 both run together,
+  // since the middle row is only restating what the gap row is already showing.
+  const duration = settling ? SEAL_COUNT_MS : COUNT_DURATION_MS;
+  const midDelay = settling ? SWELL_MS : 0;
+  const gapDelay = settling ? gapOffset + SWELL_MS : 0;
+
+  // A row gets out of the way of whichever *other* row is up.
+  const fadeFor = (swell: number) => 1 - swell;
+
+  // How much of the pact count's party letter is left. Gone by PARTY_FADE_SWELL, which
+  // is what lets that row's label grow at all — see PACT_SWELL_LABEL_SIZE.
+  const partyLetter = Math.max(0, 1 - midSize / PARTY_FADE_SWELL);
+
+  // On the 2032 board the middle row is the pact and nothing else, so it says so
+  // whether or not one has been signed yet. On the 2026 board it is the enacted map
+  // until a pact replaces it.
+  const midLabel = is2032 || isMatched ? 'Pact' : eraId;
+
+  // Both blank until this state has a pact, and on 2032 the gap holds out further
+  // still — until its own turn comes round, so the pact row's swell isn't answered
+  // underneath before it has finished making its point.
+  const midBlank = is2032 && !isMatched;
+  const gapBlank = is2032 && (!isMatched || (settling && elapsed < gapOffset));
+
+  // The 2026 gap is a standing figure that a pact reduces, so it counts down to what
+  // survives. The 2032 gap doesn't exist until a pact creates it, so it counts up from
+  // nothing to what the pact left behind — which means feeding zero while unmatched
+  // rather than the baseline the state would owe.
+  const gapValue = is2032 && !isMatched ? 0 : Math.abs(gap);
 
   return (
     <>
-      {/* Once a pact is sealed the middle row is no longer the map the era names
-          but what the pact leaves behind, and the gap below it is what survives
-          that. On the 2032 board that row starts at nothing, because the map every
-          state draws for itself is the one with no minority districts in it. */}
-      <g opacity={1 - size}>
+      {/* The proportional share — the one figure that is true before anybody signs
+          anything, and the only row on the 2032 board that starts with a number. */}
+      <g opacity={fadeFor(Math.max(midSize, gapSize))}>
         <text x={6} y={EQ_ROW_Y[0]} dominantBaseline="central" fontSize={EQ_LABEL_SIZE} fill="#888">
           Minority Districts (Fair)
         </text>
-        {seatCount(EQ_ROW_Y[0], proportional)}
-
-        <text x={6} y={EQ_ROW_Y[1]} dominantBaseline="central" fontSize={EQ_LABEL_SIZE} fill="#888">
-          Minority Districts ({isMatched ? 'Pact' : ERA_MAP_LABEL[eraId]})
+        <text
+          x={BOX_W - 6} y={EQ_ROW_Y[0]}
+          textAnchor="end" dominantBaseline="central"
+          fontSize={9} fontWeight={700} fill={PARTY_COLORS[minorityParty]}
+        >
+          {proportional}{minorityParty}
         </text>
-        {seatCount(
-          EQ_ROW_Y[1],
-          <AnimatedCount value={current} delay={delay} duration={duration} />,
-        )}
-
-        <line
-          x1={6}
-          y1={EQ_RULE_Y}
-          x2={BOX_W - 6}
-          y2={EQ_RULE_Y}
-          stroke="rgba(0,0,0,0.15)"
-          strokeWidth={0.5}
-        />
       </g>
 
-      <text
-        x={6}
-        y={at(EQ_ROW_Y[2], SWELL_ROW_Y)}
-        dominantBaseline="central"
-        fontSize={at(EQ_LABEL_SIZE, SWELL_LABEL_SIZE)}
-        fill="#888"
-      >
-        Representation Gap
-      </text>
-      <AnimatedCount value={Math.abs(gap)} delay={delay} duration={duration}>
-        {shown => (
-          <text
-            x={BOX_W - 6}
-            y={at(EQ_ROW_Y[2], SWELL_ROW_Y)}
-            textAnchor="end"
-            dominantBaseline="central"
-            fontSize={at(GAP_COUNT_SIZE, SWELL_COUNT_SIZE)}
-            fontWeight={700}
-            // Black belongs to the figure on screen, not the one being counted
-            // towards: a gap falling to zero wears orange the whole way down and
-            // turns black as it lands, and a gap that was already zero is black
-            // throughout, because nothing is falling.
-            fill={shown === 0 ? FAIR_BLACK : GAP_ORANGE}
-          >
-            {shown}
-          </text>
-        )}
-      </AnimatedCount>
+      {/* What the map delivers: the enacted count in 2026, the pact's own in 2032. */}
+      <g opacity={fadeFor(gapSize)}>
+        <text
+          x={6}
+          y={atMid(EQ_ROW_Y[1], SWELL_ROW_Y)}
+          dominantBaseline="central"
+          fontSize={atMid(EQ_LABEL_SIZE, PACT_SWELL_LABEL_SIZE)}
+          fill="#888"
+        >
+          Minority Districts ({midLabel})
+        </text>
+        <AnimatedCount value={current} delay={midDelay} duration={duration}>
+          {shown => (
+            <text
+              x={BOX_W - 6}
+              y={atMid(EQ_ROW_Y[1], SWELL_ROW_Y)}
+              textAnchor="end"
+              dominantBaseline="central"
+              fontSize={atMid(9, PACT_SWELL_COUNT_SIZE)}
+              fontWeight={700}
+              fill={PARTY_COLORS[minorityParty]}
+            >
+              {midBlank ? '' : shown}
+              {/* Sized as well as faded, so the figure closes up the space it leaves
+                  rather than sitting short of the row's edge. */}
+              {!midBlank && (
+                <tspan
+                  fontSize={atMid(9, PACT_SWELL_COUNT_SIZE) * partyLetter}
+                  opacity={partyLetter}
+                >
+                  {minorityParty}
+                </tspan>
+              )}
+            </text>
+          )}
+        </AnimatedCount>
+      </g>
+
+      <line
+        x1={6}
+        y1={EQ_RULE_Y}
+        x2={BOX_W - 6}
+        y2={EQ_RULE_Y}
+        stroke="rgba(0,0,0,0.15)"
+        strokeWidth={0.5}
+        opacity={fadeFor(Math.max(midSize, gapSize))}
+      />
+
+      <g opacity={fadeFor(midSize)}>
+        <text
+          x={6}
+          y={atGap(EQ_ROW_Y[2], SWELL_ROW_Y)}
+          dominantBaseline="central"
+          fontSize={atGap(EQ_LABEL_SIZE, SWELL_LABEL_SIZE)}
+          fill="#888"
+        >
+          Representation Gap
+        </text>
+        <AnimatedCount value={gapValue} delay={gapDelay} duration={duration}>
+          {shown => (
+            <text
+              x={BOX_W - 6}
+              y={atGap(EQ_ROW_Y[2], SWELL_ROW_Y)}
+              textAnchor="end"
+              dominantBaseline="central"
+              fontSize={atGap(GAP_COUNT_SIZE, SWELL_COUNT_SIZE)}
+              fontWeight={700}
+              // Black belongs to the figure on screen, not the one being counted
+              // towards: a gap falling to zero wears orange the whole way down and
+              // turns black as it lands, and a gap that was already zero is black
+              // throughout, because nothing is falling.
+              fill={shown === 0 ? FAIR_BLACK : GAP_ORANGE}
+            >
+              {gapBlank ? '' : shown}
+            </text>
+          )}
+        </AnimatedCount>
+      </g>
     </>
   );
 }
@@ -697,9 +837,9 @@ export function BipartiteMatchGraph({
 
   useEffect(() => {
     if (!seal) return;
-    const timeoutId = setTimeout(() => setSeal(null), PACT_LINGER_MS);
+    const timeoutId = setTimeout(() => setSeal(null), LINGER_MS[eraId]);
     return () => clearTimeout(timeoutId);
-  }, [seal]);
+  }, [eraId, seal]);
 
   const layoutMatches = seal ? seal.matches : selectedMatches;
   const anchorId = seal ? seal.anchorId : activeStateId;

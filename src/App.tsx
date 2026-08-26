@@ -9,7 +9,11 @@ import {
   computeResidualGaps,
   computeNationalRepresentationGap,
 } from './data/computeRepresentationGap';
-import { computeResidualGaps2032 } from './data/plan2032';
+import {
+  computeDrawn2032,
+  computeResidualGaps2032,
+  computeStatedGap2032,
+} from './data/plan2032';
 import type { EraId } from './components/BipartiteMatchGraph';
 import { HoveredState, MatchPair } from './types';
 
@@ -87,12 +91,18 @@ function App() {
 
   const boardGaps = era === '2032' ? residualGaps2032 : residualGaps;
 
-  // What the board on screen has left standing — the figure the stat bar and the
-  // results panel both measure against that board's own baseline.
+  // What the board on screen has left standing, across every state — the figure the
+  // results panel measures against that board's own baseline.
   const boardNationalGap = useMemo(
     () => computeNationalRepresentationGap(boardGaps),
     [boardGaps],
   );
+
+  // The stat bar's two 2032 readings, both of which start at zero and fill: the gap
+  // only the signed states have left behind, and the districts the pacts have drawn.
+  // The 2026 board has neither — its bar reads the enacted map and the full residual.
+  const stated2032 = useMemo(() => computeStatedGap2032(matches2032), [matches2032]);
+  const drawn2032 = useMemo(() => computeDrawn2032(matches2032), [matches2032]);
 
   const handleToggleMatch = useCallback((pair: MatchPair) => {
     const pk = pairKey(pair[0], pair[1]);
@@ -183,7 +193,14 @@ function App() {
 
   return (
     <div className="app">
-      <StatBar era={era} nationalRepresentationGap={boardNationalGap} />
+      {/* The 2032 board hands it a gap counted only over the states that have signed,
+          so the bar starts where the boxes do — at nothing — rather than asserting a
+          total the board itself leaves blank. See StatBar and computeStatedGap2032. */}
+      <StatBar
+        era={era}
+        nationalRepresentationGap={era === '2032' ? stated2032 : boardNationalGap}
+        drawn={drawn2032}
+      />
 
       {/* The map gives up some width once the columns arrive, so they sit higher. */}
       <section className={`hero-section${started ? ' compact' : ''}`}>
@@ -220,8 +237,8 @@ function App() {
             <p>
               So pair up the red states and blue states into bipartisan pacts. Each pact will give
               the minority party in each of those two states their representation back. States with
-              similar size delegations make the best pacts. See how many disproportionate districts
-              you can undraw!
+              similar size delegations make the best pacts. Click Start below to see how many
+              disproportionate districts you can undraw!
             </p>
           </div>
 
@@ -238,7 +255,7 @@ function App() {
           {/* Outside the viewport, so it stays put while the columns rise into it. */}
           <p className="match-instructions">
             {/* A line each, so the break lands after "column," and nowhere else. */}
-            <span>Click a state to see its best matches in the other column,</span>
+            <span>Click a state to see its best matches at the top of the opposite column,</span>
             <span>then click one of those states to confirm the pact.</span>
           </p>
 

@@ -10,10 +10,46 @@ import { fipsToState } from '../map/fipsMapping';
 import type { EraId } from './BipartiteMatchGraph';
 import cloudUrl from '../map/mushroom-cloud.png';
 
-/** The gaps and the pact payout of whichever board is on screen. */
+/**
+ * How big the biggest cloud and the biggest badge on a board can get, read off that
+ * board's own gaps instead of written down.
+ *
+ * They were constants, and constants went stale the moment the 2032 board changed
+ * shape: its largest gap went from 14 to 18 against a `MAX_REP_GAP` of 16, and since
+ * the cloud scale has no clamp, California drew at 148.5 in a scale whose maximum is
+ * 140. The badge scale does clamp, so its failure was quieter and worse — every 2032
+ * pact from 10 up rendering at exactly the same radius.
+ *
+ * A pact is capped by its smaller partner, so the largest trade a board can produce is
+ * the smaller of its two columns' largest gaps — 9 in 2026, where California's 16 has
+ * only Texas's 9 to trade with, and 18 in 2032, where California and Texas both owe 18.
+ */
+function scaleLimits(gaps: Record<string, number>) {
+  let maxGap = 0;
+  let maxLeft = 0;
+  let maxRight = 0;
+  for (const gap of Object.values(gaps)) {
+    const size = Math.abs(gap);
+    if (size > maxGap) maxGap = size;
+    // Negative is the D-drawn left column, positive the R-drawn right.
+    if (gap < 0 && size > maxLeft) maxLeft = size;
+    if (gap > 0 && size > maxRight) maxRight = size;
+  }
+  return { maxGap, maxPactGain: Math.min(maxLeft, maxRight) };
+}
+
+/** The gaps, the pact payout and the icon scales of whichever board is on screen. */
 const BOARDS = {
-  '2026': { baselineGaps, returned: pactSeatsReturned },
-  '2032': { baselineGaps: baselineGaps2032, returned: pact2032Returned },
+  '2026': {
+    baselineGaps,
+    returned: pactSeatsReturned,
+    ...scaleLimits(baselineGaps),
+  },
+  '2032': {
+    baselineGaps: baselineGaps2032,
+    returned: pact2032Returned,
+    ...scaleLimits(baselineGaps2032),
+  },
 } as const;
 
 interface HeroMapProps {
@@ -30,24 +66,14 @@ const HEIGHT = 600;
 /** Breathing room left above and below the cropped map bounds. */
 const VIEW_PAD = 4;
 
-/**
- * The largest gap either board holds — California's 16 in 2026, against its 14 in
- * 2032. **One scale, deliberately shared**, so a cloud means the same size of gap
- * whichever board is up and switching between them shows the 2032 clouds coming in
- * genuinely smaller, which they are. Sizing each board to its own maximum would
- * redraw California the same either way and hide that.
- */
-const MAX_REP_GAP = 16;
 const MAX_ICON_RADIUS = 70;
 
 /**
- * Badges are sized against the largest trade rather than the largest gap: a pact is
- * capped by its smaller partner, so ten is the most any state can win — California's
- * 14 against Florida's 10, on the 2032 board. 2026 tops out a seat lower at nine,
- * California's 16 against Texas's or Florida's 9, and shares this scale for the same
- * reason the clouds do.
+ * Badges are sized against the largest *trade* rather than the largest gap, since a
+ * pact is capped by its smaller partner and no badge can ever count more than that.
+ * Sizing them against the largest gap would leave every badge in the bottom half of
+ * the scale on the 2026 board, where the biggest gap is 16 and the biggest trade 9.
  */
-const MAX_PACT_GAIN = 10;
 const MAX_BADGE_RADIUS = 30;
 /** A badge still has a number to hold when the pact returns nothing. */
 const MIN_BADGE_RADIUS = 10;
@@ -249,9 +275,13 @@ export function HeroMap({
     // pact still says what it says, it just doesn't fly across to say it.
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+    // Clamped, so a gap past the board's own maximum can't draw outside the scale.
+    // Nothing should reach for it now that the domain comes from the data, but the
+    // unclamped version is what let the 2032 clouds overflow, so the guard stays.
     const repGapRadius = d3.scaleSqrt()
-      .domain([0, MAX_REP_GAP])
-      .range([0, MAX_ICON_RADIUS]);
+      .domain([0, board.maxGap])
+      .range([0, MAX_ICON_RADIUS])
+      .clamp(true);
 
     // Clouds track the gap, but a pact always clears both partners' — the badge
     // takes over from there, even where some gap survives the pact.
@@ -355,7 +385,7 @@ export function HeroMap({
     // party receiving them and sized by how many. Both partners return the same
     // number, so a pact reads as two circles of one size in the two party colors.
     const badgeRadius = d3.scaleSqrt()
-      .domain([0, MAX_PACT_GAIN])
+      .domain([0, board.maxPactGain])
       .range([0, MAX_BADGE_RADIUS])
       .clamp(true);
     const radiusFor = (gain: number) => Math.max(MIN_BADGE_RADIUS, badgeRadius(gain));

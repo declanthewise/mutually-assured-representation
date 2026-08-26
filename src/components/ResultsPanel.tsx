@@ -91,19 +91,22 @@ export function ResultsPanel({
 
   return (
     <div className="results-panel">
-      {/* The 2032 board is reached from a button rather than from the top of the
-          page, so it says outright which map it is talking about. */}
-      {is2032 && <p className="results-kicker">After the 2030 Census</p>}
+      {/* The 2026 board's headline runs two lines, set here rather than left to the
+          wrap: what the pacts returned is one clause, and the claim the whole tool
+          makes closes on a line of its own.
 
-      {/* Two lines, set here rather than left to the wrap: what the pacts returned
-          is one clause, and the claim the whole tool makes closes on a line of its
-          own. Each `headline-line` is a block, and `.results-headline` sizes itself
-          so the longer of the two stays on one line — see App.css, which is where
-          the arithmetic for that lives and where it has to be redone if this
-          wording changes. The 2032 figures are no wider: its baseline is 97 and the
-          most any pairing can close is 80, since a pact is capped by the lesser
-          partner and the left column only owes 40. */}
-      {seatsClosed > 0 ? (
+          The 2032 board takes one line instead. Its second line used to be the same
+          margin claim, and that claim stopped being true there once an unclosed gap
+          began going to the state's own majority: an uneven pact moves the House, and
+          the stat bar says so. Rather than qualify it on every uneven run, the line
+          goes, and the headline says the one thing that is always true — how many
+          districts the pacts drew proportionally that nobody would have drawn. */}
+      {is2032 ? (
+        <p className="results-headline">
+          Your {spellCount(pacts.length)} {pacts.length === 1 ? 'pact' : 'pacts'} created{' '}
+          <span style={{ color: FAIR_BLACK }}>{seatsClosed}</span> proportional districts.
+        </p>
+      ) : seatsClosed > 0 ? (
         <p className="results-headline">
           <span className="headline-line">
             Your {spellCount(pacts.length)} {pacts.length === 1 ? 'pact' : 'pacts'} returned{' '}

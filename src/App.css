@@ -358,62 +358,36 @@ body {
    Results Panel
    =========================== */
 
-/* The headline is measured against this box, not the viewport, so the type can
-   be sized off the width it actually has to fill. */
+/* Centering is the only thing this box does to its text now. The headline used to
+   be sized in `cqi` against it — hence a container context — but it is set in the
+   page's prose instead, so there is nothing left to measure. */
 .results-panel {
   text-align: center;
   padding: 0.5rem 0 1rem;
-  container-type: inline-size;
 }
 
-/* The results run wider than the columns they replace. The headline is the
-   reason — it reaches full size in a 593px box and the shared measure leaves
-   472px — and the pact list is happy to follow it out. */
+/* The results run wider than the columns they replace, which the pact list wants —
+   its two state names and their counts sit on one line at this measure. */
 .results-wide {
   max-width: 660px;
 }
 
-/* The line break is in the markup (see ResultsPanel), so this sets no measure and
-   does no balancing — its whole job is to keep the longer of the two lines on one
-   line. That line is the second, "and the U.S. House district margin is
-   unchanged.", 22.18em of Playfair at 600. The first is shorter at every count
-   the headline can name — 20.8em at its widest, "Your seven pacts returned 104 of
-   104 districts," — so the measure is a fixed string and doesn't move with the
-   numbers. It fits whenever the font is at most a 22.18th of the box:
-   100 / 22.18 = 4.5cqi, taken down to 4.4 for margin.
-   Above a 545px box that reaches the 1.5rem cap and the type stops growing — a
-   532px line, which the 660px panel is wide enough to hold. Below it the headline
-   shrinks with the panel rather than wrapping, which is what holds the two lines
-   from the widest desktop to the narrowest phone: a 320px screen still gets 13px
-   of headline.
-   Nothing here says `nowrap` on purpose: Georgia stands in about 13% wider
-   until the webfont lands, and for that moment a wrapped line beats one run off
-   the side. Measure in the browser, not from a probe — a probe that is empty at
-   parse time never triggers the webfont, and reports Georgia's width instead. */
+/* The page's prose, centered: same family, size, leading and colour as `.app-intro`.
+   It was Playfair at `min(4.4cqi, 1.5rem)`, sized so its longest line stayed
+   unbroken, and all of that arithmetic is gone with it — at prose size every line
+   the headline can produce fits several times over, so nothing has to be re-measured
+   when the wording changes. The 2026 board's two lines are still set by hand in the
+   markup (see `.headline-line`), because that break is a rhetorical one rather than
+   anything the width forces. */
 .results-headline {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: min(4.4cqi, 1.5rem);
-  font-weight: 600;
-  line-height: 1.3;
-  color: #111;
+  font-size: 0.94rem;
+  line-height: 1.55;
+  color: #444;
   margin-bottom: 0.9rem;
 }
 
 .headline-line {
   display: block;
-}
-
-/* Which map the results are about, above the headline rather than inside it —
-   the 2032 board is reached from a button partway through, so it can't rely on
-   the page around it to say where the reader has arrived. Only that board shows
-   one; the 2026 results are where the page already was. */
-.results-kicker {
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #de7128; /* GAP_ORANGE — see src/colors.ts */
-  margin-bottom: 0.5rem;
 }
 
 .results-pacts {
@@ -422,12 +396,17 @@ body {
   border-top: 1px solid #e0e0e0;
 }
 
+/* The page's prose again, so the panel reads as one block of text rather than a
+   headline with a caption under it. Only the row rhythm is the list's own: the
+   padding and the rule between items. The longest pairing the board can produce —
+   "+10 North Carolina Democrats <-> +10 Massachusetts Republicans" — is 406px at this
+   size against a 612px measure, so nothing wraps. */
 .results-pacts li {
   padding: 0.35rem 0;
   border-bottom: 1px solid #eee;
-  font-size: 0.8rem;
-  line-height: 1.3;
-  color: #333;
+  font-size: 0.94rem;
+  line-height: 1.55;
+  color: #444;
 }
 
 /* ===========================
@@ -448,14 +427,20 @@ body {
   margin: 12px auto 0;
   padding: 0 1rem;
   text-align: center;
-  font-size: 0.62rem;
-  line-height: 1.35;
-  color: #888;
+  /* The page's prose, like the headline and the intro — one voice for every
+     sentence the page speaks. */
+  font-size: 0.94rem;
+  line-height: 1.55;
+  color: #444;
 }
 
+/* Block, so the break lands after "column," at every width. It used to be `nowrap`
+   as well, which is not safe at prose size: the first clause measures 434px and would
+   push a phone into a horizontal scroll. Letting a clause wrap costs a line on a
+   narrow screen and keeps the clause break where it belongs — two lines down to
+   600px, three to 390px, four at 320px, and no overflow at any of them. */
 .match-instructions span {
   display: block;
-  white-space: nowrap;
 }
 
 .match-columns-viewport {
@@ -673,11 +658,6 @@ body {
 
   .visualization-wide {
     padding: 0 0.5rem;
-  }
-
-  /* The two lines are set in the base rule; a phone only needs them smaller. */
-  .match-instructions {
-    font-size: 0.6rem;
   }
 
   /* No width to give up on a phone. The desktop shrink buys room for the columns
