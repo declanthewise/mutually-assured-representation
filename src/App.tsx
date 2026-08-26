@@ -9,6 +9,7 @@ import {
   computeResidualGaps,
   computeNationalRepresentationGap,
 } from './data/computeRepresentationGap';
+import { computeResidualGaps2032 } from './data/plan2032';
 import type { EraId } from './components/BipartiteMatchGraph';
 import { HoveredState, MatchPair } from './types';
 
@@ -71,16 +72,26 @@ function App() {
   const selectedMatches = era === '2032' ? matches2032 : matches2026;
   const setSelectedMatches = era === '2032' ? setMatches2032 : setMatches2026;
 
-  // The gap is a fact about enacted maps, so it always reads the 2026 run — the
-  // 2032 board neither moves it nor is measured by it.
+  // Each board keeps its own gaps. The 2026 ones are a fact about enacted maps, so
+  // the stat bar and the hero map read them whichever board is up; the 2032 ones are
+  // what the columns and the results answer to while that board is the one on screen.
   const residualGaps = useMemo(
     () => computeResidualGaps(matches2026),
     [matches2026],
   );
 
-  const nationalRepresentationGap = useMemo(
-    () => computeNationalRepresentationGap(residualGaps),
-    [residualGaps],
+  const residualGaps2032 = useMemo(
+    () => computeResidualGaps2032(matches2032),
+    [matches2032],
+  );
+
+  const boardGaps = era === '2032' ? residualGaps2032 : residualGaps;
+
+  // What the board on screen has left standing — the figure the stat bar and the
+  // results panel both measure against that board's own baseline.
+  const boardNationalGap = useMemo(
+    () => computeNationalRepresentationGap(boardGaps),
+    [boardGaps],
   );
 
   const handleToggleMatch = useCallback((pair: MatchPair) => {
@@ -172,15 +183,16 @@ function App() {
 
   return (
     <div className="app">
-      <StatBar nationalRepresentationGap={nationalRepresentationGap} />
+      <StatBar era={era} nationalRepresentationGap={boardNationalGap} />
 
       {/* The map gives up some width once the columns arrive, so they sit higher. */}
       <section className={`hero-section${started ? ' compact' : ''}`}>
         <HeroMap
           topoData={topoData}
           onHoverState={setHoveredState}
-          selectedMatches={matches2026}
-          residualGaps={residualGaps}
+          era={era}
+          selectedMatches={selectedMatches}
+          residualGaps={boardGaps}
         />
       </section>
 
@@ -236,7 +248,7 @@ function App() {
                 era={era}
                 selectedMatches={selectedMatches}
                 onToggleMatch={handleToggleMatch}
-                residualGaps={residualGaps}
+                residualGaps={boardGaps}
               />
             </div>
           </div>
@@ -264,7 +276,7 @@ function App() {
           <ResultsPanel
             era={era}
             selectedMatches={selectedMatches}
-            nationalRepresentationGap={nationalRepresentationGap}
+            nationalRepresentationGap={boardNationalGap}
             onRetry={handleStartOver}
             onTry2032={era === '2026' ? handleTry2032 : undefined}
           />
@@ -278,7 +290,7 @@ function App() {
         </p>
       </footer>
 
-      {hoveredState && <StateTooltip hoveredState={hoveredState} residualGaps={residualGaps} />}
+      {hoveredState && <StateTooltip hoveredState={hoveredState} residualGaps={boardGaps} />}
     </div>
   );
 }

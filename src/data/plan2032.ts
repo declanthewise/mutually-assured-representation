@@ -1,22 +1,33 @@
 import { MatchPair, StateData } from '../types';
 import { FairSplit, fairSplitOf } from './computeRepresentationGap';
+import { stateSafeSeats } from './districtLeans';
 import { holdsDemocraticBranches, stateData } from './stateData';
 
 /**
  * The board as it stands after the 2030 census, when every state redraws at once.
  *
- * The 2026 board is an argument about maps that exist: it measures an enacted map
- * against the state's proportional ideal and calls the difference a representation
- * gap. None of that survives reapportionment. There is no 2032 map to measure, and
- * so **no representation gap anywhere in this module** — the district-level Cook
- * leans in `districtLeans.ts` describe districts that will not exist, and nothing
- * here reads them.
+ * It is the 2026 board over a different apportionment, and deliberately nothing more
+ * clever than that: the same ideal, the same gap, the same pact math, so a reader who
+ * has played one board already knows how to play this one.
  *
- * What is left is the half that doesn't depend on an enacted map: each state's own
- * statewide PVI, and how many districts it will have to draw. Those two give the
- * fair split directly, so the whole board is built out of `fairSplitOf()` against
- * `districts2032` — the same ideal the 2026 board uses, asked of the delegation the
- * census leaves the state with rather than the one it has now.
+ * Two halves, and both are projections:
+ *
+ * **The ideal** is `fairSplitOf()` against `districts2032`. Reapportionment moves how
+ * many districts a state draws, not how it votes, so the statewide PVI carries over
+ * untouched and the fair split falls straight out of it.
+ *
+ * **The enacted map** is today's, held at the same level of gerrymandering and scaled
+ * to the new delegation: a state drawing 4 of its 52 districts for the minority is
+ * taken to draw 4 of 48. That is a projection, not a forecast — nobody knows what any
+ * state will draw in 2031 — but it is the neutral one. It assumes only that states
+ * keep doing what they are doing now, which makes the 2032 gap a statement about the
+ * census rather than about anybody's intentions, and it lands at 97 against 2026's
+ * 104, near enough to read as the same map on a different map of the country.
+ *
+ * The minority-party count is the one that gets scaled, because it is the only one
+ * the board ever shows and the only one the gap is measured from — on the 2026 board
+ * the displayed gap is always exactly the minority party's own shortfall, since the
+ * column a state sits in is the side its gerrymander squeezes.
  *
  * Apportionment projections: Brennan Center.
  * https://www.brennancenter.org/our-work/analysis-opinion/how-states-seats-us-house-could-change-after-next-census
@@ -31,11 +42,6 @@ import { holdsDemocraticBranches, stateData } from './stateData';
  * was already in.
  */
 export const matchable2032States = stateData.filter(s => s.districts2032 >= 2);
-
-/** Lookup over the matchable set only, so an unmatchable id can't seal a pact. */
-const state2032ById: Record<string, StateData> = Object.fromEntries(
-  matchable2032States.map(s => [s.id, s]),
-);
 
 /** The proportional ideal on the projected delegation. */
 export function fairSplit2032(state: StateData): FairSplit {
@@ -76,60 +82,178 @@ export function minorityFair2032(state: StateData): number {
 }
 
 /**
- * Districts a pact commits **each** partner to draw for the other's party, so its
- * national effect is double this number — the same shape as `pactSeatsReturned()`,
- * and for the same reason.
+ * The minority districts today's map draws, carried to the projected delegation at
+ * the same rate and rounded to the nearest whole district.
  *
- * **The House balance must not move.** One state draws R districts it would rather
- * draw D and the other does the reverse, so the trade only exists between opposite
- * columns, and only up to the lesser of the two fair minorities. Whatever the larger
- * partner still owes its minority is left on the table — a pact can't hand over more
- * than its partner can match without moving the margin, which is the one thing the
- * whole tool refuses to do.
+ * Done in integers, like `fairSplitOf()` and for the same reason — a half district
+ * has to land on a definite side. **A tie rounds down**, toward fewer minority
+ * districts, because the party holding the pen is the one that would win the argument
+ * over a district that could go either way, and the whole premise here is that states
+ * keep gerrymandering. Exactly one state reaches the tie: Minnesota, 4 of 8 districts
+ * drawn R and projected to 7, which is 3.50 on the nose.
+ *
+ * `floor((2·count·new + old − 1) / (2·old))` is round-half-down in whole numbers, so
+ * no float ever decides it.
  */
-export function pact2032Returned(stateA: string, stateB: string): number {
-  const a = state2032ById[stateA];
-  const b = state2032ById[stateB];
-  if (!a || !b) return 0;
-  // Same column — nothing to trade, exactly as two same-direction gerrymanders
-  // return nothing on the 2026 board.
-  if (isDemocraticSide2032(a) === isDemocraticSide2032(b)) return 0;
-  return Math.min(minorityFair2032(a), minorityFair2032(b));
+function projectedMinority(count: number, oldDistricts: number, newDistricts: number): number {
+  return Math.floor((2 * count * newDistricts + oldDistricts - 1) / (2 * oldDistricts));
+}
+
+/** A state's projected 2032 delegation. Always sums to `districts2032`. */
+export interface Seats2032 {
+  rSeats: number;
+  dSeats: number;
+  even: number;
 }
 
 /**
- * Districts each state has been committed to by the selected pacts, keyed by id and
- * zero for a state that hasn't signed. Both halves of a pact commit the same number,
- * which is what the box's second row counts.
- */
-export function computeReturned2032(selectedMatches: MatchPair[]): Record<string, number> {
-  const returned: Record<string, number> = Object.fromEntries(
-    matchable2032States.map(s => [s.id, 0]),
-  );
-
-  for (const [stateA, stateB] of selectedMatches) {
-    const seats = pact2032Returned(stateA, stateB);
-    if (seats === 0) continue;
-    returned[stateA] = seats;
-    returned[stateB] = seats;
-  }
-
-  return returned;
-}
-
-/**
- * Every minority district the fair maps owe nationally — the pool the results panel
- * measures a run against, and the counterpart of the 2026 board's baseline gap.
+ * Today's delegation carried to the projected one, for **all fifty states** — the
+ * board drops the single-district ones, but the House does not, and Rhode Island
+ * still sends somebody.
  *
- * It is a ceiling rather than a target: pacts are capped pairwise by the lesser
- * partner, so no pairing of the board delivers all of it.
+ * The minority count is scaled, and so is the undecided count, because both are
+ * facts about how the map was drawn. **The majority takes whatever is left**, which
+ * is what makes the three sum to the new delegation exactly and is the same premise
+ * the rest of this file rests on: the party holding the pen takes the districts a
+ * state gains and protects its own when a state loses them. It never goes negative —
+ * the two scaled counts would have to round up past the whole delegation between them
+ * — but it is clamped anyway, since the data moves.
+ *
+ * Which party counts as the minority follows `isDemocraticSide2032()`, so it is read
+ * off lean rather than off the 2026 gap. The one state where those disagree is
+ * Nevada, which the 2026 board seats on the left with its D-drawn map and this one
+ * seats on the right with its R+1 lean; the 2032 columns are built on lean, so this
+ * follows lean.
  */
-export const national2032Fair: number = matchable2032States.reduce(
-  (total, state) => total + minorityFair2032(state),
-  0,
+export const stateSeats2032: Record<string, Seats2032> = Object.fromEntries(
+  stateData.map(state => {
+    const counts = stateSafeSeats[state.id];
+    const { districts2022: from, districts2032: to } = state;
+    const demSide = isDemocraticSide2032(state);
+
+    const minority = counts
+      ? projectedMinority(demSide ? counts.rSeats : counts.dSeats, from, to)
+      : 0;
+    const even = counts ? projectedMinority(counts.even, from, to) : 0;
+    const majority = Math.max(0, to - minority - even);
+
+    return [
+      state.id,
+      {
+        rSeats: demSide ? minority : majority,
+        dSeats: demSide ? majority : minority,
+        even,
+      },
+    ];
+  }),
 );
 
-/** Districts the selected pacts commit nationally — both halves of every pact. */
-export function computeNational2032Returned(selectedMatches: MatchPair[]): number {
-  return selectedMatches.reduce((total, [a, b]) => total + pact2032Returned(a, b) * 2, 0);
+/**
+ * The districts the projected map gives the party this state's column squeezes — the
+ * box's middle row, and what its gap is measured from.
+ */
+export function minorityEnacted2032(state: StateData): number {
+  const seats = stateSeats2032[state.id];
+  if (!seats) return 0;
+  return isDemocraticSide2032(state) ? seats.rSeats : seats.dSeats;
 }
+
+/**
+ * The projected House, across all 435 districts. Fixed, and independent of any pact —
+ * that is the whole argument, and it is why a pact trades in both directions at once.
+ *
+ * It comes to **229R 189D 17 EVEN, a margin of R+40**, against today's R+24. The
+ * sixteen points are reapportionment alone: no map here is drawn any differently than
+ * it is now, and the seats still move, because they move toward the states that
+ * already draw R. It is the one figure on the 2032 board that no pact can touch.
+ */
+export const nationalSeatTotals2032 = Object.values(stateSeats2032).reduce(
+  (acc, c) => ({
+    rSeats: acc.rSeats + c.rSeats,
+    dSeats: acc.dSeats + c.dSeats,
+    even: acc.even + c.even,
+  }),
+  { rSeats: 0, dSeats: 0, even: 0 },
+);
+
+export const houseBalance2032 = nationalSeatTotals2032.rSeats - nationalSeatTotals2032.dSeats;
+export const houseBalanceParty2032 = houseBalance2032 >= 0 ? 'R' : 'D';
+
+/**
+ * A state's baseline 2032 gap: how far the projected map leaves the squeezed party
+ * short of its projected fair share. Signed the way the 2026 gap is — positive when
+ * the Democrats are the short side, so positive means R overrepresented — which makes
+ * it negative on the D-leaning left column and positive on the R-leaning right.
+ *
+ * Floored at zero, because a shortfall cannot be negative. Nothing reaches the floor
+ * today: Minnesota is the only state whose projection meets its fair share exactly,
+ * and it lands on it rather than past it. The clamp is there because the data moves —
+ * leans, apportionment and the Cook file all can — and a state whose map already
+ * over-delivers for its minority has nothing to close, not a gap pointing backwards.
+ * It also keeps the box's equation honest: the middle row is derived as the fair count
+ * less the gap, so clamping the gap is what stops that row exceeding the row above it.
+ */
+export function baselineGap2032Of(state: StateData): number {
+  const short = Math.max(0, minorityFair2032(state) - minorityEnacted2032(state));
+  return isDemocraticSide2032(state) ? -short : short;
+}
+
+/** Baseline signed 2032 gap for every matchable state, keyed by id. */
+export const baselineGaps2032: Record<string, number> = Object.fromEntries(
+  matchable2032States.map(s => [s.id, baselineGap2032Of(s)]),
+);
+
+/** Magnitude of a state's projected 2032 gerrymander. */
+export function gapSize2032Of(state: StateData): number {
+  return Math.abs(baselineGaps2032[state.id] ?? 0);
+}
+
+/**
+ * Districts a pact hands back to the shorted party in *each* state, so its national
+ * effect is double this number — the same shape as `pactSeatsReturned()`, and for the
+ * same reason.
+ *
+ * **The House balance must not move.** One state draws a D district R and the other
+ * draws an R district D, so the trade only exists between opposite columns, and only
+ * up to the lesser of the two gaps. Whatever the larger partner is still short stays
+ * on the board.
+ */
+export function pact2032Returned(stateA: string, stateB: string): number {
+  const gapA = baselineGaps2032[stateA] ?? 0;
+  const gapB = baselineGaps2032[stateB] ?? 0;
+  // Same direction, or one of them has nothing to give up.
+  if (gapA * gapB >= 0) return 0;
+  return Math.min(Math.abs(gapA), Math.abs(gapB));
+}
+
+/**
+ * Signed 2032 gap for every state once the selected pacts are honored — each partner
+ * sheds `pact2032Returned` districts of it, keeping the sign so callers can still
+ * tell which party the remainder favors. The counterpart of `computeResidualGaps()`.
+ */
+export function computeResidualGaps2032(selectedMatches: MatchPair[]): Record<string, number> {
+  const residual: Record<string, number> = { ...baselineGaps2032 };
+
+  for (const [stateA, stateB] of selectedMatches) {
+    const returned = pact2032Returned(stateA, stateB);
+    if (returned === 0) continue;
+    residual[stateA] -= Math.sign(residual[stateA]) * returned;
+    residual[stateB] -= Math.sign(residual[stateB]) * returned;
+  }
+
+  return residual;
+}
+
+/**
+ * The national 2032 gap before any pact: **97**, against 2026's 104. The census costs
+ * the minority parties a little less than the maps already do, which is the useful
+ * thing the board says — reapportionment alone is not the emergency; the drawing is.
+ *
+ * Five states carry no gap: Maine, Michigan, Minnesota, Nebraska and Nevada. The best
+ * any pairing can do is leave 17, since a pact is capped by the lesser partner and the
+ * left column only owes 40 of the 97.
+ */
+export const baseline2032Gap: number = matchable2032States.reduce(
+  (total, state) => total + Math.abs(baselineGap2032Of(state)),
+  0,
+);

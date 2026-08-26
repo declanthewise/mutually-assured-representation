@@ -5,12 +5,22 @@ import { HoveredState, MatchPair } from '../types';
 import { EVEN_GRAY, FAIR_BLACK, LEAN_DOMAIN, LEAN_RANGE, PARTY_COLORS } from '../colors';
 import { stateDataById } from '../data/stateData';
 import { baselineGaps, pactSeatsReturned } from '../data/computeRepresentationGap';
+import { baselineGaps2032, pact2032Returned } from '../data/plan2032';
 import { fipsToState } from '../map/fipsMapping';
+import type { EraId } from './BipartiteMatchGraph';
 import cloudUrl from '../map/mushroom-cloud.png';
+
+/** The gaps and the pact payout of whichever board is on screen. */
+const BOARDS = {
+  '2026': { baselineGaps, returned: pactSeatsReturned },
+  '2032': { baselineGaps: baselineGaps2032, returned: pact2032Returned },
+} as const;
 
 interface HeroMapProps {
   topoData: any;
   onHoverState: (state: HoveredState | null) => void;
+  /** Which board is on screen — the clouds, badges and arcs all follow it. */
+  era: EraId;
   selectedMatches: MatchPair[];
   residualGaps: Record<string, number>;
 }
@@ -20,16 +30,24 @@ const HEIGHT = 600;
 /** Breathing room left above and below the cropped map bounds. */
 const VIEW_PAD = 4;
 
+/**
+ * The largest gap either board holds — California's 16 in 2026, against its 14 in
+ * 2032. **One scale, deliberately shared**, so a cloud means the same size of gap
+ * whichever board is up and switching between them shows the 2032 clouds coming in
+ * genuinely smaller, which they are. Sizing each board to its own maximum would
+ * redraw California the same either way and hide that.
+ */
 const MAX_REP_GAP = 16;
 const MAX_ICON_RADIUS = 70;
 
 /**
- * Badges are sized against the largest trade on the board rather than the largest
- * gap: a pact is capped by its smaller partner, so nine is the most any state can
- * win — California's 16 against Texas's or Florida's 9. Sizing against 16 would
- * leave every badge in the bottom half of the scale.
+ * Badges are sized against the largest trade rather than the largest gap: a pact is
+ * capped by its smaller partner, so ten is the most any state can win — California's
+ * 14 against Florida's 10, on the 2032 board. 2026 tops out a seat lower at nine,
+ * California's 16 against Texas's or Florida's 9, and shares this scale for the same
+ * reason the clouds do.
  */
-const MAX_PACT_GAIN = 9;
+const MAX_PACT_GAIN = 10;
 const MAX_BADGE_RADIUS = 30;
 /** A badge still has a number to hold when the pact returns nothing. */
 const MIN_BADGE_RADIUS = 10;
@@ -57,6 +75,8 @@ function featureStateId(feature: any): string {
 interface BadgeDatum {
   id: string;
   gain: number;
+  /** The state's baseline gap on the board that drew it — what names the party. */
+  gap: number;
   /** Its pact, which is the arc it rides. */
   key: string;
   /** True where it runs that arc from the far end back to the near one. */
@@ -66,24 +86,31 @@ interface BadgeDatum {
 }
 
 /**
- * The party a pact hands seats to in a given state — the one the enacted map
- * shorted, so the opposite of whoever its gap favors. Texas is drawn R+9, so a
- * pact there returns seats to D; California is drawn D−16, so it returns R.
- * Read off the baseline gap, not the residual: sealing a pact would otherwise
- * repaint the badge it just drew.
+ * The party a pact hands seats to in a given state — the one the map shorted, so the
+ * opposite of whoever its gap favors. Texas is drawn R+9, so a pact there returns
+ * seats to D; California is drawn D−16, so it returns R.
+ *
+ * The gap travels on the datum rather than being looked up here, so the badge is
+ * colored by the board that drew it. It is the baseline gap either way, never the
+ * residual: sealing a pact would otherwise repaint the badge it just drew.
  *
  * A pact capped at zero hands nothing to anybody, so both its badges go gray
  * however their states are drawn — a party color on a `0` would name a winner
  * of a trade that never happened.
  */
 function badgeColor(d: BadgeDatum): string {
-  if (d.gain === 0) return EVEN_GRAY;
-  const gap = baselineGaps[d.id] ?? 0;
-  if (gap === 0) return EVEN_GRAY;
-  return gap > 0 ? PARTY_COLORS.D : PARTY_COLORS.R;
+  if (d.gain === 0 || d.gap === 0) return EVEN_GRAY;
+  return d.gap > 0 ? PARTY_COLORS.D : PARTY_COLORS.R;
 }
 
-export function HeroMap({ topoData, onHoverState, selectedMatches, residualGaps }: HeroMapProps) {
+export function HeroMap({
+  topoData,
+  onHoverState,
+  era,
+  selectedMatches,
+  residualGaps,
+}: HeroMapProps) {
+  const board = BOARDS[era];
   const svgRef = useRef<SVGSVGElement>(null);
   const onHoverStateRef = useRef(onHoverState);
   const pathRef = useRef<d3.GeoPath | null>(null);
@@ -339,11 +366,18 @@ export function HeroMap({ topoData, onHoverState, selectedMatches, residualGaps 
     // that belongs to the first travels the curve back to front.
     const badgeData = selectedMatches
       .flatMap(([a, b]) => {
-        const gain = pactSeatsReturned(a, b);
+        const gain = board.returned(a, b);
         const key = [a, b].slice().sort().join('-');
+        const gapOf = (id: string) => board.baselineGaps[id] ?? 0;
         return [
-          { id: a, gain, key, reverse: true, home: centroids.get(a), from: centroids.get(b) },
-          { id: b, gain, key, reverse: false, home: centroids.get(b), from: centroids.get(a) },
+          {
+            id: a, gain, gap: gapOf(a), key,
+            reverse: true, home: centroids.get(a), from: centroids.get(b),
+          },
+          {
+            id: b, gain, gap: gapOf(b), key,
+            reverse: false, home: centroids.get(b), from: centroids.get(a),
+          },
         ];
       })
       .filter((d): d is BadgeDatum => !!d.home && !!d.from);
@@ -422,7 +456,7 @@ export function HeroMap({ topoData, onHoverState, selectedMatches, residualGaps 
     badges.select('text')
       .attr('font-size', d => Math.round(radiusFor(d.gain) * 0.95))
       .text(d => (d.gain > 0 ? `+${d.gain}` : '0'));
-  }, [topoData, selectedMatches, matchedStateIds, residualGaps]);
+  }, [topoData, board, selectedMatches, matchedStateIds, residualGaps]);
 
   return <svg ref={svgRef} className="hero-map" />;
 }

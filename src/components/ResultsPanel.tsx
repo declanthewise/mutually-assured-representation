@@ -4,12 +4,7 @@ import {
   computeNationalRepresentationGap,
   pactSeatsReturned,
 } from '../data/computeRepresentationGap';
-import {
-  computeNational2032Returned,
-  isDemocraticSide2032,
-  national2032Fair,
-  pact2032Returned,
-} from '../data/plan2032';
+import { baseline2032Gap, baselineGaps2032, pact2032Returned } from '../data/plan2032';
 import { stateDataById } from '../data/stateData';
 import { MatchPair } from '../types';
 import type { EraId } from './BipartiteMatchGraph';
@@ -35,29 +30,25 @@ const SPELLED = [
 
 const spellCount = (n: number) => SPELLED[n] ?? String(n);
 
+/** Everything the results read off the board that is up, gathered in one place. */
+const BOARDS = {
+  '2026': { baselineGaps, pool: BASELINE_GAP, returned: pactSeatsReturned },
+  '2032': { baselineGaps: baselineGaps2032, pool: baseline2032Gap, returned: pact2032Returned },
+} as const;
+
 /**
- * The party a state hands seats back to when it disarms.
- *
- * On the 2026 board that's read off the gap: a positive gap is R overrepresentation,
- * so unwinding it returns Democrats. On the 2032 board there is no gap, so it's read
- * off the column the same way the box's rows are — a D-leaning state owes its
- * Republicans. The two agree wherever both apply, since the gap is what puts a state
- * in its column on the 2026 board. Either way every pact pairs one of each, which is
- * why the balance holds.
+ * The party a state hands seats back to when it disarms. A positive gap is R
+ * overrepresentation, so unwinding it returns Democrats; a negative gap returns
+ * Republicans. Both boards sign their gaps the same way — in 2032 the sign follows
+ * the column, since the gap there is the whole fair minority share — so this reads
+ * one map or the other and asks the same question of it. Every pact pairs one of
+ * each, which is why the balance holds.
  */
 function PactHalf({ era, stateId, seats }: { era: EraId; stateId: string; seats: number }) {
-  const state = stateDataById[stateId];
-  const party =
-    era === '2032'
-      ? state && isDemocraticSide2032(state)
-        ? 'R'
-        : 'D'
-      : (baselineGaps[stateId] ?? 0) > 0
-        ? 'D'
-        : 'R';
+  const party = (BOARDS[era].baselineGaps[stateId] ?? 0) > 0 ? 'D' : 'R';
   return (
     <span style={{ color: PARTY_COLORS[party] }}>
-      +{seats} {state?.name ?? stateId} {PARTY_NAMES[party]}
+      +{seats} {stateDataById[stateId]?.name ?? stateId} {PARTY_NAMES[party]}
     </span>
   );
 }
@@ -65,7 +56,7 @@ function PactHalf({ era, stateId, seats }: { era: EraId; stateId: string; seats:
 interface ResultsPanelProps {
   era: EraId;
   selectedMatches: MatchPair[];
-  /** 2026 only — the gap left standing once the pacts are honored. */
+  /** The gap left standing once the pacts are honored, on the board shown. */
   nationalRepresentationGap: number;
   onRetry: () => void;
   /** Offered from the 2026 results only; the 2032 board is the end of the line. */
@@ -80,29 +71,21 @@ export function ResultsPanel({
   onTry2032,
 }: ResultsPanelProps) {
   const is2032 = era === '2032';
+  const board = BOARDS[era];
 
-  // Both boards count the same two things — what the pacts came to, and the pool
-  // they were drawn from — so the headline below is one piece of markup either way.
-  // What differs is only where the figures come from: districts clawed back off
-  // enacted maps in 2026, districts committed before any map exists in 2032.
-  const seatsClosed = is2032
-    ? computeNational2032Returned(selectedMatches)
-    : BASELINE_GAP - nationalRepresentationGap;
-  const pool = is2032 ? national2032Fair : BASELINE_GAP;
+  // Both boards count the same two things — the gap they started with, and how much
+  // of it the pacts closed — so the headline below is one piece of markup either way.
+  // Only the baseline differs: 104 off the enacted maps, 182 off the maps 2032 would
+  // bring if nobody signed anything.
+  const pool = board.pool;
+  const seatsClosed = pool - nationalRepresentationGap;
 
   // Biggest trades first — the pacts that did the most work lead the list. Within
   // a pact the half returning Democrats reads first, so every line runs D then R.
   const pacts = selectedMatches
     .map(([a, b]) => {
-      const aReturnsDemocrats = is2032
-        ? !isDemocraticSide2032(stateDataById[a])
-        : (baselineGaps[a] ?? 0) > 0;
-      const [left, right] = aReturnsDemocrats ? [a, b] : [b, a];
-      return {
-        a: left,
-        b: right,
-        seats: is2032 ? pact2032Returned(a, b) : pactSeatsReturned(a, b),
-      };
+      const [left, right] = (board.baselineGaps[a] ?? 0) > 0 ? [a, b] : [b, a];
+      return { a: left, b: right, seats: board.returned(a, b) };
     })
     .sort((x, y) => y.seats - x.seats);
 
@@ -117,9 +100,9 @@ export function ResultsPanel({
           own. Each `headline-line` is a block, and `.results-headline` sizes itself
           so the longer of the two stays on one line — see App.css, which is where
           the arithmetic for that lives and where it has to be redone if this
-          wording changes. The 2032 figures are no wider: it caps at "Your 17 pacts
-          returned 154 of 182 districts,", two characters short of the 2026 worst
-          case the measure was taken against. */}
+          wording changes. The 2032 figures are no wider: its baseline is 97 and the
+          most any pairing can close is 80, since a pact is capped by the lesser
+          partner and the left column only owes 40. */}
       {seatsClosed > 0 ? (
         <p className="results-headline">
           <span className="headline-line">

@@ -165,30 +165,64 @@ paragraph under them says it again. The absence is the design, not an oversight 
   they must not disagree.
 
 - **The 2032 board**: a second board on the same graph, reached by "Try 2032" beside Retry on the
-  2026 results. It asks the same question of the apportionment the 2030 census is projected to leave
-  — Brennan Center figures, already in `stateData.ts` as `districts2032` and summing to 435. All of
-  its math is in `data/plan2032.ts`.
-  **There is no representation gap on it, and there must not be.** A gap measures an enacted map
-  against the ideal, and after a census there is no enacted map — the 2026 district leans describe
-  districts that will not exist, so nothing in `plan2032.ts` reads `districtLeans.ts`. What survives
-  reapportionment is the state's own PVI and its new seat count, which is all `fairSplitOf()` needs;
-  `fairSplit()` is now a thin call to it against `districts2022`.
-  Columns split on **statewide lean alone** — there is no gerrymander yet to point either way, so
-  lean is the whole test rather than the 2026 board's fallback. Michigan and Wisconsin are EVEN and
-  fall to `holdsDemocraticBranches()`, which settles both (MI left, WI right). Single-district states
-  stay out, which now drops **Rhode Island**: 43 matchable states against 2026's 44.
-  A pact returns `min(fairMinorityA, fairMinorityB)` to *each* partner, capped by the lesser side for
-  the same reason the 2026 pact is — the House balance must not move. The national pool is **182**.
-  Ranking drops the gap key and stops at size then minority share; that loses nothing, since on this
-  board the share *is* what a pact spends.
-  The box shows two rows, not three: what the fair map owes, and what a pact has committed (0 until
-  one is signed). Every figure on it is minority-party districts, so **no orange appears on the 2032
-  board at all** — orange is the gap, and there is none. The swelled row is sized 10/26 rather than
-  the gap row's 11/28 because its count carries a party letter the gap's doesn't; at 11/28 "18D"
-  overlaps the label. See the comment on `PLEDGE_SWELL_LABEL_SIZE`.
-  The two boards keep **separate pact lists** in `App.tsx`. The stat bar and the hero map read
-  enacted maps, so both go on reporting the 2026 run while the 2032 board is up; neither answers to
-  it. Retry clears both and returns to the opening screen.
+  2026 results. It is the 2026 board over the apportionment the 2030 census is projected to leave —
+  Brennan Center figures, already in `stateData.ts` as `districts2032` and summing to 435 — and
+  deliberately nothing more clever, so a reader who has played one board can play this one. Same
+  ideal, same gap, same pact math. All of it is in `data/plan2032.ts`.
+  Both halves of the equation are projections. **The ideal** is `fairSplitOf()` against
+  `districts2032`; reapportionment moves how many districts a state draws and not how it votes, so
+  the statewide PVI carries over untouched. **The enacted map** is today's held at the same rate and
+  scaled: a state drawing 4 of its 52 for the minority is taken to draw 4 of 48. Only the minority
+  party's count is scaled, because it is the only one the box shows and the only one the gap is
+  measured from — on the 2026 board the displayed gap is always exactly the minority party's own
+  shortfall, since the column a state sits in is the side its gerrymander squeezes.
+  Rounding is integer, like `fairSplit()`, and **a tie rounds down** — toward fewer minority
+  districts, since the party holding the pen wins the argument over a district that could go either
+  way. Exactly one state reaches the tie: Minnesota, 4 of 8 projected to 7, which is 3.50 on the
+  nose. It rounds to 3, which is also its fair share, so its gap is 0.
+  The gap is floored at zero because a shortfall can't be negative. **Nothing reaches the floor
+  today** — the clamp is there because the data moves, and it is also what keeps the box's equation
+  honest, since the middle row is derived as the fair count less the gap.
+  National baseline: **97**, against 2026's 104. Five states carry no gap (ME, MI, MN, NE, NV). The
+  left column owes 40 of the 97 and a pact is capped by the lesser partner, so the best any pairing
+  can do is close 80 and leave 17.
+  Columns split on **statewide lean alone** — the 2026 board splits on the direction of the
+  gerrymander and reads lean only as a fallback, but that would re-rank this board off the wrong map.
+  Michigan and Wisconsin are EVEN and fall to `holdsDemocraticBranches()`, which settles both (MI
+  left, WI right). Nevada is the one state the two boards seat differently: left in 2026 on its
+  D-drawn map, right here on its R+1 lean. Single-district states stay out, which now drops **Rhode
+  Island**: 43 matchable states against 2026's 44.
+  Ranking is identical on both boards — size ratio, then minority share, then gap, then alphabetical.
+  The box is the same three-row equation either way: `BoxBody` takes the era and reads
+  `ERA_MAP_LABEL` for it, so the middle row is `(2026)` or `(2032 proj.)` and switches to `(Pact)`
+  once sealed on both boards. The gap row does **not** repeat the qualifier — a gap measured off a
+  projected map is a projection whether it says so or not. It was tried and pulled back out: at the
+  swelled size "Representation Gap (proj.)" reaches x=127 against a count starting at x=105, so the
+  suffix had to fade away on the way up, which is machinery for a word the row above already says.
+  There is no separate 2032 box component either; there was one briefly and it earned nothing.
+  **Both stat bar readouts follow the board.** The gap donut counts that board's own baseline down —
+  104 or 97 — and the margin donut shows that board's enacted House: R+24 today, **R+40** projected.
+  Those sixteen points are reapportionment alone, with no map drawn any differently than it is now;
+  the seats simply move toward states that already draw R. Neither margin moves when a pact is
+  signed, on either board, which is the claim the whole tool makes.
+  The projected House needs all fifty states, since the board drops the single-district ones but the
+  House does not — Rhode Island still sends somebody. `stateSeats2032` scales each state's minority
+  and undecided counts and **gives the majority the remainder**, which is what makes the three sum to
+  the new delegation exactly and is the same premise as the rest: the party holding the pen takes the
+  districts a state gains and protects its own when it loses them. The national total is 435 by
+  construction.
+  The hero map and the tooltip follow the board too, so **everything on the page reads one era at a
+  time**. `HeroMap` takes the era and looks its gaps and pact payout up in a `BOARDS` record rather
+  than importing `baselineGaps` directly; the badge's gap now travels on the badge datum, so a badge
+  is colored by the board that drew it.
+  The two icon scales are **shared across both boards, deliberately**, so a cloud or a badge means
+  the same number of districts whichever board is up. `MAX_REP_GAP` stays at 16 — California's 2026
+  gap, against its 14 in 2032 — so switching boards shows the 2032 clouds coming in genuinely
+  smaller, which they are; sizing each board to its own maximum would redraw California identically
+  and hide it. `MAX_PACT_GAIN` is 10, the 2032 ceiling (California's 14 against Florida's 10),
+  a seat above 2026's 9.
+  The two boards keep **separate pact lists** in `App.tsx`, and each has its own residual gaps. Retry
+  clears both and returns to the opening screen.
 
 ## Commands
 
