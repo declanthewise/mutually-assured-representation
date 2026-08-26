@@ -22,7 +22,7 @@ src/
 ├── components/              # All UI
 │   ├── HeroMap.tsx          # D3-based interactive US map — clouds, pact badges and arcs
 │   ├── StateTooltip.tsx     # Hover tooltip, driven by HeroMap
-│   ├── BipartiteMatchGraph.tsx  # Two re-sorting columns of state boxes
+│   ├── BipartiteMatchGraph.tsx  # Two re-sorting columns of state boxes; draws either era
 │   ├── ResultsPanel.tsx     # What the pacts returned, once Finish replaces the board
 │   ├── StatBar.tsx          # House balance + national rep. gap (sticky, above the map)
 │   └── AnimatedCount.tsx    # Count-up number, used by StatBar and the match graph
@@ -31,6 +31,7 @@ src/
 │   ├── districtLeans.ts     # Parses that file into per-state + national seat counts
 │   ├── stateData.ts         # 50 states: 2025 Cook PVI, seat count, map-drawing authority
 │   ├── computeRepresentationGap.ts # Per-state gaps, pact math, national total
+│   ├── plan2032.ts          # The post-census board: fair splits, columns, pact math
 │   └── checkBranchControl.ts  # Dev tool beside the data it checks — see Commands
 ├── map/                     # Map geometry and its assets
 │   ├── useTopoData.ts       # Fetches the topology (null until it lands)
@@ -163,6 +164,32 @@ paragraph under them says it again. The absence is the design, not an oversight 
   `BipartiteMatchGraph.tsx`, decides both the column and which party the box's minority rows count —
   they must not disagree.
 
+- **The 2032 board**: a second board on the same graph, reached by "Try 2032" beside Retry on the
+  2026 results. It asks the same question of the apportionment the 2030 census is projected to leave
+  — Brennan Center figures, already in `stateData.ts` as `districts2032` and summing to 435. All of
+  its math is in `data/plan2032.ts`.
+  **There is no representation gap on it, and there must not be.** A gap measures an enacted map
+  against the ideal, and after a census there is no enacted map — the 2026 district leans describe
+  districts that will not exist, so nothing in `plan2032.ts` reads `districtLeans.ts`. What survives
+  reapportionment is the state's own PVI and its new seat count, which is all `fairSplitOf()` needs;
+  `fairSplit()` is now a thin call to it against `districts2022`.
+  Columns split on **statewide lean alone** — there is no gerrymander yet to point either way, so
+  lean is the whole test rather than the 2026 board's fallback. Michigan and Wisconsin are EVEN and
+  fall to `holdsDemocraticBranches()`, which settles both (MI left, WI right). Single-district states
+  stay out, which now drops **Rhode Island**: 43 matchable states against 2026's 44.
+  A pact returns `min(fairMinorityA, fairMinorityB)` to *each* partner, capped by the lesser side for
+  the same reason the 2026 pact is — the House balance must not move. The national pool is **182**.
+  Ranking drops the gap key and stops at size then minority share; that loses nothing, since on this
+  board the share *is* what a pact spends.
+  The box shows two rows, not three: what the fair map owes, and what a pact has committed (0 until
+  one is signed). Every figure on it is minority-party districts, so **no orange appears on the 2032
+  board at all** — orange is the gap, and there is none. The swelled row is sized 10/26 rather than
+  the gap row's 11/28 because its count carries a party letter the gap's doesn't; at 11/28 "18D"
+  overlaps the label. See the comment on `PLEDGE_SWELL_LABEL_SIZE`.
+  The two boards keep **separate pact lists** in `App.tsx`. The stat bar and the hero map read
+  enacted maps, so both go on reporting the 2026 run while the 2032 board is up; neither answers to
+  it. Retry clears both and returns to the opening screen.
+
 ## Commands
 
 ```bash
@@ -205,7 +232,8 @@ joint resolution and nine more because a commission draws and the governor isn't
 but that asked one small shape to carry two unrelated facts, so the mark now says only who holds
 each branch.
 
-`governorCanVeto`, `independentCommission`, `districts2032` and `hasBallotInitiative` have no reader — keep them: a pact
+`districts2032` is read by the 2032 board (see below). `governorCanVeto`, `independentCommission`
+and `hasBallotInitiative` have no reader — keep them: a pact
 has to survive whoever holds the pen, and a ballot initiative is a route around a hostile
 legislature. `independentCommission` is deliberately strict, true only where a commission holds the
 pen outright (AZ, CO, ID, MI, MT, WA); politician and advisory commissions and New York's overridable

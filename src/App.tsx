@@ -9,6 +9,7 @@ import {
   computeResidualGaps,
   computeNationalRepresentationGap,
 } from './data/computeRepresentationGap';
+import type { EraId } from './components/BipartiteMatchGraph';
 import { HoveredState, MatchPair } from './types';
 
 function pairKey(a: string, b: string): string {
@@ -53,14 +54,28 @@ function rideHome(then: () => void): () => void {
 
 function App() {
   const [hoveredState, setHoveredState] = useState<HoveredState | null>(null);
-  const [selectedMatches, setSelectedMatches] = useState<MatchPair[]>([]);
+
+  // Which board is on screen. The two keep separate pact lists rather than sharing
+  // one, because they are not the same board: the 2032 apportionment drops Rhode
+  // Island and moves fourteen delegations, so a 2026 pairing need not even exist
+  // there. Keeping them apart also leaves the 2026 run intact behind the 2032 board,
+  // which is what the stat bar and the map go on showing — neither answers to 2032,
+  // since both are reading enacted maps and there are none.
+  const [era, setEra] = useState<EraId>('2026');
+  const [matches2026, setMatches2026] = useState<MatchPair[]>([]);
+  const [matches2032, setMatches2032] = useState<MatchPair[]>([]);
   const [started, setStarted] = useState(false);
   const [finished, setFinished] = useState(false);
   const topoData = useTopoData();
 
+  const selectedMatches = era === '2032' ? matches2032 : matches2026;
+  const setSelectedMatches = era === '2032' ? setMatches2032 : setMatches2026;
+
+  // The gap is a fact about enacted maps, so it always reads the 2026 run — the
+  // 2032 board neither moves it nor is measured by it.
   const residualGaps = useMemo(
-    () => computeResidualGaps(selectedMatches),
-    [selectedMatches],
+    () => computeResidualGaps(matches2026),
+    [matches2026],
   );
 
   const nationalRepresentationGap = useMemo(
@@ -81,7 +96,7 @@ function App() {
       );
       return [...filtered, pair];
     });
-  }, []);
+  }, [setSelectedMatches]);
 
   // The Finish button hangs below the columns, so losing it while the page is
   // scrolled down to it takes a strip of the page away from under the reader and
@@ -130,10 +145,27 @@ function App() {
   useEffect(() => () => cancelFinishRide.current(), []);
 
   // Back to the opening screen with an empty board — the map, the stat bar and the
-  // columns all read off selectedMatches, so clearing it resets every one of them.
+  // columns all read off the match lists, so clearing them resets every one of them.
+  // Both are cleared whichever board Retry was pressed on: the opening screen is the
+  // 2026 pitch, and arriving there with a 2032 run still standing behind it would put
+  // pacts on a board the reader never played.
   const handleStartOver = useCallback(() => {
-    setSelectedMatches([]);
+    setMatches2026([]);
+    setMatches2032([]);
+    setEra('2026');
     setStarted(false);
+    setFinished(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  // Straight from the 2026 results onto the post-census board, with the 2026 run left
+  // where it is behind it — the stat bar and the map go on reporting it, and Retry
+  // can still put the whole thing back. No ride home is needed: the results panel is
+  // already at the top, and the board it makes way for is taller than what it
+  // replaces, so nothing falls out from under the reader.
+  const handleTry2032 = useCallback(() => {
+    setMatches2032([]);
+    setEra('2032');
     setFinished(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
@@ -147,7 +179,7 @@ function App() {
         <HeroMap
           topoData={topoData}
           onHoverState={setHoveredState}
-          selectedMatches={selectedMatches}
+          selectedMatches={matches2026}
           residualGaps={residualGaps}
         />
       </section>
@@ -201,6 +233,7 @@ function App() {
           <div className="match-columns-viewport">
             <div className="visualization-wide match-columns">
               <BipartiteMatchGraph
+                era={era}
                 selectedMatches={selectedMatches}
                 onToggleMatch={handleToggleMatch}
                 residualGaps={residualGaps}
@@ -229,9 +262,11 @@ function App() {
       {finished && (
         <div className="visualization-wide results-wide match-columns">
           <ResultsPanel
+            era={era}
             selectedMatches={selectedMatches}
             nationalRepresentationGap={nationalRepresentationGap}
             onRetry={handleStartOver}
+            onTry2032={era === '2026' ? handleTry2032 : undefined}
           />
         </div>
       )}

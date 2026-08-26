@@ -262,6 +262,9 @@ body {
 .finish-row {
   display: flex;
   justify-content: center;
+  /* Only the results row holds two buttons; under the columns there is just
+     Finish, and a gap on a single child costs nothing. */
+  gap: 0.6rem;
   padding: 1rem 1.5rem 0.5rem;
 }
 
@@ -291,8 +294,13 @@ body {
 
 /* Built like Start: solid black, white type. The two are the ends of the same
    action — one opens the board, the other closes it — so they read as one kind
-   of button rather than a filled one and an outlined one. */
-.finish-btn {
+   of button rather than a filled one and an outlined one.
+
+   Try 2032 joins them because it is the same kind of move: it opens a board.
+   Beside it on the results row, Retry stays orange for putting the gaps back, so
+   the pair reads forward-in-black against back-in-orange. */
+.finish-btn,
+.try-2032-btn {
   display: inline-block;
   padding: 0.5rem 2rem;
   background: #000000; /* FAIR_BLACK — see src/colors.ts */
@@ -310,7 +318,8 @@ body {
 
 /* Wearing its color at rest now, so the hover lifts the surface instead of
    changing what it means — the same answer Start gives. */
-.finish-btn:hover:enabled {
+.finish-btn:hover:enabled,
+.try-2032-btn:hover {
   background: #333;
   transform: translateY(-1px);
 }
@@ -392,6 +401,19 @@ body {
 
 .headline-line {
   display: block;
+}
+
+/* Which map the results are about, above the headline rather than inside it —
+   the 2032 board is reached from a button partway through, so it can't rely on
+   the page around it to say where the reader has arrived. Only that board shows
+   one; the 2026 results are where the page already was. */
+.results-kicker {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #de7128; /* GAP_ORANGE — see src/colors.ts */
+  margin-bottom: 0.5rem;
 }
 
 .results-pacts {

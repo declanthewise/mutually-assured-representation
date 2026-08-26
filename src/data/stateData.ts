@@ -3,11 +3,16 @@ import { StateData } from '../types';
 /**
  * Per-state data, hand-edited. There is no generation step.
  *
- * Only two fields feed the representation gap today:
+ * Two fields feed the representation gap:
  *   partisanLean   — statewide Cook PVI, signed positive for D. Redistricting doesn't
  *                    move a statewide PVI (it's the state's own presidential vote versus
  *                    the nation's), so the 2026 release left these unchanged from 2025.
  *   districts2022  — seat count under the 2022 apportionment.
+ *
+ * A third builds the 2032 board:
+ *   districts2032  — projected seat count after the 2030 census. It carries the same
+ *                    lean, since reapportionment moves how many districts a state
+ *                    draws and not how it votes. See data/plan2032.ts.
  *
  * The rest describe who controls map-drawing in each state. Only the three branch
  * fields are read at runtime, as the pyramid on each match-graph box; the others are

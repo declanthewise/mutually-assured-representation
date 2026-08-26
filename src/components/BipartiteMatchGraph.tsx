@@ -3,15 +3,72 @@ import * as d3 from 'd3';
 import { BranchControl, StateData, MatchPair } from '../types';
 import { EVEN_GRAY, FAIR_BLACK, GAP_ORANGE, LEAN_DOMAIN, LEAN_RANGE, PARTY_COLORS } from '../colors';
 import { baselineGaps, fairSplit } from '../data/computeRepresentationGap';
+import {
+  computeReturned2032,
+  isDemocraticSide2032,
+  matchable2032States,
+  minorityFair2032,
+} from '../data/plan2032';
 import { holdsDemocraticBranches, stateData } from '../data/stateData';
 import { AnimatedCount, COUNT_DURATION_MS } from './AnimatedCount';
 
 /** Single-district states have no map to draw, so they never enter a pact. */
 export const matchableStates = stateData.filter(s => s.districts2022 >= 2);
 
+export type EraId = '2026' | '2032';
+
+/**
+ * The two boards this graph can draw. Everything below the era — the columns, the
+ * parked pacts, the swell, the scroll-following, the hover arbitration — is the same
+ * board furniture either way, so the era supplies only the four questions the
+ * furniture asks about a state, and the box body reads the era to know which rows it
+ * owes.
+ *
+ * The gap is the one thing the two boards genuinely disagree about rather than
+ * merely compute differently, so it is optional: 2026 has one, 2032 has none, and
+ * every place that would rank or draw a gap tests for it. See plan2032.ts.
+ */
+interface Era {
+  states: StateData[];
+  /** Districts the state's delegation holds on this board. */
+  districtsOf: (s: StateData) => number;
+  /** Which column: D-drawn (2026) or D-leaning (2032) on the left. */
+  isDemocraticSide: (s: StateData) => boolean;
+  /** The box's top row — minority districts the fair map gives. */
+  minorityFairOf: (s: StateData) => number;
+  /** What a column with no anchor ranks by after size: the weight the state carries. */
+  weightOf: (s: StateData) => number;
+  /** Magnitude of the state's gerrymander, on a board that has enacted maps. */
+  gapSizeOf?: (s: StateData) => number;
+}
+
+const ERAS: Record<EraId, Era> = {
+  '2026': {
+    states: matchableStates,
+    districtsOf: s => s.districts2022,
+    isDemocraticSide,
+    minorityFairOf: minorityProportionalOf,
+    // Eight districts drawn straight and eight drawn three seats off are not equally
+    // worth reading first, so weight is the gerrymander.
+    weightOf: gapSizeOf,
+    gapSizeOf,
+  },
+  '2032': {
+    states: matchable2032States,
+    districtsOf: s => s.districts2032,
+    isDemocraticSide: isDemocraticSide2032,
+    minorityFairOf: minorityFair2032,
+    // No gerrymander to weigh yet, so the weight is what the state has at stake:
+    // the districts its fair map owes the party it would otherwise squeeze.
+    weightOf: minorityFair2032,
+  },
+};
+
 interface BipartiteMatchGraphProps {
+  era: EraId;
   selectedMatches: MatchPair[];
   onToggleMatch: (pair: MatchPair) => void;
+  /** 2026 only — what each state's gerrymander comes to once the pacts are honored. */
   residualGaps: Record<string, number>;
 }
 
@@ -50,6 +107,35 @@ const NAME_BASELINE_Y = HEADER_MID_Y + (NAME_SIZE * CAP_RATIO) / 2;
 /** Baselines of the three equation rows, and the rule above the total. */
 const EQ_ROW_Y = [29, 40, 52];
 const EQ_RULE_Y = 46;
+
+/**
+ * The 2032 board's two body rows: what the state's fair map owes its minority, and
+ * what a pact has actually committed. There is no third row, because there is no
+ * enacted map to subtract and so no representation gap — see plan2032.ts.
+ *
+ * They straddle SWELL_ROW_Y rather than starting where the three-row equation does,
+ * so two rows sit centered in the space three used to fill and the swell still grows
+ * from the middle of the pair.
+ */
+const PLEDGE_ROW_Y = [32, 47];
+
+/**
+ * The 2032 row at full swell, a size down from the gap row's 11/28.
+ *
+ * It has to carry a party letter the gap row doesn't — the count is minority
+ * districts, so it reads "18D" where the gap reads "18" — and that letter is what
+ * the extra width goes on. Measured in the browser rather than off the 0.41-per-
+ * character estimate, at the widest the board can produce: "Districts Returned"
+ * runs 82 units at 11 and ends at x=88, and "18D" at 28 comes back to x=87.8. They
+ * overlap. At 10 and 26 the label ends at 80.6 and the count starts at 91.1, which
+ * leaves 10.5 units — a little more air than the 8.4 the gap row lives with.
+ *
+ * 18 is the ceiling and not a guess: it's California's fair R share against Texas's
+ * fair D share, the largest pact on the board. Re-measure if either moves into three
+ * digits, though nothing short of a much bigger House would do it.
+ */
+const PLEDGE_SWELL_LABEL_SIZE = 10;
+const PLEDGE_SWELL_COUNT_SIZE = 26;
 
 /**
  * The three row labels, which read as one column and so share a size. The cap is
@@ -418,6 +504,81 @@ function BoxBody({
   );
 }
 
+interface PledgeBodyProps {
+  /** The party whose fair-share districts both rows are in. */
+  minorityParty: 'D' | 'R';
+  /** Districts the state's fair map owes that party. */
+  fair: number;
+  /** Districts a pact has committed — 0 until one is signed. */
+  returned: number;
+  settling: boolean;
+}
+
+/**
+ * The 2032 box below the header line: what the state's fair map owes the party its
+ * column squeezes, and how much of that a pact has actually committed.
+ *
+ * Both rows count minority districts, so both are drawn in that party's color, and
+ * no orange appears anywhere on this board — orange is the representation gap, and
+ * there is no enacted map here to be short of. The unsigned state reads 0 committed
+ * against everything it owes, which is the state of the world the board argues about:
+ * every state redraws at once after the census, and nothing is owed to anybody until
+ * two of them agree it is.
+ *
+ * On the two boxes that have just signed, the committed row swells to fill the box
+ * and counts *up* — the 2026 board watches a gap fall to what survives, and this one
+ * watches a commitment climb from nothing.
+ */
+function PledgeBody({ minorityParty, fair, returned, settling }: PledgeBodyProps) {
+  const size = useSwell(settling);
+  const at = (rest: number, full: number) => rest + (full - rest) * size;
+
+  const delay = settling ? SWELL_MS : 0;
+  const duration = settling ? SWELL_COUNT_MS : COUNT_DURATION_MS;
+
+  return (
+    <>
+      <g opacity={1 - size}>
+        <text
+          x={6} y={PLEDGE_ROW_Y[0]}
+          dominantBaseline="central" fontSize={EQ_LABEL_SIZE} fill="#888"
+        >
+          Minority Districts (Fair)
+        </text>
+        <text
+          x={BOX_W - 6} y={PLEDGE_ROW_Y[0]}
+          textAnchor="end" dominantBaseline="central"
+          fontSize={9} fontWeight={700} fill={PARTY_COLORS[minorityParty]}
+        >
+          {fair}{minorityParty}
+        </text>
+      </g>
+
+      <text
+        x={6}
+        y={at(PLEDGE_ROW_Y[1], SWELL_ROW_Y)}
+        dominantBaseline="central"
+        fontSize={at(EQ_LABEL_SIZE, PLEDGE_SWELL_LABEL_SIZE)}
+        fill="#888"
+      >
+        Districts Returned
+      </text>
+      <text
+        x={BOX_W - 6}
+        y={at(PLEDGE_ROW_Y[1], SWELL_ROW_Y)}
+        textAnchor="end"
+        dominantBaseline="central"
+        fontSize={at(GAP_COUNT_SIZE, PLEDGE_SWELL_COUNT_SIZE)}
+        fontWeight={700}
+        fill={PARTY_COLORS[minorityParty]}
+      >
+        <AnimatedCount value={returned} delay={delay} duration={duration} />
+        {minorityParty}
+      </text>
+    </>
+  );
+}
+
 /** A state, the row it occupies in its column, and any push from the heading. */
 interface Placement {
   state: StateData;
@@ -514,12 +675,11 @@ function gapSizeOf(state: StateData): number {
  * equally worth reading first. Alphabetical is left to settle states alike in
  * both, which is all it was ever fit to decide.
  */
-function bySize(a: StateData, b: StateData): number {
-  return (
-    b.districts2022 - a.districts2022 ||
-    gapSizeOf(b) - gapSizeOf(a) ||
-    a.name.localeCompare(b.name)
-  );
+function bySize(era: Era) {
+  return (a: StateData, b: StateData): number =>
+    era.districtsOf(b) - era.districtsOf(a) ||
+    era.weightOf(b) - era.weightOf(a) ||
+    a.name.localeCompare(b.name);
 }
 
 /**
@@ -536,10 +696,10 @@ function bySize(a: StateData, b: StateData): number {
  * California(52), on 12 seats against 14, while California's own column headed
  * with Texas — the two sides of the marquee pairing disagreeing about each other.
  */
-function sizeRatio(target: StateData) {
-  const targetSize = target.districts2022;
+function sizeRatio(target: StateData, era: Era) {
+  const targetSize = era.districtsOf(target);
   return (state: StateData): number => {
-    const r = state.districts2022 / targetSize;
+    const r = era.districtsOf(state) / targetSize;
     return r >= 1 ? r : 1 / r;
   };
 }
@@ -554,11 +714,12 @@ function sizeRatio(target: StateData) {
  * gap only settles states already alike in both. Where it does settle them, it
  * settles them usefully: the pact spends the lesser of the two gaps, so the
  * nearest-sized gap is the one that leaves fewest seats on the table.
+ *
+ * The 2032 board carries no gap and so ranks on the first two keys alone.
  */
-function byClosenessTo(target: StateData) {
-  const sizeApart = sizeRatio(target);
-  const targetMinority = minorityProportionalOf(target);
-  const targetGap = gapSizeOf(target);
+function byClosenessTo(target: StateData, era: Era) {
+  const sizeApart = sizeRatio(target, era);
+  const targetMinority = era.minorityFairOf(target);
   return (a: StateData, b: StateData): number => {
     // The state that was clicked heads its own column. It scores zero on every key
     // below, but so does any state of the same size, share and gap — three 2-district
@@ -574,22 +735,32 @@ function byClosenessTo(target: StateData) {
     if (sizeDiff !== 0) return sizeDiff;
 
     const minorityDiff =
-      Math.abs(minorityProportionalOf(a) - targetMinority) -
-      Math.abs(minorityProportionalOf(b) - targetMinority);
+      Math.abs(era.minorityFairOf(a) - targetMinority) -
+      Math.abs(era.minorityFairOf(b) - targetMinority);
     if (minorityDiff !== 0) return minorityDiff;
 
-    const gapDiff = Math.abs(gapSizeOf(a) - targetGap) - Math.abs(gapSizeOf(b) - targetGap);
-    if (gapDiff !== 0) return gapDiff;
+    // Only where the board has enacted maps to be short of. The 2032 board stops
+    // here and lets alphabetical settle it, losing nothing: there the minority share
+    // *is* what a pact spends, so the key this would have broken ties with is
+    // already the key above.
+    if (era.gapSizeOf) {
+      const targetGap = era.gapSizeOf(target);
+      const gapDiff =
+        Math.abs(era.gapSizeOf(a) - targetGap) - Math.abs(era.gapSizeOf(b) - targetGap);
+      if (gapDiff !== 0) return gapDiff;
+    }
 
     return a.name.localeCompare(b.name);
   };
 }
 
 export function BipartiteMatchGraph({
+  era: eraId,
   selectedMatches,
   onToggleMatch,
   residualGaps,
 }: BipartiteMatchGraphProps) {
+  const era = ERAS[eraId];
   const [activeStateId, setActiveStateId] = useState<string | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -632,13 +803,21 @@ export function BipartiteMatchGraph({
     return () => clearTimeout(timeoutId);
   }, [seal]);
 
+  // The 2032 counterpart of residualGaps: what each state's pacts have committed.
+  // Derived here rather than passed down, because it is the same pure function of
+  // the same matches the parent already holds and nothing else needs it.
+  const returned2032 = useMemo(
+    () => (eraId === '2032' ? computeReturned2032(selectedMatches) : null),
+    [eraId, selectedMatches],
+  );
+
   const layoutMatches = seal ? seal.matches : selectedMatches;
   const anchorId = seal ? seal.anchorId : activeStateId;
 
   /** stateId → the state it is currently paired with */
   const partnerById = useMemo(() => {
     const map = new Map<string, StateData>();
-    const byId = new Map(matchableStates.map(s => [s.id, s]));
+    const byId = new Map(era.states.map(s => [s.id, s]));
     for (const [a, b] of selectedMatches) {
       const stateA = byId.get(a);
       const stateB = byId.get(b);
@@ -648,7 +827,7 @@ export function BipartiteMatchGraph({
       }
     }
     return map;
-  }, [selectedMatches]);
+  }, [era, selectedMatches]);
 
   // Sides follow the direction of the state's gerrymander, so a pairing across the
   // gutter always has seats to trade — see pactSeatsReturned(), which pays out
@@ -661,8 +840,8 @@ export function BipartiteMatchGraph({
     const right: StateData[] = [];
     const column = new Map<string, Column>();
 
-    for (const state of matchableStates) {
-      if (isDemocraticSide(state)) {
+    for (const state of era.states) {
+      if (era.isDemocraticSide(state)) {
         left.push(state);
         column.set(state.id, 'left');
       } else {
@@ -672,11 +851,11 @@ export function BipartiteMatchGraph({
     }
 
     return { leftStates: left, rightStates: right, columnOf: column };
-  }, []);
+  }, [era]);
 
   const anchorState = useMemo(
-    () => (anchorId ? matchableStates.find(s => s.id === anchorId) ?? null : null),
-    [anchorId],
+    () => (anchorId ? era.states.find(s => s.id === anchorId) ?? null : null),
+    [anchorId, era],
   );
 
   // Matched states leave the running order for good and park at the bottom,
@@ -700,7 +879,7 @@ export function BipartiteMatchGraph({
       return {
         flowing: states
           .filter(s => !matchedIds.has(s.id))
-          .sort(isRanking ? byClosenessTo(anchorState) : bySize),
+          .sort(isRanking ? byClosenessTo(anchorState, era) : bySize(era)),
         // Pact order, so both columns park their halves in the same sequence.
         parked: states
           .filter(s => matchedIds.has(s.id))
@@ -733,7 +912,7 @@ export function BipartiteMatchGraph({
       rowCount: rows,
       pactHeader: headed ? { startRow: rows - layoutMatches.length } : null,
     };
-  }, [anchorState, leftStates, rightStates, layoutMatches]);
+  }, [anchorState, era, leftStates, rightStates, layoutMatches]);
 
   const totalHeight =
     TOP_PAD + rowCount * ROW_H - ROW_GAP + BOTTOM_PAD + (pactHeader ? PACT_HEADER_H : 0);
@@ -844,18 +1023,17 @@ export function BipartiteMatchGraph({
     const badgeH = 13;
     const badgeX = BOX_W - 5 - badgeW;
 
-    // The equation the box spells out: the districts the state's own PVI says the
-    // squeezed party should hold, the districts it actually holds, and the gap
-    // between them. "Now" moves with the pacts, so it's the fair count less
-    // whatever gap survives them — before any pact that is the enacted count.
-    const fair = fairSplit(state);
-    const signedGap = residualGaps[state.id] ?? 0;
-
-    // Only the minority party's districts are shown: the side the enacted map
-    // squeezes. Which party that is follows the state's own lean, matching the
-    // column, so the two rows always read in the same party.
+    // Only the minority party's districts are shown: the side the map squeezes, or
+    // on the 2032 board would squeeze. Which party that is follows the column, so
+    // every row on the box reads in the same party.
     const minorityParty = isLeft ? 'R' : 'D';
-    const fairMinority = isLeft ? fair.rSeats : fair.dSeats;
+    const fairMinority = era.minorityFairOf(state);
+
+    // The equation the 2026 box spells out: the districts the state's own PVI says
+    // the squeezed party should hold, the districts it actually holds, and the gap
+    // between them. "Now" moves with the pacts, so it's the fair count less whatever
+    // gap survives them — before any pact that is the enacted count.
+    const signedGap = residualGaps[state.id] ?? 0;
     const currentMinority = fairMinority - Math.abs(signedGap);
 
     return (
@@ -938,21 +1116,29 @@ export function BipartiteMatchGraph({
           {state.name}
           {/* No baseline of its own: it inherits the line's, which is the point. */}
           <tspan dx={3} fontSize={8.5} fontWeight={500} fill="#999">
-            ({state.districts2022})
+            ({era.districtsOf(state)})
           </tspan>
         </text>
 
-        <BoxBody
-          minorityParty={minorityParty}
-          proportional={fairMinority}
-          current={currentMinority}
-          gap={signedGap}
-          isMatched={isMatched}
-          // The two boxes that just signed put their gap up in lights before
-          // going anywhere; the linger they're holding still for is the length
-          // of that.
-          settling={!!seal?.pair.includes(state.id)}
-        />
+        {/* The two boxes that just signed put their figure up in lights before going
+            anywhere; the linger they're holding still for is the length of that. */}
+        {returned2032 ? (
+          <PledgeBody
+            minorityParty={minorityParty}
+            fair={fairMinority}
+            returned={returned2032[state.id] ?? 0}
+            settling={!!seal?.pair.includes(state.id)}
+          />
+        ) : (
+          <BoxBody
+            minorityParty={minorityParty}
+            proportional={fairMinority}
+            current={currentMinority}
+            gap={signedGap}
+            isMatched={isMatched}
+            settling={!!seal?.pair.includes(state.id)}
+          />
+        )}
       </g>
     );
   };

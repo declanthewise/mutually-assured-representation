@@ -25,17 +25,27 @@ export interface FairSplit {
  * signing — Democrats, two branches to one.
  */
 export function fairSplit(state: StateData): FairSplit {
+  return fairSplitOf(state, state.districts2022);
+}
+
+/**
+ * The same ideal against a delegation size given outright, for a board drawn on an
+ * apportionment other than today's — the 2032 graph asks this of `districts2032`.
+ * The lean is the state's own PVI either way, since reapportionment moves how many
+ * districts a state draws and not how it votes.
+ */
+export function fairSplitOf(state: StateData, districts: number): FairSplit {
   // Integer arithmetic: districts × (50 − lean) is the ideal × 100 exactly, so the
   // remainder is the last district's share in hundredths with no float error. A
   // remainder of exactly 50 computed as a float could land on either side of the
   // comparison, which is Michigan's whole case.
-  const scaled = state.districts2022 * (50 - state.partisanLean);
+  const scaled = districts * (50 - state.partisanLean);
   const whole = Math.floor(scaled / 100);
   const remainder = scaled % 100;
 
   const lastToR = remainder === 50 ? !holdsDemocraticBranches(state) : remainder > 50;
   const rSeats = lastToR ? whole + 1 : whole;
-  return { rSeats, dSeats: state.districts2022 - rSeats };
+  return { rSeats, dSeats: districts - rSeats };
 }
 
 /**

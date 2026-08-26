@@ -11,9 +11,10 @@ export interface StateData {
   districts2022: number; // Congressional districts under the 2022 apportionment
   partisanLean: number;  // Statewide Cook PVI: positive = D lean, negative = R lean
 
-  // Who draws the maps. Unused at runtime today — kept for pact-feasibility work.
+  // The 2032 board's delegation — see data/plan2032.ts.
   districts2032: number;       // Projected districts after the 2030 census
 
+  // Who draws the maps. Unused at runtime today — kept for pact-feasibility work.
   /**
    * Does an independent commission draw the congressional map — one that holds the
    * pen outright, not a commission the legislature can override or ignore? True for
