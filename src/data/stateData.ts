@@ -14,10 +14,21 @@ import { StateData } from '../types';
  *                    lean, since reapportionment moves how many districts a state
  *                    draws and not how it votes. See data/plan2032.ts.
  *
- * The rest describe who controls map-drawing in each state. Only the three branch
- * fields are read at runtime, as the pyramid on each match-graph box; the others are
- * kept for pact-feasibility work — an interstate compact has to survive whoever holds
- * the pen, and a ballot initiative is a route around a hostile legislature.
+ * The rest describe who controls map-drawing in each state — an interstate compact
+ * has to survive whoever holds the pen. Three are read at runtime: the branch fields
+ * as the pyramid on each match-graph box, and `governorCanVeto` and
+ * `hasBallotInitiative` as the two marks beside it. `independentCommission` still has
+ * no reader.
+ *
+ * Both marks are deliberately narrow, and the narrowing is where the surprises are.
+ * `governorCanVeto` wants a veto that costs something, so it drops the six states
+ * that override on a bare majority of the elected members — AL, AR, IN, KY, TN, WV —
+ * along with the eleven where the plan never reaches the governor at all.
+ * `hasBallotInitiative` wants a citizen route that can actually reach map-drawing, so
+ * it drops MD and NM, which have the popular referendum but no initiative, and AK, IL
+ * and MS, which have an initiative that cannot get there. Every state's rules differ
+ * in the details; they are written out one by one in data/mapDrawingRules.md, which
+ * is where to go before changing a value here.
  *
  * The branches are recorded one at a time rather than as a single trifecta verdict,
  * because the verdict throws away the interesting half: which branch is the holdout.
@@ -45,7 +56,7 @@ export const stateData: StateData[] = [
     senateParty: 'rep',
     houseParty: 'rep',
     independentCommission: false,
-    governorCanVeto: true,
+    governorCanVeto: false,
     hasBallotInitiative: false,
   },
   {
@@ -60,7 +71,7 @@ export const stateData: StateData[] = [
     houseParty: 'split',
     independentCommission: false,
     governorCanVeto: true,
-    hasBallotInitiative: true,
+    hasBallotInitiative: false,
   },
   {
     id: 'AZ',
@@ -86,7 +97,7 @@ export const stateData: StateData[] = [
     houseParty: 'rep',
     // The Board of Apportionment draws state legislative lines only; congress is the General Assembly's.
     independentCommission: false,
-    governorCanVeto: true,
+    governorCanVeto: false,
     hasBallotInitiative: true,
   },
   {
@@ -98,10 +109,13 @@ export const stateData: StateData[] = [
     governorParty: 'dem',
     senateParty: 'dem',
     houseParty: 'dem',
-    // Prop 50 (Nov 2025) suspended the citizens' commission; the legislature holds the
-    // pen through 2030, and the commission resumes for 2031.
+    // Prop 50 (Nov 2025) suspended the citizens' commission by writing one
+    // legislature-drawn map into Art. XXI for 2026, 2028 and 2030; the commission
+    // resumes for 2031. So the map is neither the commission's nor a bill: there is
+    // nothing on the governor's desk, and changing it before 2031 means another
+    // ballot measure — which is the route that created the commission to begin with.
     independentCommission: false,
-    governorCanVeto: true,
+    governorCanVeto: false,
     hasBallotInitiative: true,
   },
   {
@@ -206,7 +220,7 @@ export const stateData: StateData[] = [
     houseParty: 'dem',
     independentCommission: false,
     governorCanVeto: true,
-    hasBallotInitiative: true,
+    hasBallotInitiative: false,
   },
   {
     id: 'IN',
@@ -218,7 +232,7 @@ export const stateData: StateData[] = [
     senateParty: 'rep',
     houseParty: 'rep',
     independentCommission: false,
-    governorCanVeto: true,
+    governorCanVeto: false,
     hasBallotInitiative: false,
   },
   {
@@ -257,7 +271,7 @@ export const stateData: StateData[] = [
     senateParty: 'rep',
     houseParty: 'rep',
     independentCommission: false,
-    governorCanVeto: true,
+    governorCanVeto: false,
     hasBallotInitiative: false,
   },
   {
@@ -298,7 +312,7 @@ export const stateData: StateData[] = [
     // Advisory only — the legislature adopts and the governor signs.
     independentCommission: false,
     governorCanVeto: true,
-    hasBallotInitiative: true,
+    hasBallotInitiative: false,
   },
   {
     id: 'MA',
@@ -351,7 +365,7 @@ export const stateData: StateData[] = [
     houseParty: 'rep',
     independentCommission: false,
     governorCanVeto: true,
-    hasBallotInitiative: true,
+    hasBallotInitiative: false,
   },
   {
     id: 'MO',
@@ -446,7 +460,7 @@ export const stateData: StateData[] = [
     // Advisory only — the legislature adopts and the governor signs.
     independentCommission: false,
     governorCanVeto: true,
-    hasBallotInitiative: true,
+    hasBallotInitiative: false,
   },
   {
     id: 'NY',
@@ -589,7 +603,7 @@ export const stateData: StateData[] = [
     senateParty: 'rep',
     houseParty: 'rep',
     independentCommission: false,
-    governorCanVeto: true,
+    governorCanVeto: false,
     hasBallotInitiative: false,
   },
   {
@@ -667,7 +681,7 @@ export const stateData: StateData[] = [
     senateParty: 'rep',
     houseParty: 'rep',
     independentCommission: false,
-    governorCanVeto: true,
+    governorCanVeto: false,
     hasBallotInitiative: false,
   },
   {

@@ -132,31 +132,53 @@ match graph — `governorParty` on top, `senateParty` and `houseParty` as the co
 **Every state shows its pyramid, and every pyramid stands upright.** Who holds each branch is all
 the mark says.
 
-`governorCanVeto` is recorded but **nothing reads it**. It used to flip the pyramid upside-down for
-the eleven states whose governor can't veto the congressional map (AZ, CO, CT, HI, ID, MI, MT, NC,
-NJ, VA, WA — CT and NC set their lines by joint resolution, the other nine use commissions that
-leave the governor out of the process). That made one small shape carry two unrelated facts, so the
-orientation is gone and the field joins the other map-drawing ones kept for pact-feasibility work.
+#### The two route marks
 
-`independentCommission` is likewise recorded but **unread** — it's kept for pact-feasibility work,
-like the other map-drawing fields. It's deliberately strict: true only where a commission holds the
-pen outright, which is six states (AZ, CO, ID, MI, MT, WA). Politician commissions (HI, NJ, VA),
-advisory commissions (AK, IA, ME, MD, NM, RI, UT) and New York's overridable one are all false,
-because elected officials still decide. New York is the useful test — its legislature overrode the
-commission in 2022 and 2024, and its governor can veto the map, which a commission holding the pen
-would leave nothing to do.
+Beside the pyramid, in the same header, sit up to two more marks: **two stacked boxes with the top one
+ticked** where citizens can put map-drawing on the ballot, and a **head-and-shoulders figure** where
+the governor's veto is a real check on the map. Together they say what could change a state's map over
+the objection of whoever draws it now. The strip is only as wide as the marks a state actually has, so
+a state with one draws one and a state with neither gives the space back to its name.
 
-`districts2032` and `hasBallotInitiative` likewise have no runtime reader and are deliberately kept —
-a ballot initiative is a route around a hostile legislature.
+Both readings are narrower than the field names suggest, and the narrowing is the substance:
 
-Both fields describe the map **actually in force for 2026**, not the state's standing rule, and the
-mid-decade wave moved several:
+- **`governorCanVeto`** (32 states) needs the plan to reach the desk *and* the override to cost more
+  than the majority that passed the map. Eleven states fail the first test — CT and NC never present
+  the plan, nine more (AZ, CO, HI, ID, MI, MT, NJ, VA, WA) let a commission draw it — and California
+  fails it too while Prop 50's map sits in the constitution. Six fail the second: Alabama, Arkansas,
+  Indiana, Kentucky, Tennessee and West Virginia all override on a majority of the elected members,
+  so a veto there buys a second vote and nothing else.
+- **`hasBallotInitiative`** (21 states) needs a citizen route that can actually reach map-drawing, not
+  merely some form of direct democracy. Twenty-six states have no initiative at all; Maryland and New
+  Mexico have only the popular referendum, which strikes a law but cannot propose one; Illinois
+  confines citizen amendments to subjects that don't include congressional redistricting, which is why
+  the Independent Map Amendment was struck from the 2016 ballot; Mississippi's process has been void
+  since 2021; and Alaska's reaches statutes while everything about its redistricting is constitutional.
 
-- **California** — Prop 50 (Nov 2025) suspended the citizens' commission and handed the pen to the
-  legislature through 2030; the commission resumes in 2031. So California is a pyramid, not a circle.
-- **Virginia** — the April 2026 amendment that would have bypassed its commission passed 51%, then
-  the Supreme Court of Virginia struck it down on May 8, 2026. The commission stands, so Virginia
-  keeps its circle.
+All of this is congressional lines and only those — Florida, Maryland and Mississippi each pass state
+legislative maps by a route their governor never sees, and their congressional maps as bills he can
+veto. The state-by-state working, including override thresholds and who draws where, is in
+[`src/data/mapDrawingRules.md`](src/data/mapDrawingRules.md). Nothing checks it automatically.
+
+`independentCommission` is the one map-drawing field **nothing reads** — kept for pact-feasibility
+work. It's deliberately strict: true only where a commission holds the pen outright, which is six
+states (AZ, CO, ID, MI, MT, WA). Politician commissions (HI, NJ, VA), advisory commissions (IA, ME,
+MD, NM, RI, UT) and New York's overridable one are all false, because elected officials still decide.
+New York is the useful test — its legislature overrode the commission in 2022 and 2024, and its
+governor can veto the map, which a commission holding the pen would leave nothing to do.
+
+All three fields describe the map **actually in force for 2026**, not the state's standing rule, and
+the mid-decade wave moved several:
+
+- **California** — Prop 50 (Nov 2025) suspended the citizens' commission, but not by handing the pen
+  to the legislature: it wrote one legislature-drawn map into Art. XXI for 2026, 2028 and 2030, and
+  the commission resumes in 2031. So the map is neither the commission's nor a bill, which is why
+  California draws no figure — there is nothing on the governor's desk, and changing it before 2031
+  means another ballot measure.
+- **Virginia** — the April 2026 amendment that would have handed congressional map-drawing back to the
+  legislature passed 51%, then the Supreme Court of Virginia struck it down on May 8, 2026 over how it
+  moved through the legislature. The commission stands, so Virginia's governor is still out of the
+  process and draws no figure.
 - **Arkansas and Missouri** — both were once miscategorized as commission states. Their commissions
   draw *state legislative* lines only; congressional maps come from the legislature, and Missouri's
   governor signed one in September 2025.

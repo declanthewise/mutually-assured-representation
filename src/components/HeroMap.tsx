@@ -7,7 +7,7 @@ import { stateDataById } from '../data/stateData';
 import { baselineGaps, pactSeatsReturned } from '../data/computeRepresentationGap';
 import { baselineGaps2032, pact2032Returned } from '../data/plan2032';
 import { fipsToState } from '../map/fipsMapping';
-import type { EraId } from './BipartiteMatchGraph';
+import { PACT_COUNT_AT_MS, type EraId } from './BipartiteMatchGraph';
 import cloudUrl from '../map/mushroom-cloud.png';
 
 /**
@@ -86,10 +86,22 @@ const MIN_BADGE_RADIUS = 10;
  * pact returns the same number on both sides.
  */
 const PACT_TRAVEL_MS = 900;
-/** The clouds take 500ms to clear; the flight leaves into the space they free. */
-const PACT_TRAVEL_DELAY = 250;
+/**
+ * When the flight leaves: `PACT_COUNT_AT_MS`, the moment the match graph's first count
+ * starts running.
+ *
+ * The map and the graph are answering the same click and should be seen to. Below the
+ * fold the graph spends that time bringing the two boxes level and closing the link
+ * between them; a badge that had already landed by then would read as a second,
+ * unrelated event. On the count they go together — the arc draws and the badges fly as
+ * the borders and the link take their new colors, and the clouds clear into it rather
+ * than ahead of it (see `cloudDelay`).
+ */
+const PACT_TRAVEL_DELAY = PACT_COUNT_AT_MS;
 /** Short enough that the badge is solid for nearly all of its flight. */
 const PACT_FADE_MS = 250;
+/** How long a cleared cloud takes to shrink away. */
+const PACT_CLOUD_MS = 500;
 /** Gentle at both ends: a thing handed over, not fired across. */
 const PACT_EASE = d3.easeCubicInOut;
 
@@ -275,6 +287,21 @@ export function HeroMap({
     // pact still says what it says, it just doesn't fly across to say it.
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+    // When the map answers a click. Nothing to wait for under reduced motion: the
+    // match graph drops its own lead there — its boxes reach their rows and their link
+    // closes inside a millisecond — so a map still holding for the full delay would be
+    // the one slow thing on a page that had been asked to hurry.
+    const travelDelay = reduceMotion ? 0 : PACT_TRAVEL_DELAY;
+
+    // The clouds clear *into* the flight rather than well ahead of it: they start in
+    // time to be half gone when the badges set out, which is the relation the two have
+    // always had. Pinning the clearing to the click instead — which is what it did when
+    // the flight left a quarter-second after one — left the map bare and still for a
+    // second and a half while the graph brought its boxes together and closed the link
+    // between them. The gap a pact fills should not be seen to go before the pact that
+    // fills it has set out.
+    const cloudDelay = Math.max(0, travelDelay - PACT_CLOUD_MS / 2);
+
     // Clamped, so a gap past the board's own maximum can't draw outside the scale.
     // Nothing should reach for it now that the domain comes from the data, but the
     // unclamped version is what let the 2032 clouds overflow, so the guard stays.
@@ -295,7 +322,13 @@ export function HeroMap({
     svg.select('.safe-seat-icons')
       .selectAll<SVGImageElement, any>('image')
       .transition()
-      .duration(500)
+      // Only a cloud a pact is clearing waits. Everything else moves at once — most of
+      // all a cloud coming *back*, when the × breaks a pact and the state returns to
+      // the gap it had. That is an undo and has nothing to wait for; the delay here is
+      // for the one cloud whose going is part of the pact being made. A state already
+      // parked runs a delayed transition to the size it is, which costs nothing.
+      .delay(d => (matchedStateIds.has(featureStateId(d)) ? cloudDelay : 0))
+      .duration(PACT_CLOUD_MS)
       .ease(d3.easeCubicOut)
       .attr('width', cloudDiameter)
       .attr('height', cloudDiameter)
@@ -350,7 +383,7 @@ export function HeroMap({
               return `0 ${this.getTotalLength()} 0`;
             })
             .call(s => s.transition()
-              .delay(PACT_TRAVEL_DELAY)
+              .delay(travelDelay)
               .duration(PACT_TRAVEL_MS)
               .ease(PACT_EASE)
               .attrTween('stroke-dasharray', function () {
@@ -448,7 +481,7 @@ export function HeroMap({
             .attr('font-weight', 700);
 
           if (reduceMotion) {
-            g.transition().duration(400).delay(PACT_TRAVEL_DELAY).attr('opacity', 1);
+            g.transition().duration(400).delay(travelDelay).attr('opacity', 1);
             return g;
           }
 
@@ -456,9 +489,9 @@ export function HeroMap({
           // has to be solid early to be worth watching cross, but the flight is
           // what takes the time. Same delay, duration and easing as the arc, which
           // is what keeps each tail pinned to the badge laying it down.
-          g.transition('fade').delay(PACT_TRAVEL_DELAY).duration(PACT_FADE_MS).attr('opacity', 1);
+          g.transition('fade').delay(travelDelay).duration(PACT_FADE_MS).attr('opacity', 1);
           g.transition('travel')
-            .delay(PACT_TRAVEL_DELAY)
+            .delay(travelDelay)
             .duration(PACT_TRAVEL_MS)
             .ease(PACT_EASE)
             .attrTween('transform', d => flightAt(d))

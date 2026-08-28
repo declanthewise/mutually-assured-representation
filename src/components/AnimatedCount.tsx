@@ -15,6 +15,10 @@ export const COUNT_DURATION_MS = 400;
  * anything that has to answer to the number actually on screen rather than the
  * one being counted towards, such as the colour it's drawn in.
  *
+ * A `duration` of zero sets the figure outright, with no run and no frame in between:
+ * the match graph asks for that on a broken pact, where the state is going back to
+ * what it was rather than arriving somewhere new.
+ *
  * A run picks up from the figure on screen, not from the last value asked for,
  * so changing `duration` or `delay` mid-count carries on from there at the new
  * pace instead of stranding the count part-way. That's what happens when a pact
@@ -41,12 +45,26 @@ export function AnimatedCount({
     const to = value;
     if (from === to) return;
 
+    // A duration of zero means the figure isn't being counted to, it just *is* — the
+    // match graph asks for that when a pact is broken, since an undo shouldn't read as
+    // a second event. Taken here rather than by running the loop with a zero divisor,
+    // which put a frame of `Infinity` on screen.
+    if (duration <= 0) {
+      shown.current = to;
+      setDisplay(to);
+      return;
+    }
+
     let raf: number;
 
     const begin = () => {
       const start = performance.now();
       const tick = (now: number) => {
-        const t = Math.min((now - start) / duration, 1);
+        // Clamped below as well as above: a rAF callback carries the frame's own
+        // timestamp, which can predate the `performance.now()` taken just before it
+        // was asked for, and a negative elapsed would step the figure past `from` in
+        // the wrong direction for one frame.
+        const t = Math.min(Math.max(now - start, 0) / duration, 1);
         shown.current = Math.round(from + (to - from) * t);
         setDisplay(shown.current);
         if (t < 1) raf = requestAnimationFrame(tick);

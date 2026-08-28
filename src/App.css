@@ -483,7 +483,7 @@ body {
 
 .bipartite-graph .state-box {
   cursor: pointer;
-  transition: transform 550ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--row-travel-ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Boxes in "Your Pacts" are inert — no cursor, no hover, no click. Breaking the
@@ -492,29 +492,106 @@ body {
   pointer-events: none;
 }
 
-/* Hover previews the black an active box wears, at the same weight — the border
-   only ever changes color. It's painted from the box's own stroke rather than
-   from `:hover` here, because the columns re-rank under a still cursor: a
-   deselected box slides out from under the pointer, and a browser doesn't
-   re-evaluate `:hover` until the pointer moves, so the box kept wearing the
-   black it had just given up. See hoveredStateId in BipartiteMatchGraph.tsx. */
+/* The border carries two things at once. Its color is the state's own condition —
+   how far short its squeezed party is — and its weight is the interface's: hover
+   previews the thickening an active box wears, at the same color. Both are painted
+   from the box's own stroke rather than from `:hover` here, because the columns
+   re-rank under a still cursor: a deselected box slides out from under the pointer,
+   and a browser doesn't re-evaluate `:hover` until the pointer moves, so the box
+   kept wearing the emphasis it had just given up. See hoveredStateId in
+   BipartiteMatchGraph.tsx.
+
+   The weight doesn't transition: it answers the pointer, and an answer that takes
+   most of a second is no answer. The color does, on the first count and over its
+   length — the moment the trade lands, which is when the link and the map's arc go
+   too. A transition holds its old value for the whole of its delay, so a sealing box
+   keeps the color it walked in with through the boxes' trip and the link's closing and
+   only then fades. Fading it from the click was what made the change unreadable: both
+   boxes had settled on their new colors before there was anything on the board to
+   explain it.
+
+   **Scoped to `.settling`, which is the whole point of that class.** A pact being made
+   is the only color change worth watching; the × breaking one is an undo, and it takes
+   the state straight back to what it was. Off a seal the class is absent, there is no
+   transition, and the border reverts in a frame — as do the counts, on the same
+   reasoning (see `duration` in BipartiteMatchGraph.tsx). */
+.bipartite-graph .state-box.settling .state-box-border {
+  transition: stroke var(--seal-count-ms) ease var(--pact-count-ms);
+}
 
 /* Everything that hangs off the parked block rather than sitting in it: each
    link with its ×, and the "Your Pacts" heading. They ride one transform on the
-   same curve as the boxes, so when a broken pact moves the block a row they
-   travel with it instead of jumping to the new row and waiting for it there.
-
-   A piece that has just appeared has nowhere to travel from: it belongs to the
-   row the boxes are still sliding into, so it holds at zero opacity for their
-   trip and fades in once they arrive. `backwards` is what applies that zero
-   during the delay. */
+   same curve as the boxes, so when a broken pact moves the block a row — or when a
+   sealed one leaves the top of the columns for the bottom — they travel with it
+   instead of jumping to the new row and waiting for it there. */
 .bipartite-graph .match-link,
 .bipartite-graph .pact-heading {
-  transition: transform 550ms cubic-bezier(0.4, 0, 0.2, 1);
-  animation: pact-settle-in 200ms ease-out 550ms backwards;
+  transition: transform var(--row-travel-ms) cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* A piece that has just appeared has nowhere to travel from: it belongs to a row
+   the boxes are still sliding into, so it holds at zero opacity for their trip and
+   fades in once they arrive. `backwards` is what applies that zero during the delay.
+
+   The heading and the × are the two that do appear. The link no longer does — it is
+   born at the top of the columns as the pact is sealed and travels down — but the ×
+   is withheld until then, because a pact still being made has nothing to take back. */
+.bipartite-graph .pact-heading,
+.bipartite-graph .pact-remove {
+  animation: pact-settle-in 200ms ease-out var(--row-travel-ms) backwards;
 }
 
 @keyframes pact-settle-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* The link closing. Both halves are drawn from their own box's edge toward the
+   middle, where they meet — the two states reaching across the gutter, which is the
+   picture the board is arguing for.
+
+   Drawn with a dash rather than a scale: the stroke is hidden by an offset of its
+   whole length and walked into view by running that to zero. `pathLength={1}` on the
+   line makes the offset a fraction, so the keyframe needs to know nothing about how
+   wide the gutter is. A scaleX would have wanted a transform-origin per side and
+   would have squashed the round caps. Direction is in the geometry: each half is
+   authored with x1 at its box, so the dash walks it inward without either half
+   knowing which side it is on.
+
+   They wait out --row-travel-ms, so they close between two boxes that have arrived
+   rather than across a gap two boxes are still sliding into. */
+.bipartite-graph .match-link.sealing .pact-half {
+  stroke-dasharray: 1;
+  animation: pact-draw var(--seal-count-ms) ease var(--row-travel-ms) both;
+}
+
+@keyframes pact-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* The after-colors, laid over the halves at the same width and ends and brought up on
+   the first count, over exactly its length — the same clock the two borders fade on
+   and the map's arc draws on, because they are all one pact taking effect. Nothing
+   travels: the change happens along the whole line at once.
+
+   `backwards` fill holds it clear through the delay, so the two states have the line
+   to themselves through the close; `forwards` holds it up afterwards, and when the
+   linger ends the class goes with the animation and the layer is simply opaque — that
+   color is what the pact keeps down in "Your Pacts". */
+.bipartite-graph .match-link.sealing .pact-fade {
+  animation: pact-fade-in var(--seal-count-ms) ease var(--pact-count-ms) both;
+}
+
+@keyframes pact-fade-in {
   from {
     opacity: 0;
   }
@@ -547,9 +624,23 @@ body {
     transition-duration: 1ms;
   }
 
-  /* The boxes arrive at once, so nothing hung off them has anything to wait for. */
+  /* Nothing to wait for: the boxes reach their rows and the link closes in that
+     millisecond, so the color has nothing left to hold off for. Matched at the same
+     specificity as the rule it is overriding, or it loses. */
+  .bipartite-graph .state-box.settling .state-box-border {
+    transition-duration: 1ms;
+    transition-delay: 0ms;
+  }
+
+  /* The boxes arrive at once, so nothing hung off them has anything to wait for.
+     The link's two pairs of lines are each matched at their own full specificity: a
+     shorter selector loses to the one that sets the animation, and the link would go
+     on drawing and bleeding for over a second on a board that had stopped moving. */
   .bipartite-graph .match-link,
-  .bipartite-graph .pact-heading {
+  .bipartite-graph .match-link.sealing .pact-half,
+  .bipartite-graph .match-link.sealing .pact-fade,
+  .bipartite-graph .pact-heading,
+  .bipartite-graph .pact-remove {
     transition-duration: 1ms;
     animation-duration: 1ms;
     animation-delay: 0ms;
