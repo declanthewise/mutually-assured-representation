@@ -22,8 +22,9 @@ src/
 ├── components/              # All UI
 │   ├── HeroMap.tsx          # D3-based interactive US map — clouds, pact badges and arcs
 │   ├── StateTooltip.tsx     # Hover tooltip, driven by HeroMap
-│   ├── BipartiteMatchGraph.tsx  # Two re-sorting columns of state boxes; draws either era
-│   ├── ResultsPanel.tsx     # What the pacts returned, once Finish replaces the board
+│   ├── BipartiteMatchGraph.tsx  # Two re-sorting columns of state boxes; draws either era.
+│   │                            #   Also the results panel, which reports the pacts in those
+│   │                            #   same boxes — see ResultsPanel at the foot of the file
 │   ├── StatBar.tsx          # House balance + national rep. gap (sticky, above the map)
 │   └── AnimatedCount.tsx    # Count-up number, used by StatBar and the match graph
 ├── data/                    # Data plus the math over it; nothing generated
@@ -262,7 +263,7 @@ paragraph under them says it again. The absence is the design, not an oversight 
   **The House balance must not move** — that is the argument the whole tool makes, and it is what keeps
   the trade symmetric: one state draws a D district R, the other draws an R district D, and both
   columns end where they started. So `pactSeatsReturned()` pays out only between states gerrymandered
-  in opposite directions, and only up to the lesser of the two gaps. On the 2026 board `ResultsPanel.tsx`
+  in opposite directions, and only up to the lesser of the two gaps. On the 2026 board `ResultsPanel`
   can therefore say the margin is unchanged without qualification: whatever gap survives was already
   on the enacted map, so leaving it there moves nothing. **That does not carry to 2032** — there is no
   enacted map, so a surviving gap is drawn by the state's own majority and does move the House. See
@@ -327,7 +328,7 @@ paragraph under them says it again. The absence is the design, not an oversight 
   it failed to close — which is the sentence the box is making.
   What differs is only what the rows *say*. The 2026 box already holds figures and a pact moves them,
   New York going from 6 of its 11 to 8 and its gap from 5 down to 3. The 2032 box has nothing to
-  change: its lower two rows start **blank**, the middle one is always `(Pact)`, there is no 2032 map
+  change: its lower two rows start **blank**, the middle one is always `Pact`, there is no 2032 map
   until a pact draws one, so the same two turns write both figures from nothing. 2026 used to swell
   only the gap, on the grounds that its middle row was restating what the gap row already said — but
   that row is the trade itself, where the gap is only what the trade missed, and each deserves its own
@@ -338,24 +339,39 @@ paragraph under them says it again. The absence is the design, not an oversight 
   row's place in the sequence is just an offset into it (`GAP_ROW_OFFSET_MS` for the second), which is
   what lets one clock drive both. `PACT_LINGER_MS` is a lead plus two cycles, holding either board
   still for **5150ms** after each pact.
-  **The middle row's label changes with the row.** On the 2026 board it reads `(2026)` until a pact
-  makes it `(Pact)`, and that hand-over is a dissolve running over the row's own rise rather than a
-  flip on the click. Only the ending crosses: the row is three `text` elements, one drawing
-  `Minority Districts` at full strength and one for each ending, and each ending's own text opens with
-  a `fill="none"` tspan holding the prefix — painting nothing but advancing the pen, so the endings
-  land on the same x at any size the swell is passing through and nothing has to measure the prefix.
-  **Every visible run is a parent run, and that is not tidiness.** A `<tspan>` carrying glyphs under
-  `dominant-baseline="central"` renders half a unit below the line its own `text` sits on — the
+  **The three rows are `Fair Minority Districts`, `Current Minority Districts` and
+  `Representation Gap`**, each label set at the size of the count beside it — 9 on the
+  two district rows, 9.5 on the gap, which is the half point `GAP_COUNT_SIZE` already
+  gave the figure the box concludes with. A row is one line at one size, not a small
+  caption with a large figure at the end of it. The counts also sit `COUNT_INSET`
+  short of the right padding, four units in, so the figure is nearer the words it
+  belongs to; the rule between the rows still spans the full measure, and the swell
+  puts the count back on the padding, which is the only place its budget fits.
+  **The middle row's label changes on the way down to "Your Pacts"**, when the linger lapses and the
+  pair leaves the head of the columns. On the 2026 board it reads `Current` through the whole seal —
+  the rise, both counts, the fold — and becomes `Pact` as the box travels down. Nothing crosses and
+  nothing moves.
+  **Changing the words on screen was tried three ways and all three were wrong**, and why each failed
+  is worth keeping. The two readings crossfaded whole are a thicket legible as neither, because the
+  word that changes is the first and their shared words stand a word apart. Faded one out before the
+  other in, the row goes visibly bare. Drawing `Minority Districts` once and sliding it from behind
+  one word to behind the other — 12 units — puts a line of type moving sideways under a count that is
+  trying to be read. The older wording had none of these problems and could not have: it read
+  `Minority Districts (2026)`, so the tail was drawn once at full strength and only the parenthetical
+  crossed, each ending's text opening with a `fill="none"` tspan that painted the prefix invisibly to
+  walk the pen out to the same x. That trick only works while the ending is what changes.
+  **The deeper answer is that the label change is not the event.** The pact is, and the swell and the
+  counts are what say so; a label doing something of its own over the top of them is a third thing
+  going on. So the words wait for the box to be finished with. 2032 never changes at all — its middle
+  row is `Pact` before anybody signs anything.
+  **No `<tspan>` on the line carries glyphs, and that is not tidiness.** A tspan with visible glyphs
+  under `dominant-baseline="central"` renders half a unit below the line its own `text` sits on — the
   parent's `central` resolved a second time against the run's own baseline table — which at this size
-  is a parenthetical visibly sagging away from the words before it, and it was doing exactly that
-  before. Nothing said on the tspan recovers it: `dominant-baseline: auto`, `inherit` and
-  `alignment-baseline: baseline` all sag alike. It is the same fault as the drooping party letter on
-  the count below, and it wants the same answer — keep the glyphs out of the tspan.
-  Crossfading two whole labels was tried and is wrong twice over: the shared prefix goes through both
-  layers at part opacity and lightens visibly at the halfway point, and before the fade starts the two
-  endings sit stacked and legible as neither. The fade runs off `elapsed` and not off `1 - midSize`,
-  because the swell is symmetric and brought the old reading back when the row folded. 2032 has no
-  such change — its middle row is `(Pact)` before anybody signs anything.
+  was a parenthetical visibly sagging away from the words before it. Nothing said on the tspan
+  recovers it: `dominant-baseline: auto`, `inherit` and `alignment-baseline: baseline` all sag alike.
+  It is the same fault as the drooping party letter on the count below, and it wants the same answer —
+  keep the glyphs out of the tspan. Each reading is now one whole label in a `text` of its own, so the
+  trap is closed by construction rather than by care.
   `PACT_COUNT_AT_MS` is where the **first** count starts within that, and it is the figure the whole
   app answers a click on. Everything the pact causes happens on it: the two borders and the link
   between them come up in their new colors, and on the map `HeroMap` imports the same constant as its
@@ -386,11 +402,25 @@ paragraph under them says it again. The absence is the design, not an oversight 
   millisecond, so there is nothing to wait for.
   **The pact row grows less far than the gap row at both ends, and its party letter is why.** The row
   is 128 units, x=6 to x=134, label left and count right. Measured in the app at the weights they are
-  set in: "Minority Districts (Pact)" runs 9.67 units per unit of font size against "Representation
+  set in: "Pact Minority Districts" runs 9.06 units per unit of font size against "Representation
   Gap"'s 8.26, and the widest count either row can hold is two digits and a letter — `18D`, the
-  largest trade on the 2032 board — at 1.653 per unit against a bare `18`'s 1.024. So the gap row's
-  11-and-28 is unavailable here at any pairing. 9 and 19 clear by 9.6, a shade more than the 8.4 the
-  gap row lives on; 9 and 20 leaves 8.0, and 9.5 and 19 only 4.8.
+  largest trade on the 2032 board — at 1.653 per unit against a bare `18`'s 1.024. At 9 and 19 those
+  clear by 15.1, where the gap row's 11 and 28 clear by 8.4.
+  **On this row the label no longer grows at all**, its rest size having been raised to meet its own
+  count and taken the growth with it. What is left is the count — 9 to 19, better than two to one —
+  under a label that holds its size and its place. **And 9 is a ceiling now, not a leftover.** The
+  words don't change until the box leaves, so a sealing 2026 box stands at full swell reading
+  "Current Minority Districts" the whole time — 10.42 per unit, the longest label on the box, ending
+  at x=99.7 — while its count runs up to the pact's figure underneath, two digits and a letter coming
+  back to x=102.6. **2.9 units** is what this row now lives on, against the gap row's 8.4, and the
+  ceiling is 9.28.
+  **So the pact row's swell is the count's alone**, and that is geometry rather than neglect. The row
+  sits at y=40 against a swell centre of y=39.5, so unlike the gap row it has nowhere to rise to, and
+  its label is already at its count's size with no room to grow into a row this full. What magnifies
+  is the figure, 9 to 19, with the other two rows clearing out of the way. Shortening the label while
+  magnified would free it — `Minority Districts` alone is 7.05 per unit, which would carry a label at
+  11 — and was considered and turned down: a magnified row that has stopped saying which map it is
+  counting is worse than one that doesn't magnify.
   The letter used to be **dropped** on the way up, which bought a label at 10 and a count at 21. That
   was the wrong thing to sell: the letter names the party every figure in the box is about, and a row
   that sheds it mid-swell is answering a question it has stopped asking. Paying for it out of both
@@ -445,18 +475,45 @@ paragraph under them says it again. The absence is the design, not an oversight 
   the line goes and the headline says the one thing always true of that board: how many districts the
   pacts drew proportionally that nobody would otherwise have drawn.
   There is no "After the 2030 Census" kicker over it any more, and no era label of any kind on the
-  results — the board is reached by a button that says 2032 and the boxes carry the year themselves.
+  results — the board is reached by a button that says 2032, and nothing between the click and the
+  results panel has claimed to be any other year.
   The two boards keep **separate pact lists** in `App.tsx`, and each has its own residual gaps. Retry
   clears both and returns to the opening screen.
 
+- **The results report the pacts in the board's own boxes**, not in a line of type each. `PactRoster`
+  in `BipartiteMatchGraph.tsx` stands the parked pairs back up — the same `StateBox`, the same flat
+  link, every state on the side of the gutter it held on the board and wearing the residual color the
+  pacts left it at — one pact to a row, biggest trade first. That order is the panel's; the sides are
+  the columns' own `isDemocraticSide`, so a pair reads D-drawn to R-drawn without the panel ordering
+  it. There is no × and no handler: the board is over, and this is the account of it, so nothing here
+  is a control and nothing moves.
+  It replaces a list that read "+9 California Republicans ↔ +9 Texas Democrats" per pairing — which
+  said in words what the boxes had already said in figures, and said nothing at all about the states
+  left short. A box says both: what the trade delivered on its pact row, and what it missed on its
+  gap row.
+  `StateBox` is what makes it possible. The box used to be a closure inside the graph, reading the
+  active state, the hover and the seal off it directly; it now takes all of that as props — `isActive`,
+  `emphasized`, `settling` and the four handlers — so a box drawn outside the columns simply says none
+  of it. Both boards use the roster, and 2032's boxes read `Pact` on their middle row there exactly as
+  they do parked.
+  **So the panel lives in `BipartiteMatchGraph.tsx`**, at the foot of the file, rather than in a
+  `ResultsPanel.tsx` of its own. It is the board's account of itself and is drawn in the board's own
+  parts: the roster, the box, and the `ERAS` record — which now carries each board's `pool` (its
+  baseline gap, 104 and 182) and its `returned` alongside the four questions the columns ask, so the
+  two boards are described once. Kept in its own file, the panel imported half the graph and kept a
+  second record of the same two boards beside it.
+  The border on a results box is still the state's **residual** gap, exactly as it is on the board, so
+  the two partners in a pact usually disagree: a state the pact made whole comes to rest on the pale
+  neutral while one still short keeps its blue or its red, and the link between them is half of each.
+  That is the roster's whole point — it reports what each side got, not that a trade happened.
+
 - **Typography**: every block of running text on the page — the opening prose (`.app-intro`), the
-  match instructions, the results headline and the pact list under it — is set **identically**:
-  Source Sans 3 at `0.94rem`, 1.55 leading, `#444`. Only the alignment differs, the latter three
-  being centered, and the pact list keeps its own row rhythm (the padding and the rule between
-  items) because that is list structure rather than type. Its longest possible pairing,
-  "+10 North Carolina Democrats ↔ +10 Massachusetts Republicans", is 406px at this size against a
-  612px measure, so nothing wraps. Every sentence the page
-  speaks in its own voice looks the same; the display faces are for the title and the figures.
+  match instructions and the results headline — is set **identically**: Source Sans 3 at `0.94rem`,
+  1.55 leading, `#444`. Only the alignment differs, the latter two being centered. Every sentence the
+  page speaks in its own voice looks the same; the display faces are for the title and the figures.
+  The results panel has no prose under its headline any more — the pacts are drawn there rather than
+  written out (see the roster below), so `.results-pacts` and the 660px `.results-wide` measure it
+  wanted are both gone, and the panel sits in the ordinary `.visualization-wide` 520.
   The headline used to be Playfair at `min(4.4cqi, 1.5rem)`, sized so its longest line stayed
   unbroken, with `.results-panel` carrying a container context to measure against and a second
   measure for the one-line 2032 variant. **All of that is gone.** At prose size every line the

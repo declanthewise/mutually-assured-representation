@@ -12,12 +12,19 @@ import {
   UNDERREP_DOMAIN,
   UNDERREP_RANGE,
 } from '../colors';
-import { baselineGaps, fairSplit } from '../data/computeRepresentationGap';
 import {
+  baselineGaps,
+  computeNationalRepresentationGap,
+  fairSplit,
+  pactSeatsReturned,
+} from '../data/computeRepresentationGap';
+import {
+  baseline2032Gap,
   gapSize2032Of,
   isDemocraticSide2032,
   matchable2032States,
   minorityFair2032,
+  pact2032Returned,
 } from '../data/plan2032';
 import { holdsDemocraticBranches, stateData, stateDataById } from '../data/stateData';
 import { AnimatedCount, COUNT_DURATION_MS } from './AnimatedCount';
@@ -48,6 +55,13 @@ interface Era {
   minorityFairOf: (s: StateData) => number;
   /** Magnitude of the state's gerrymander — the weight it carries into a pact. */
   gapSizeOf: (s: StateData) => number;
+  /**
+   * The board's whole gap before anybody signs: 104 off the enacted maps, 182 off
+   * the maps 2032 would bring. The results measure against it.
+   */
+  pool: number;
+  /** What a pairing pays out — capped by the lesser gap, so the House can't move. */
+  returned: (a: string, b: string) => number;
 }
 
 const ERAS: Record<EraId, Era> = {
@@ -57,6 +71,8 @@ const ERAS: Record<EraId, Era> = {
     isDemocraticSide,
     minorityFairOf: minorityProportionalOf,
     gapSizeOf,
+    pool: computeNationalRepresentationGap(baselineGaps),
+    returned: pactSeatsReturned,
   },
   '2032': {
     states: matchable2032States,
@@ -64,6 +80,8 @@ const ERAS: Record<EraId, Era> = {
     isDemocraticSide: isDemocraticSide2032,
     minorityFairOf: minorityFair2032,
     gapSizeOf: gapSize2032Of,
+    pool: baseline2032Gap,
+    returned: pact2032Returned,
   },
 };
 
@@ -97,6 +115,34 @@ const underrepColorScale = d3.scaleLinear<string>()
   .domain(UNDERREP_DOMAIN)
   .range(UNDERREP_RANGE)
   .clamp(true);
+
+/**
+ * Where a state sits on that ramp, for a gap it is carrying: the gap over the debt,
+ * which is the box's own gap row over its top row.
+ */
+function underrepColorFor(era: Era, state: StateData, signedGap: number): string {
+  const owed = era.minorityFairOf(state);
+  return underrepColorScale(owed ? signedGap / owed : 0);
+}
+
+/**
+ * The color a state's border wore before the pact now being sealed — which is its
+ * baseline, since a box in a pact is inert and so cannot have been clicked into
+ * another one. The sign is the column's: a D-drawn (or D-leaning) map is negative.
+ *
+ * This is what each half of a closing link is drawn in, so a half leaves its box the
+ * color the box still is at that moment — the border only starts draining once the
+ * boxes have arrived, which is also when the halves start out.
+ */
+function preSealColorOf(era: Era, state: StateData): string {
+  const size = era.gapSizeOf(state);
+  return underrepColorFor(era, state, era.isDemocraticSide(state) ? -size : size);
+}
+
+/** The color a state's border wears now: what the pacts have left it at. */
+function borderColorOf(era: Era, state: StateData, residualGaps: Record<string, number>): string {
+  return underrepColorFor(era, state, residualGaps[state.id] ?? 0);
+}
 
 const BOX_W = 140;
 const BOX_H = 60;
@@ -171,17 +217,34 @@ const EQ_ROW_Y = [29, 40, 52];
 const EQ_RULE_Y = 46;
 
 /**
- * The three row labels, which read as one column and so share a size. The cap is
- * the longest label against the widest count: "Minority Districts (Proportional)"
- * runs ~0.41 units per character per unit of font size, and a two-digit count
- * ("13D") leaves it about 108 units of the row. That puts the ceiling near 8.3.
+ * Each row's label is set at its own count's size, so a row reads as one line rather
+ * than as a caption with a figure after it. The top two rows carry a count of
+ * districts and the gap row carries the gap, which is half a point larger — see
+ * GAP_COUNT_SIZE — and their labels follow them. That is the only difference between
+ * the three, and it puts the extra weight on the row the box is concluding with.
  *
- * "(Fair)" replaced "(Proportional)" and gave eight characters back. The three that
- * remain — "(Fair)", "(2026)" and the 2032 board's "(Pact)" — are all within a
- * character of each other, so the row that sets the budget is whichever carries the
- * widest count.
+ * Nothing is tight at these sizes: the longest label, "Current Minority Districts" at
+ * 10.42 units per unit of font size, ends at x=100 against a count that starts at
+ * x=115. It is the swell that is tight, and only on the middle row — see
+ * PACT_SWELL_LABEL_SIZE.
  */
-const EQ_LABEL_SIZE = 8;
+const EQ_COUNT_SIZE = 9;
+const EQ_LABEL_SIZE = EQ_COUNT_SIZE;
+
+/**
+ * How far the counts sit in from the box's right padding, and the labels' answer to
+ * the width of the box. A count anchored on the padding itself is a figure at the far
+ * edge of the row from the words it belongs to; pulling it in four units closes that
+ * without the row losing its shape.
+ *
+ * Only at rest. A swelling row puts its count back on the padding — see
+ * PACT_SWELL_COUNT_SIZE, whose whole budget is the 128 units between the two
+ * paddings, and which has none of them to give. The count's right edge therefore
+ * drifts those four units outward as it grows, under a figure going from 9 to 19.
+ */
+const COUNT_INSET = 4;
+const COUNT_X = BOX_W - 6 - COUNT_INSET;
+const SWELL_COUNT_X = BOX_W - 6;
 
 
 
@@ -252,6 +315,17 @@ const VIEW_W = RIGHT_BOX_X + BOX_W + LEFT_BOX_X;
 
 /** The break-pact button, centered in the gutter the links cross. */
 const LINK_MID_X = LEFT_BOX_X + BOX_W + COL_GAP / 2;
+
+/**
+ * The weight of a box's border: two units, three where the interface has hold of it.
+ * The stroke is centered on the box's own edge, so half of it lies outside the row —
+ * which is what `ROSTER_EDGE_PAD` exists to keep inside the picture.
+ */
+const BOX_STROKE = 2;
+const BOX_STROKE_EMPHASIZED = 3;
+
+/** Half a border, kept above the roster's first row and below its last. */
+const ROSTER_EDGE_PAD = BOX_STROKE / 2;
 
 const REMOVE_R = 8;
 const REMOVE_TICK = 3;
@@ -402,6 +476,7 @@ const PACT_LINGER_MS = SEAL_LEAD_MS + SWELL_CYCLE_MS * 2;
  * gap to keep.
  */
 const GAP_COUNT_SIZE = 9.5;
+const GAP_LABEL_SIZE = GAP_COUNT_SIZE;
 const SWELL_LABEL_SIZE = 11;
 const SWELL_COUNT_SIZE = 28;
 const SWELL_ROW_Y = (HEADER_HEIGHT + BOX_H) / 2;
@@ -411,14 +486,27 @@ const SWELL_ROW_Y = (HEADER_HEIGHT + BOX_H) / 2;
  * reason is that it carries more: a longer label, and a count that keeps its party.
  *
  * The row is 128 units wide, x=6 to x=134, label left and count right. Measured in the
- * app at the weights they are set in, "Minority Districts (Pact)" runs 9.67 units per
+ * app at the weights they are set in, "Pact Minority Districts" runs 9.06 units per
  * unit of font size against "Representation Gap"'s 8.26, and the widest count either
  * row can hold is two digits and a letter — "18D", the largest trade on the 2032 board
- * — at 1.653 per unit against a bare "18"'s 1.024.
+ * — at 1.653 per unit against a bare "18"'s 1.024. At 9 and 19 those come to 81.5 and
+ * 31.4, clearing by 15.1.
  *
- * So the gap row's 11-and-28 is not available here at any pairing. At 9 and 19 the two
- * come to 87.0 and 31.4, clearing by 9.6 — a shade more than the 8.4 the gap row lives
- * on. Nothing bigger fits: 9 and 20 leaves 8.0, and 9.5 and 19 leaves 4.8.
+ * **The label no longer grows at all**, the rest size having been raised to meet its
+ * own count and taken the growth with it. What is left is the count, which is where
+ * the row's magnification was anyway: 9 to 19, better than two to one, under a label
+ * that holds its size and its place.
+ *
+ * **And 9 is a ceiling now, not a leftover.** The words do not change until the box
+ * leaves for "Your Pacts", so a sealing 2026 box stands at full swell reading "Current
+ * Minority Districts" the whole time — 10.42 per unit, the longest label on the box,
+ * ending at x=99.7. Its count runs up to the pact's figure underneath, and two digits
+ * and a letter come back to x=102.6: **2.9 units**, which is what this row now lives
+ * on. That puts the ceiling at 9.28, and the row is full rather than empty — which is
+ * why the swell here is the count's alone. The label holding still through it is the
+ * price of a label this long, and the alternative — shortening it while magnified so
+ * it could grow — buys a magnified row that has stopped saying which map it is
+ * counting.
  *
  * **The party letter stays.** It used to be dropped on the way up, which bought a
  * label at 10 and a count at 21, and it was the wrong thing to sell — the letter names
@@ -726,32 +814,27 @@ function BoxBody({
   const fadeFor = (swell: number) => 1 - swell;
 
   // The row carries two runs at one size, so the size is named once.
-  const midCountSize = atMid(9, PACT_SWELL_COUNT_SIZE);
+  const midCountSize = atMid(EQ_COUNT_SIZE, PACT_SWELL_COUNT_SIZE);
 
   // On the 2032 board the middle row is the pact and nothing else, so it says so
   // whether or not one has been signed yet. On the 2026 board it is the enacted map
-  // until a pact replaces it — and that is a change the row should be seen to make,
-  // so the old parenthetical is kept on screen and dissolved into the new one.
-  const midLabel = is2032 || isMatched ? 'Pact' : eraId;
-
-  // The label the row is leaving behind, drawn over the one it is arriving at and
-  // faded out by the swell that is lifting them both. Only the 2026 board has one:
-  // 2032's middle row is `(Pact)` before anybody signs anything.
+  // until the pact is done being made — and **it changes on the way down to "Your
+  // Pacts"**, when the linger lapses and the pair leaves the head of the columns.
   //
-  // Only the ending changes, so only the ending crosses over: the two readings fade
-  // against each other while "Minority Districts" is drawn once, at full strength,
-  // and never dips. Crossfading two whole labels was tried and is wrong twice over —
-  // the shared prefix goes through both layers at part opacity and lightens visibly at
-  // the halfway point, and before the fade starts the two endings sit stacked and
-  // legible as neither.
-  const midLabelWas = !is2032 && isMatched && settling && !reduced ? eraId : null;
+  // Nothing crosses and nothing moves. Changing the words on screen was tried three
+  // ways and every one of them drew the eye to the wrong thing: the two readings
+  // crossfaded whole are a thicket legible as neither, the word that changes being the
+  // first and their shared words standing a word apart; faded one out before the other
+  // in, the row goes visibly bare; and holding the tail still while it slid from behind
+  // one word to behind the other is a line of type moving sideways under a count that
+  // is trying to be read. None of them was the event anyway — the pact is, and the
+  // swell and the counts are what say so. So the words wait for the box to be finished
+  // with, and change while it is travelling.
+  const midLabel = is2032 || (isMatched && !settling) ? 'Pact' : 'Current';
 
-  // How much of it is left. Off its own clock rather than off `1 - midSize`, because
-  // the swell is symmetric — it comes back down when the row folds, and the old
-  // reading came back with it. This only runs one way. Linear, where the size it rides
-  // on is eased: a dissolve wants an even hand-over, and easing one of two crossfading
-  // layers is what makes a crossfade dip.
-  const midLabelWasOpacity = Math.max(0, 1 - Math.max(0, elapsed - lead) / SWELL_MS);
+  // The label's size, named once so the row and anything measured in it agree. It is
+  // the same at rest and at full swell — see PACT_SWELL_LABEL_SIZE.
+  const midLabelSize = atMid(EQ_LABEL_SIZE, PACT_SWELL_LABEL_SIZE);
 
   // Both blank until this state has a pact, and on 2032 each holds its blank until its
   // own row starts to rise. A figure that arrives before the row has moved is a figure
@@ -779,12 +862,12 @@ function BoxBody({
           anything, and the only row on the 2032 board that starts with a number. */}
       <g opacity={fadeFor(Math.max(midSize, gapSize))}>
         <text x={6} y={EQ_ROW_Y[0]} dominantBaseline="central" fontSize={EQ_LABEL_SIZE} fill="#888">
-          Minority Districts (Fair)
+          Fair Minority Districts
         </text>
         <text
-          x={BOX_W - 6} y={EQ_ROW_Y[0]}
+          x={COUNT_X} y={EQ_ROW_Y[0]}
           textAnchor="end" dominantBaseline="central"
-          fontSize={9} fontWeight={700} fill={PARTY_COLORS[minorityParty]}
+          fontSize={EQ_COUNT_SIZE} fontWeight={700} fill={PARTY_COLORS[minorityParty]}
         >
           {proportional}{minorityParty}
         </text>
@@ -792,56 +875,27 @@ function BoxBody({
 
       {/* What the map delivers: the enacted count in 2026, the pact's own in 2032. */}
       <g opacity={fadeFor(gapSize)}>
-        {/* Three runs on one line, and every one of them a *parent* run: a `<tspan>`
-            carrying visible glyphs under `dominant-baseline="central"` is dropped half
-            a unit off the line its own text sits on, which at this size is a
-            parenthetical visibly sagging away from the words before it. Nothing said
-            on the tspan recovers it — `dominant-baseline: auto`, `inherit` and
-            `alignment-baseline: baseline` all sag alike — because the shift is the
-            parent's `central` being resolved a second time against the run's own
-            baseline table. So the prefix is drawn alone, and each ending is its own
-            text that walks the pen out to meet it. Same trick, same reason, as the
-            drooping party letter on the count below. */}
+        {/* One run in one `text`, and no `<tspan>` carrying glyphs anywhere on this
+            line: a tspan with visible glyphs under
+            `dominant-baseline="central"` is dropped half a unit off the line its own
+            text sits on — the parent's `central` resolved a second time against the
+            run's own baseline table — and nothing said on the tspan recovers it:
+            `dominant-baseline: auto`, `inherit` and `alignment-baseline: baseline` all
+            sag alike. Same trap, same answer, as the drooping party letter on the
+            count below. */}
         <text
           x={6}
           y={atMid(EQ_ROW_Y[1], SWELL_ROW_Y)}
           dominantBaseline="central"
-          fontSize={atMid(EQ_LABEL_SIZE, PACT_SWELL_LABEL_SIZE)}
+          fontSize={midLabelSize}
           fill="#888"
         >
-          Minority Districts
+          {midLabel} Minority Districts
         </text>
-        <text
-          x={6}
-          y={atMid(EQ_ROW_Y[1], SWELL_ROW_Y)}
-          dominantBaseline="central"
-          fontSize={atMid(EQ_LABEL_SIZE, PACT_SWELL_LABEL_SIZE)}
-          fill="#888"
-          fillOpacity={midLabelWas === null ? 1 : 1 - midLabelWasOpacity}
-        >
-          {/* Advances the pen without painting anything, so an ending lands exactly
-              where the prefix leaves off at any size the swell is passing through —
-              and nothing has to measure the prefix to put it there. */}
-          <tspan fill="none">{'Minority Districts '}</tspan>({midLabel})
-        </text>
-        {midLabelWas !== null && (
-          <text
-            x={6}
-            y={atMid(EQ_ROW_Y[1], SWELL_ROW_Y)}
-            dominantBaseline="central"
-            fontSize={atMid(EQ_LABEL_SIZE, PACT_SWELL_LABEL_SIZE)}
-            fill="#888"
-            // Gone by the time the row is up: the rise is the row becoming something
-            // else, so the two readings hand over across it.
-            fillOpacity={midLabelWasOpacity}
-          >
-            <tspan fill="none">{'Minority Districts '}</tspan>({midLabelWas})
-          </text>
-        )}
         <AnimatedCount value={current} delay={midDelay} duration={duration}>
           {shown => (
             <text
-              x={BOX_W - 6}
+              x={atMid(COUNT_X, SWELL_COUNT_X)}
               // Stated outright, as on the header line. The figure and its party
               // letter are one run now — they were two while the letter was sized
               // separately, and `central` resolved per run against each run's own
@@ -874,7 +928,7 @@ function BoxBody({
           x={6}
           y={atGap(EQ_ROW_Y[2], SWELL_ROW_Y)}
           dominantBaseline="central"
-          fontSize={atGap(EQ_LABEL_SIZE, SWELL_LABEL_SIZE)}
+          fontSize={atGap(GAP_LABEL_SIZE, SWELL_LABEL_SIZE)}
           fill="#888"
         >
           Representation Gap
@@ -882,7 +936,7 @@ function BoxBody({
         <AnimatedCount value={gapValue} delay={gapDelay} duration={duration}>
           {shown => (
             <text
-              x={BOX_W - 6}
+              x={atGap(COUNT_X, SWELL_COUNT_X)}
               y={atGap(EQ_ROW_Y[2], SWELL_ROW_Y)}
               textAnchor="end"
               dominantBaseline="central"
@@ -1091,6 +1145,313 @@ function headedBy(pinned: Set<string>, next: (a: StateData, b: StateData) => num
     return next(a, b);
   };
 }
+
+interface StateBoxProps {
+  eraId: EraId;
+  state: StateData;
+  /** Which side of the gutter it stands on, which is also whose districts it counts. */
+  column: Column;
+  /** The top of the row it stands on, in view units. */
+  y: number;
+  /** The gap the state is left carrying: its border's color and its bottom row. */
+  signedGap: number;
+  /** Picked up and looking for a partner — the name's weight as well as the border's. */
+  isActive?: boolean;
+  /** The border's weight: under the pointer, picked up, or holding the board. */
+  emphasized?: boolean;
+  isMatched: boolean;
+  settling?: boolean;
+  onClick?: (e: React.MouseEvent) => void;
+  onPointerEnter?: (e: React.PointerEvent) => void;
+  onPointerMove?: (e: React.PointerEvent) => void;
+  onPointerLeave?: () => void;
+}
+
+/**
+ * One state's box: the header line — name, delegation count, route marks, control
+ * pyramid, lean badge — over the three-row equation `BoxBody` sets out.
+ *
+ * It knows nothing about the board beyond the row it was given, which is what lets
+ * the results panel stand the parked pacts up again outside the graph. Everything
+ * the interface has to say about a box arrives as a prop, so a box drawn anywhere
+ * else simply says none of it.
+ */
+function StateBox({
+  eraId,
+  state,
+  column,
+  y,
+  signedGap,
+  isActive = false,
+  emphasized = false,
+  isMatched,
+  settling = false,
+  onClick,
+  onPointerEnter,
+  onPointerMove,
+  onPointerLeave,
+}: StateBoxProps) {
+  const era = ERAS[eraId];
+  const partisanColor = leanColorScale(state.partisanLean);
+  const leanTextColor = Math.abs(state.partisanLean) > 10 ? '#fff' : '#333';
+  const isLeft = column === 'left';
+
+  const boxX = isLeft ? LEFT_BOX_X : RIGHT_BOX_X;
+
+  // Both columns read name→badge, so the two sides scan the same way.
+  const leanText = formatLean(state.partisanLean);
+  const badgeW = leanText.length * 5 + 8;
+  const badgeH = 13;
+  const badgeX = BOX_W - 5 - badgeW;
+  // Everything right of the name hangs off the badge, so the name's budget moves
+  // with the width of the lean. See HEADER_ABBREVIATIONS for what doesn't fit it.
+  const pyramidX = badgeX - PYRAMID_GAP - PYRAMID_W;
+
+  // Only the minority party's districts are shown: the side the map squeezes, or
+  // on the 2032 board would squeeze. Which party that is follows the column, so
+  // every row on the box reads in the same party.
+  const minorityParty = isLeft ? 'R' : 'D';
+  const fairMinority = era.minorityFairOf(state);
+
+  // The equation the box spells out: the districts the state's own PVI says the
+  // squeezed party should hold, the districts the era's map gives it, and the gap
+  // between them. The middle row moves with the pacts, so it's the fair count less
+  // whatever gap the box was handed — before any pact that is the era's own
+  // baseline, the enacted count in 2026 and nothing at all in 2032.
+  const currentMinority = fairMinority - Math.abs(signedGap);
+
+  // The border reads the *residual* gap over the debt, so a pact drains its own
+  // color: a state the pacts have made whole comes to rest on the neutral, and
+  // one still owing more than half its share stays solid. Before any pact this is
+  // the baseline — today's map on the 2026 board, and on the 2032 board the whole
+  // minority share, since a clean sheet owes its minority all of it and has drawn
+  // none of it. That is why the 2032 board opens at a flat solid on every box and
+  // only acquires shading as it is pacted: the border is the one mark there with
+  // anything to say before a pact, its lower two rows being blank by design.
+  //
+  const underrepColor = underrepColorFor(era, state, signedGap);
+
+  return (
+    <g
+      className={
+        `state-box ${isActive ? 'active' : ''} ${isMatched ? 'matched' : ''}` +
+        `${settling ? ' settling' : ''}`
+      }
+      style={{ transform: `translate(${boxX}px, ${y}px)` }}
+      // All four are the board's, and a box drawn anywhere else is given none of
+      // them: a parked pact is settled, and the roster in the results panel is a
+      // picture rather than a control. See the columns for what they do there.
+      onClick={onClick}
+      onPointerEnter={onPointerEnter}
+      onPointerMove={onPointerMove}
+      onPointerLeave={onPointerLeave}
+    >
+      <rect x={0} y={0} width={BOX_W} height={BOX_H} fill="white" rx={3} />
+      <rect
+        x={0}
+        y={0}
+        width={BOX_W}
+        height={BOX_H}
+        fill="none"
+        className="state-box-border"
+        // Two marks on one stroke, kept apart so they can be read at once.
+        //
+        // **Color is the state's condition**: how far short its squeezed party
+        // is, deep blue for a map that owes Republicans most of what it owes
+        // them, deep red the other way, through EVEN_GRAY where a state is at
+        // its proportional share. It is a fraction of the delegation, so the
+        // depth is comparable between a state of 4 districts and one of 52.
+        //
+        // **Weight is the interface's own** — under the pointer, picked up and
+        // looking for a partner, or holding the board through its linger, all of
+        // which reach here as `emphasized` — and it thickens without touching the
+        // color, so a box can say "you have hold of
+        // me" and "I am still four districts short" in the same breath. Black used
+        // to carry the first of those and painted over the second, which cost most
+        // exactly where the color had just changed: a sealed pact went black at the
+        // moment its border had news.
+        //
+        // The weight goes when the box **leaves for "Your Pacts"**, not when the
+        // pact is made. The linger is the one stretch the pair is meant to be
+        // watched — that is what it exists for, and both boxes are at the head of
+        // their columns with the link closing between them — so they hold the
+        // emphasis right through it and give it up on the way down. Parked, they
+        // are settled: the only move left is the ×, and the border is left saying
+        // nothing but what the pact made of the state.
+        // A sealing box holds the color it walked in with until the link's two
+        // halves meet, and then fades to what the pact left it at. The wait is a
+        // transition delay in App.css; the stroke here is the new color from the
+        // click, which is what the delay holds off.
+        stroke={underrepColor}
+        strokeWidth={emphasized ? BOX_STROKE_EMPHASIZED : BOX_STROKE}
+        rx={BOX_R}
+      />
+
+      <line
+        x1={6}
+        y1={HEADER_HEIGHT}
+        x2={BOX_W - 6}
+        y2={HEADER_HEIGHT}
+        stroke="rgba(0,0,0,0.15)"
+        strokeWidth={0.5}
+      />
+
+      <g
+        transform={`translate(${pyramidX}, ${HEADER_MID_Y - PYRAMID_H / 2})`}
+      >
+        <ControlPyramid state={state} />
+      </g>
+
+      <g
+        transform={
+          `translate(${pyramidX - PYRAMID_GAP - routeBlockWidth(state)}, ` +
+          `${HEADER_MID_Y - ROUTE_H / 2})`
+        }
+      >
+        <RouteMarks state={state} />
+      </g>
+
+      <rect
+        x={badgeX}
+        y={HEADER_MID_Y - badgeH / 2}
+        width={badgeW}
+        height={badgeH}
+        fill={partisanColor}
+        rx={2.5}
+      />
+      <text
+        x={badgeX + badgeW / 2}
+        y={HEADER_MID_Y}
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontSize={8.5}
+        fill={leanTextColor}
+        fontWeight={600}
+      >
+        {leanText}
+      </text>
+      <text
+        x={6}
+        y={NAME_BASELINE_Y}
+        fontSize={NAME_SIZE}
+        fill="#333"
+        fontWeight={isActive ? 600 : 500}
+      >
+        {headerName(state) !== state.name && <title>{state.name}</title>}
+        {headerName(state)}
+        {/* No baseline of its own: it inherits the line's, which is the point. */}
+        <tspan dx={3} fontSize={8.5} fontWeight={500} fill="#999">
+          ({era.districtsOf(state)})
+        </tspan>
+      </text>
+
+      <BoxBody
+        eraId={eraId}
+        minorityParty={minorityParty}
+        proportional={fairMinority}
+        current={currentMinority}
+        gap={signedGap}
+        isMatched={isMatched}
+        settling={settling}
+      />
+    </g>
+  );
+}
+
+
+interface PactRosterProps {
+  era: EraId;
+  /** The pacts to stand up, in the order they are to be read down the page. */
+  pacts: MatchPair[];
+  /** What each state's gap comes to once those pacts are honored. */
+  residualGaps: Record<string, number>;
+}
+
+/**
+ * The pacts as the board parks them, lifted out of the board: the same boxes and the
+ * same flat link between them, one pact to a row. It is what the results panel shows
+ * in place of a line of type per pairing — the reader has spent the session reading
+ * these boxes, so the pacts are worth reporting in the terms they were made in, with
+ * every state's own residual color still on its border.
+ *
+ * Nothing here is a control. There is no ×, no handler and no hover: the board is
+ * over, and this is the account of it. Nothing moves either — every box is already
+ * where it belongs, so the transitions the columns run on have nothing to answer.
+ *
+ * The order of the rows is the caller's. Which side of the gutter each half stands
+ * on is not: it is the same question the columns ask, so a state is on the side here
+ * that it held on the board.
+ */
+function PactRoster({ era: eraId, pacts, residualGaps }: PactRosterProps) {
+  const era = ERAS[eraId];
+  if (pacts.length === 0) return null;
+
+  const rows = pacts.map(([a, b]) => {
+    const first = stateDataById[a];
+    const second = stateDataById[b];
+    const [left, right] = era.isDemocraticSide(first) ? [first, second] : [second, first];
+    return { key: `${a}-${b}`, left, right };
+  });
+
+  // A box's border straddles its own edge, so half of it stands outside the row. The
+  // columns never notice — TOP_PAD and BOTTOM_PAD hold the first and last rows clear
+  // of the svg — but the roster is exactly its rows tall, and without this the top
+  // pair's top stroke and the bottom pair's bottom stroke are each shaved in half.
+  const top = -ROSTER_EDGE_PAD;
+  const height = rows.length * ROW_H - ROW_GAP + ROSTER_EDGE_PAD * 2;
+
+  return (
+    <svg
+      viewBox={`0 ${top} ${VIEW_W} ${height}`}
+      className="bipartite-graph pact-roster"
+    >
+      {rows.map(({ key, left, right }, i) => {
+        const rowY = i * ROW_H;
+        const linkY = rowY + BOX_H / 2;
+        const box = (state: StateData, side: Column) => (
+          <StateBox
+            eraId={eraId}
+            state={state}
+            column={side}
+            y={rowY}
+            signedGap={residualGaps[state.id] ?? 0}
+            isMatched
+          />
+        );
+
+        return (
+          <g key={key}>
+            {/* One line per side rather than the board's four: nothing is closing
+                here, so there is no before-color to draw in and fade out from under.
+                Each half is the color its own state was left at, which is where the
+                board's own link came to rest. */}
+            <line
+              x1={LEFT_BOX_X + BOX_W}
+              y1={linkY}
+              x2={LINK_MID_X}
+              y2={linkY}
+              stroke={borderColorOf(era, left, residualGaps)}
+              strokeWidth={2}
+              strokeLinecap="round"
+            />
+            <line
+              x1={RIGHT_BOX_X}
+              y1={linkY}
+              x2={LINK_MID_X}
+              y2={linkY}
+              stroke={borderColorOf(era, right, residualGaps)}
+              strokeWidth={2}
+              strokeLinecap="round"
+            />
+            {box(left, 'left')}
+            {box(right, 'right')}
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
 
 export function BipartiteMatchGraph({
   era: eraId,
@@ -1344,29 +1705,6 @@ export function BipartiteMatchGraph({
     });
   }, [anchorId, rowById]);
 
-  /** Where a state sits on the underrepresentation ramp, for a gap it is carrying. */
-  const underrepColorFor = (state: StateData, signedGap: number) => {
-    const owed = era.minorityFairOf(state);
-    return underrepColorScale(owed ? signedGap / owed : 0);
-  };
-
-  /**
-   * The color a state's border wore before the pact now being sealed — which is its
-   * baseline, since a box in a pact is inert and so cannot have been clicked into
-   * another one. The sign is the column's: a D-drawn (or D-leaning) map is negative.
-   *
-   * This is what each half of a closing link is drawn in, so a half leaves its box
-   * the color the box still is at that moment — the border only starts draining once
-   * the boxes have arrived, which is also when the halves start out.
-   */
-  const preSealColorOf = (state: StateData) => {
-    const size = era.gapSizeOf(state);
-    return underrepColorFor(state, era.isDemocraticSide(state) ? -size : size);
-  };
-
-  /** The color a state's border wears now: what the pacts have left it at. */
-  const borderColorOf = (state: StateData) => underrepColorFor(state, residualGaps[state.id] ?? 0);
-
   /**
    * The state at one end of a link: its own end's box, not whichever of the pair
    * happens to be stored first. A pact is `[anchor, partner]` in click order and the
@@ -1379,7 +1717,7 @@ export function BipartiteMatchGraph({
   const halfColorOf = (a: string, b: string, side: Column, after: boolean) => {
     const state = sideOf(a, b, side);
     if (!state) return EVEN_GRAY;
-    return after ? borderColorOf(state) : preSealColorOf(state);
+    return after ? borderColorOf(era, state, residualGaps) : preSealColorOf(era, state);
   };
 
   const renderStateBox = (state: StateData, index: number, column: Column, yOffset: number) => {
@@ -1387,57 +1725,22 @@ export function BipartiteMatchGraph({
     const isHovered = state.id === hoveredStateId;
     /** Mid-linger: sealed, at the head of its column, not yet parked. */
     const isSettling = !!seal?.pair.includes(state.id);
-    const partner = partnerById.get(state.id);
-    const isMatched = !!partner;
-    const partisanColor = leanColorScale(state.partisanLean);
-    const leanTextColor = Math.abs(state.partisanLean) > 10 ? '#fff' : '#333';
-    const isLeft = column === 'left';
-
-    const boxX = isLeft ? LEFT_BOX_X : RIGHT_BOX_X;
-    const boxY = rowTopY(index, yOffset);
-
-    // Both columns read name→badge, so the two sides scan the same way.
-    const leanText = formatLean(state.partisanLean);
-    const badgeW = leanText.length * 5 + 8;
-    const badgeH = 13;
-    const badgeX = BOX_W - 5 - badgeW;
-    // Everything right of the name hangs off the badge, so the name's budget moves
-    // with the width of the lean. See HEADER_ABBREVIATIONS for what doesn't fit it.
-    const pyramidX = badgeX - PYRAMID_GAP - PYRAMID_W;
-
-    // Only the minority party's districts are shown: the side the map squeezes, or
-    // on the 2032 board would squeeze. Which party that is follows the column, so
-    // every row on the box reads in the same party.
-    const minorityParty = isLeft ? 'R' : 'D';
-    const fairMinority = era.minorityFairOf(state);
-
-    // The equation the box spells out: the districts the state's own PVI says the
-    // squeezed party should hold, the districts the era's map gives it, and the gap
-    // between them. The middle row moves with the pacts, so it's the fair count less
-    // whatever gap survives them — before any pact that is the era's own baseline,
-    // the enacted count in 2026 and nothing at all in 2032.
-    const signedGap = residualGaps[state.id] ?? 0;
-    const currentMinority = fairMinority - Math.abs(signedGap);
-
-    // The border reads the *residual* gap over the debt, so a pact drains its own
-    // color: a state the pacts have made whole comes to rest on the neutral, and
-    // one still owing more than half its share stays solid. Before any pact this is
-    // the baseline — today's map on the 2026 board, and on the 2032 board the whole
-    // minority share, since a clean sheet owes its minority all of it and has drawn
-    // none of it. That is why the 2032 board opens at a flat solid on every box and
-    // only acquires shading as it is pacted: the border is the one mark there with
-    // anything to say before a pact, its lower two rows being blank by design.
-    //
-    const underrepColor = borderColorOf(state);
+    const isMatched = partnerById.has(state.id);
 
     return (
-      <g
+      <StateBox
         key={state.id}
-        className={
-          `state-box ${isActive ? 'active' : ''} ${isMatched ? 'matched' : ''}` +
-          `${isSettling ? ' settling' : ''}`
-        }
-        style={{ transform: `translate(${boxX}px, ${boxY}px)` }}
+        eraId={eraId}
+        state={state}
+        column={column}
+        y={rowTopY(index, yOffset)}
+        signedGap={residualGaps[state.id] ?? 0}
+        isActive={isActive}
+        emphasized={isActive || isHovered || isSettling}
+        isMatched={isMatched}
+        // The two boxes that just signed put their figures up in lights before going
+        // anywhere; the linger they hold the board still for is the length of that.
+        settling={isSettling}
         // A parked pact is settled: the only move left on it is the × that breaks it.
         onClick={isMatched ? undefined : e => handleStateClick(state, e)}
         // `move` as well as `enter`, so a pointer left inside the box by a click
@@ -1452,118 +1755,7 @@ export function BipartiteMatchGraph({
         onPointerEnter={e => takeHover(state.id, e)}
         onPointerMove={e => takeHover(state.id, e)}
         onPointerLeave={() => setHoveredStateId(id => (id === state.id ? null : id))}
-      >
-        <rect x={0} y={0} width={BOX_W} height={BOX_H} fill="white" rx={3} />
-        <rect
-          x={0}
-          y={0}
-          width={BOX_W}
-          height={BOX_H}
-          fill="none"
-          className="state-box-border"
-          // Two marks on one stroke, kept apart so they can be read at once.
-          //
-          // **Color is the state's condition**: how far short its squeezed party
-          // is, deep blue for a map that owes Republicans most of what it owes
-          // them, deep red the other way, through EVEN_GRAY where a state is at
-          // its proportional share. It is a fraction of the delegation, so the
-          // depth is comparable between a state of 4 districts and one of 52.
-          //
-          // **Weight is the interface's own** — under the pointer, picked up and
-          // looking for a partner, or holding the board through its linger — and it
-          // thickens without touching the color, so a box can say "you have hold of
-          // me" and "I am still four districts short" in the same breath. Black used
-          // to carry the first of those and painted over the second, which cost most
-          // exactly where the color had just changed: a sealed pact went black at the
-          // moment its border had news.
-          //
-          // The weight goes when the box **leaves for "Your Pacts"**, not when the
-          // pact is made. The linger is the one stretch the pair is meant to be
-          // watched — that is what it exists for, and both boxes are at the head of
-          // their columns with the link closing between them — so they hold the
-          // emphasis right through it and give it up on the way down. Parked, they
-          // are settled: the only move left is the ×, and the border is left saying
-          // nothing but what the pact made of the state.
-          // A sealing box holds the color it walked in with until the link's two
-          // halves meet, and then fades to what the pact left it at. The wait is a
-          // transition delay in App.css; the stroke here is the new color from the
-          // click, which is what the delay holds off.
-          stroke={underrepColor}
-          strokeWidth={isActive || isHovered || isSettling ? 3 : 2}
-          rx={BOX_R}
-        />
-
-        <line
-          x1={6}
-          y1={HEADER_HEIGHT}
-          x2={BOX_W - 6}
-          y2={HEADER_HEIGHT}
-          stroke="rgba(0,0,0,0.15)"
-          strokeWidth={0.5}
-        />
-
-        <g
-          transform={`translate(${pyramidX}, ${HEADER_MID_Y - PYRAMID_H / 2})`}
-        >
-          <ControlPyramid state={state} />
-        </g>
-
-        <g
-          transform={
-            `translate(${pyramidX - PYRAMID_GAP - routeBlockWidth(state)}, ` +
-            `${HEADER_MID_Y - ROUTE_H / 2})`
-          }
-        >
-          <RouteMarks state={state} />
-        </g>
-
-        <rect
-          x={badgeX}
-          y={HEADER_MID_Y - badgeH / 2}
-          width={badgeW}
-          height={badgeH}
-          fill={partisanColor}
-          rx={2.5}
-        />
-        <text
-          x={badgeX + badgeW / 2}
-          y={HEADER_MID_Y}
-          textAnchor="middle"
-          dominantBaseline="central"
-          fontSize={8.5}
-          fill={leanTextColor}
-          fontWeight={600}
-        >
-          {leanText}
-        </text>
-        <text
-          x={6}
-          y={NAME_BASELINE_Y}
-          fontSize={NAME_SIZE}
-          fill="#333"
-          fontWeight={isActive ? 600 : 500}
-        >
-          {headerName(state) !== state.name && <title>{state.name}</title>}
-          {headerName(state)}
-          {/* No baseline of its own: it inherits the line's, which is the point. */}
-          <tspan dx={3} fontSize={8.5} fontWeight={500} fill="#999">
-            ({era.districtsOf(state)})
-          </tspan>
-        </text>
-
-        <BoxBody
-          eraId={eraId}
-          minorityParty={minorityParty}
-          proportional={fairMinority}
-          current={currentMinority}
-          gap={signedGap}
-          isMatched={isMatched}
-          // The two boxes that just signed put their gap up in lights before
-          // going anywhere; the linger they're holding still for is the length
-          // of that.
-          settling={isSettling}
-        />
-      </g>
+      />
     );
   };
 
@@ -1751,6 +1943,131 @@ export function BipartiteMatchGraph({
           )}
         </g>
       </svg>
+    </div>
+  );
+}
+
+/** Single-digit counts read as words in the headline; anything larger stays a numeral. */
+const SPELLED = [
+  'zero',
+  'one',
+  'two',
+  'three',
+  'four',
+  'five',
+  'six',
+  'seven',
+  'eight',
+  'nine',
+] as const;
+
+const spellCount = (n: number) => SPELLED[n] ?? String(n);
+
+interface ResultsPanelProps {
+  era: EraId;
+  selectedMatches: MatchPair[];
+  /** The gap left standing once the pacts are honored, on the board shown. */
+  nationalRepresentationGap: number;
+  /** Per state, the same figure — what the roster's boxes and links are colored by. */
+  residualGaps: Record<string, number>;
+  onRetry: () => void;
+  /** Offered from the 2026 results only; the 2032 board is the end of the line. */
+  onTry2032?: () => void;
+}
+
+/**
+ * What Finish puts in the board's place: a sentence about the whole run, the pacts
+ * themselves, and the way back.
+ *
+ * It lives in this file because it is the board's own account of itself. The pacts
+ * are reported in the board's boxes, so the panel and the columns share `PactRoster`,
+ * `StateBox` and the `ERAS` record — which is also where the two figures the headline
+ * needs come from, each board's baseline `pool` and its `returned`. Kept apart, the
+ * panel had to import half the graph and keep a second record of the same two boards
+ * beside it.
+ */
+export function ResultsPanel({
+  era,
+  selectedMatches,
+  nationalRepresentationGap,
+  residualGaps,
+  onRetry,
+  onTry2032,
+}: ResultsPanelProps) {
+  const is2032 = era === '2032';
+  const board = ERAS[era];
+
+  // Both boards count the same two things — the gap they started with, and how much
+  // of it the pacts closed — so the headline below is one piece of markup either way.
+  // Only the baseline differs: 104 off the enacted maps, 182 off the maps 2032 would
+  // bring if nobody signed anything.
+  const pool = board.pool;
+  const seatsClosed = pool - nationalRepresentationGap;
+
+  // Biggest trades first — the pacts that did the most work lead the list. Within a
+  // pact there is nothing to order: the roster stands each state on the side of the
+  // gutter it held on the board, so the pair reads D-drawn to R-drawn either way.
+  const pacts = selectedMatches
+    .slice()
+    .sort((x, y) => board.returned(y[0], y[1]) - board.returned(x[0], x[1]));
+
+  return (
+    <div className="results-panel">
+      {/* The 2026 board's headline runs two lines, set here rather than left to the
+          wrap: what the pacts returned is one clause, and the claim the whole tool
+          makes closes on a line of its own.
+
+          The 2032 board takes one line instead. Its second line used to be the same
+          margin claim, and that claim stopped being true there once an unclosed gap
+          began going to the state's own majority: an uneven pact moves the House, and
+          the stat bar says so. Rather than qualify it on every uneven run, the line
+          goes, and the headline says the one thing that is always true — how many
+          districts the pacts drew proportionally that nobody would have drawn. */}
+      {is2032 ? (
+        <p className="results-headline">
+          Your {spellCount(pacts.length)} {pacts.length === 1 ? 'pact' : 'pacts'} created{' '}
+          <span style={{ color: FAIR_BLACK }}>{seatsClosed}</span> proportional districts.
+        </p>
+      ) : seatsClosed > 0 ? (
+        <p className="results-headline">
+          <span className="headline-line">
+            Your {spellCount(pacts.length)} {pacts.length === 1 ? 'pact' : 'pacts'} returned{' '}
+            <span style={{ color: FAIR_BLACK }}>{seatsClosed}</span> of{' '}
+            <span style={{ color: GAP_ORANGE }}>{pool}</span> districts,
+          </span>
+          <span className="headline-line">and the U.S. House district margin is unchanged.</span>
+        </p>
+      ) : (
+        <p className="results-headline">
+          <span className="headline-line">
+            No seats returned yet — all <span style={{ color: GAP_ORANGE }}>{pool}</span>{' '}
+            districts stand,
+          </span>
+          <span className="headline-line">and the U.S. House district margin is unchanged.</span>
+        </p>
+      )}
+
+      {/* The pacts in the terms they were made in: the board's own boxes and the link
+          between them, minus the × — there is nothing left to break. It replaces a
+          line of type per pairing, which said what the trade came to in words the
+          boxes had already said in figures, and said nothing about the states left
+          short. Finish only appears once a pact is sealed, so there is always one. */}
+      <PactRoster era={era} pacts={pacts} residualGaps={residualGaps} />
+
+      {/* The orange button from under the columns, and — off the 2026 results only —
+          the one that carries the same argument past the next census. Retry puts the
+          board back and reads orange for it; Try 2032 goes forward and wears the
+          black Start and Finish wear. */}
+      <div className="finish-row">
+        <button className="restart-btn" onClick={onRetry}>
+          Retry
+        </button>
+        {onTry2032 && (
+          <button className="try-2032-btn" onClick={onTry2032}>
+            Try 2032
+          </button>
+        )}
+      </div>
     </div>
   );
 }

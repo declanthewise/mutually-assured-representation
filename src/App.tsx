@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { HeroMap } from './components/HeroMap';
-import { BipartiteMatchGraph } from './components/BipartiteMatchGraph';
-import { ResultsPanel } from './components/ResultsPanel';
+import { BipartiteMatchGraph, ResultsPanel } from './components/BipartiteMatchGraph';
 import { StatBar } from './components/StatBar';
 import { StateTooltip } from './components/StateTooltip';
 import { useTopoData } from './map/useTopoData';
@@ -289,11 +288,12 @@ function App() {
       )}
 
       {finished && (
-        <div className="visualization-wide results-wide match-columns">
+        <div className="visualization-wide match-columns">
           <ResultsPanel
             era={era}
             selectedMatches={selectedMatches}
             nationalRepresentationGap={boardNationalGap}
+            residualGaps={boardGaps}
             onRetry={handleStartOver}
             onTry2032={era === '2026' ? handleTry2032 : undefined}
           />
