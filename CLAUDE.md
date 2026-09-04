@@ -338,10 +338,17 @@ paragraph under them says it again. The absence is the design, not an oversight 
   still for **5150ms** after each pact.
   **The middle row's label changes with the row.** On the 2026 board it reads `(2026)` until a pact
   makes it `(Pact)`, and that hand-over is a dissolve running over the row's own rise rather than a
-  flip on the click. Only the ending crosses: `Minority Districts` is drawn once at full strength, the
-  new ending fades up on a `fillOpacity` tspan inside it, and the old one is a second `text` whose
-  prefix is a `fill="none"` tspan — painting nothing but advancing the pen, so the two endings land on
-  the same x at any size the swell is passing through and nothing has to measure the prefix.
+  flip on the click. Only the ending crosses: the row is three `text` elements, one drawing
+  `Minority Districts` at full strength and one for each ending, and each ending's own text opens with
+  a `fill="none"` tspan holding the prefix — painting nothing but advancing the pen, so the endings
+  land on the same x at any size the swell is passing through and nothing has to measure the prefix.
+  **Every visible run is a parent run, and that is not tidiness.** A `<tspan>` carrying glyphs under
+  `dominant-baseline="central"` renders half a unit below the line its own `text` sits on — the
+  parent's `central` resolved a second time against the run's own baseline table — which at this size
+  is a parenthetical visibly sagging away from the words before it, and it was doing exactly that
+  before. Nothing said on the tspan recovers it: `dominant-baseline: auto`, `inherit` and
+  `alignment-baseline: baseline` all sag alike. It is the same fault as the drooping party letter on
+  the count below, and it wants the same answer — keep the glyphs out of the tspan.
   Crossfading two whole labels was tried and is wrong twice over: the shared prefix goes through both
   layers at part opacity and lightens visibly at the halfway point, and before the fade starts the two
   endings sit stacked and legible as neither. The fade runs off `elapsed` and not off `1 - midSize`,

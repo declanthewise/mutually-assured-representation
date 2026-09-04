@@ -792,6 +792,16 @@ function BoxBody({
 
       {/* What the map delivers: the enacted count in 2026, the pact's own in 2032. */}
       <g opacity={fadeFor(gapSize)}>
+        {/* Three runs on one line, and every one of them a *parent* run: a `<tspan>`
+            carrying visible glyphs under `dominant-baseline="central"` is dropped half
+            a unit off the line its own text sits on, which at this size is a
+            parenthetical visibly sagging away from the words before it. Nothing said
+            on the tspan recovers it — `dominant-baseline: auto`, `inherit` and
+            `alignment-baseline: baseline` all sag alike — because the shift is the
+            parent's `central` being resolved a second time against the run's own
+            baseline table. So the prefix is drawn alone, and each ending is its own
+            text that walks the pen out to meet it. Same trick, same reason, as the
+            drooping party letter on the count below. */}
         <text
           x={6}
           y={atMid(EQ_ROW_Y[1], SWELL_ROW_Y)}
@@ -799,10 +809,20 @@ function BoxBody({
           fontSize={atMid(EQ_LABEL_SIZE, PACT_SWELL_LABEL_SIZE)}
           fill="#888"
         >
-          {'Minority Districts '}
-          <tspan fillOpacity={midLabelWas === null ? 1 : 1 - midLabelWasOpacity}>
-            ({midLabel})
-          </tspan>
+          Minority Districts
+        </text>
+        <text
+          x={6}
+          y={atMid(EQ_ROW_Y[1], SWELL_ROW_Y)}
+          dominantBaseline="central"
+          fontSize={atMid(EQ_LABEL_SIZE, PACT_SWELL_LABEL_SIZE)}
+          fill="#888"
+          fillOpacity={midLabelWas === null ? 1 : 1 - midLabelWasOpacity}
+        >
+          {/* Advances the pen without painting anything, so an ending lands exactly
+              where the prefix leaves off at any size the swell is passing through —
+              and nothing has to measure the prefix to put it there. */}
+          <tspan fill="none">{'Minority Districts '}</tspan>({midLabel})
         </text>
         {midLabelWas !== null && (
           <text
@@ -815,9 +835,6 @@ function BoxBody({
             // else, so the two readings hand over across it.
             fillOpacity={midLabelWasOpacity}
           >
-            {/* Advances the pen without painting anything, so the old ending lands
-                exactly where the new one does at any size the swell is passing
-                through — and nothing has to measure the prefix to put it there. */}
             <tspan fill="none">{'Minority Districts '}</tspan>({midLabelWas})
           </text>
         )}
