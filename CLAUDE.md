@@ -84,8 +84,10 @@ paragraph under them says it again. The absence is the design, not an oversight 
   longer on the match graph's pact links**: those are drawn in their own two states' colors, before
   and after, so the link reports what the pact bought rather than asserting that it bought something.
   A pact that disarmed both partners comes to rest on `EVEN_GRAY` the whole way across, which is that
-  ramp's own word for a state at its proportional share and says the same thing black would. The one
-  black left on the graph is the × and the "Your Pacts" heading, which are interface and not argument.
+  ramp's own word for a state at its proportional share and says the same thing black would. The only
+  black left on the graph is the "Your Pacts" heading, which is interface and not argument. The × is
+  `GAP_ORANGE` throughout, ring and tick alike: it is one control, and a black ring around an orange
+  tick read as two marks, with the ring taking the eye first and saying nothing the tick hadn't.
   Red/blue stay reserved for party — which is why the map's pact badges are party-colored and not black: a
   badge names the party the pact hands seats back to, so it is a party fact, not a fairness one. The
   arc between them is the fairness half of that pair, in `FAIR_BLACK`, and so is the ring around each

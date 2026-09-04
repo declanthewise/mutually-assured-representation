@@ -1705,7 +1705,7 @@ export function BipartiteMatchGraph({
                     }}
                   >
                     <title>Break this pact</title>
-                    <circle r={REMOVE_R} fill="white" stroke={FAIR_BLACK} strokeWidth={1.5} />
+                    <circle r={REMOVE_R} fill="white" stroke={GAP_ORANGE} strokeWidth={1.5} />
                     <path
                       d={`M${-REMOVE_TICK} ${-REMOVE_TICK}L${REMOVE_TICK} ${REMOVE_TICK}
                           M${REMOVE_TICK} ${-REMOVE_TICK}L${-REMOVE_TICK} ${REMOVE_TICK}`}

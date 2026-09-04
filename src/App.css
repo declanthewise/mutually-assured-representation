@@ -606,13 +606,20 @@ body {
   cursor: pointer;
 }
 
-.bipartite-graph .pact-remove circle {
-  transition: fill 150ms ease;
+.bipartite-graph .pact-remove circle,
+.bipartite-graph .pact-remove path {
+  transition: fill 150ms ease, stroke 150ms ease;
 }
 
-/* The ring fills in; the orange × rides on top of it either way. */
+/* The ring fills in, and the × turns out of it. The control is one colour now, ring
+   and tick alike, so an orange tick on an orange disc would put the × out — it swaps
+   to the ground it was drawn on and the gesture reads exactly as it did in black. */
 .bipartite-graph .pact-remove:hover circle {
-  fill: #000000; /* FAIR_BLACK — see src/colors.ts */
+  fill: #de7128; /* GAP_ORANGE — see src/colors.ts */
+}
+
+.bipartite-graph .pact-remove:hover path {
+  stroke: #ffffff;
 }
 
 @media (prefers-reduced-motion: reduce) {
