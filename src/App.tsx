@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { HeroMap } from './components/HeroMap';
-import { BipartiteMatchGraph, ResultsPanel } from './components/BipartiteMatchGraph';
+import { BipartiteMatchGraph, ResultsPanel, baselinePool } from './components/BipartiteMatchGraph';
 import { useTopoData } from './map/useTopoData';
 import {
   computeResidualGaps,
@@ -9,10 +9,27 @@ import {
 import { computeResidualGaps2032 } from './data/plan2032';
 import type { EraId } from './components/BipartiteMatchGraph';
 import { MatchPair } from './types';
+import { FAIR_BLACK, GAP_ORANGE } from './colors';
 
 function pairKey(a: string, b: string): string {
   return [a, b].sort().join('-');
 }
+
+/** Single-digit counts read as words in the headline; anything larger stays a numeral. */
+const SPELLED = [
+  'zero',
+  'one',
+  'two',
+  'three',
+  'four',
+  'five',
+  'six',
+  'seven',
+  'eight',
+  'nine',
+] as const;
+
+const spellCount = (n: number) => SPELLED[n] ?? String(n);
 
 /** How long to wait for the page to reach the top before giving up on it. */
 const SCROLL_HOME_MS = 2000;
@@ -87,6 +104,12 @@ function App() {
     () => computeNationalRepresentationGap(boardGaps),
     [boardGaps],
   );
+
+  // What the headline counts: the gap the board opened with, and how much of it the
+  // pacts closed. Both come off whichever board is on screen — 104 against the enacted
+  // maps, 182 against the maps 2032 would bring if nobody signed anything.
+  const pool = baselinePool(era);
+  const seatsClosed = pool - boardNationalGap;
 
   const handleToggleMatch = useCallback((pair: MatchPair) => {
     const pk = pairKey(pair[0], pair[1]);
@@ -222,8 +245,7 @@ function App() {
           <div className="app-intro">
             <p>
               Gerrymandering has pulled the United States into an arms race between red states and
-              blue states. State minority parties are going extinct and the House has never been
-              more divided. The only way to stop the escalation is to concurrently implement new
+              blue states. The only way to stop the escalation is to concurrently implement new
               Congressional district maps that are equally less disproportionate, one red state
               and one blue state at a time, so the margin in Congress remains unchanged.
             </p>
@@ -247,9 +269,8 @@ function App() {
         <>
           {/* Outside the viewport, so it stays put while the columns rise into it. */}
           <p className="match-instructions">
-            {/* A line each, so the break lands after "column," and nowhere else. */}
-            <span>Click a state to see its best matches at the top of the opposite column,</span>
-            <span>then click one of those states to confirm the pact.</span>
+            Click a state to see its best matches at the top of the opposite column, then
+            click one of those states to confirm the pact.
           </p>
 
           <div className="match-columns-viewport">
@@ -282,16 +303,64 @@ function App() {
       )}
 
       {finished && (
-        <div className="visualization-wide match-columns">
-          <ResultsPanel
-            era={era}
-            selectedMatches={selectedMatches}
-            nationalRepresentationGap={boardNationalGap}
-            residualGaps={boardGaps}
-            onRetry={handleStartOver}
-            onTry2032={era === '2026' ? handleTry2032 : undefined}
-          />
-        </div>
+        <>
+          {/* The run said in a sentence, up here with the pitch and the instructions
+              rather than inside the panel: it is the page speaking, where everything
+              below it is the board reporting itself in its own boxes. So it is set as
+              they are — the page's prose, ranged left on the prose measure, wrapping
+              where the width says to. It used to break by hand, a clause to a line,
+              which put "stand," alone on a line of its own once the type came down to
+              prose size.
+
+              The 2032 board says less: its second clause used to be the margin claim
+              the 2026 board makes, and that claim stopped being true there once an
+              unclosed gap began going to the state's own majority — an uneven pact
+              moves the House. Rather than qualify it on every uneven run, it goes, and
+              the headline says the one thing always true of that board: how many
+              districts the pacts drew proportionally that nobody would have drawn. */}
+          {era === '2032' ? (
+            <p className="results-headline">
+              Your {spellCount(selectedMatches.length)}{' '}
+              {selectedMatches.length === 1 ? 'pact' : 'pacts'} created{' '}
+              <span className="headline-figure" style={{ color: FAIR_BLACK }}>
+                {seatsClosed}
+              </span>{' '}
+              minority party districts.
+            </p>
+          ) : seatsClosed > 0 ? (
+            <p className="results-headline">
+              Your {spellCount(selectedMatches.length)}{' '}
+              {selectedMatches.length === 1 ? 'pact' : 'pacts'} returned{' '}
+              <span className="headline-figure" style={{ color: FAIR_BLACK }}>
+                {seatsClosed}
+              </span>{' '}
+              of{' '}
+              <span className="headline-figure" style={{ color: GAP_ORANGE }}>
+                {pool}
+              </span>{' '}
+              districts, and the U.S. House district margin is unchanged.
+            </p>
+          ) : (
+            <p className="results-headline">
+              No seats returned yet — all{' '}
+              <span className="headline-figure" style={{ color: GAP_ORANGE }}>
+                {pool}
+              </span>{' '}
+              disproportionate districts stand, and the U.S. House district margin is
+              unchanged.
+            </p>
+          )}
+
+          <div className="visualization-wide match-columns">
+            <ResultsPanel
+              era={era}
+              selectedMatches={selectedMatches}
+              residualGaps={boardGaps}
+              onRetry={handleStartOver}
+              onTry2032={era === '2026' ? handleTry2032 : undefined}
+            />
+          </div>
+        </>
       )}
 
       <footer className="article-footer">

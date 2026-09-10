@@ -491,6 +491,15 @@ paragraph under them says it again. The absence is the design, not an oversight 
   baseline gap, 104 and 182) and its `returned` alongside the four questions the columns ask, so the
   two boards are described once. Kept in its own file, the panel imported half the graph and kept a
   second record of the same two boards beside it.
+  **The headline over it is not the panel's**, and is set in `App.tsx` with the opening prose and the
+  match instructions: it is the page speaking about the run, where everything below it is the board
+  reporting itself in its own boxes. `App` counts it from `boardNationalGap` against `baselinePool`,
+  a one-line export off the same `ERAS` record, so the boards are still described once and the panel
+  no longer takes a `nationalRepresentationGap` prop. The 0.5rem that was `.results-panel`'s top
+  padding went with it to `.results-headline`, which otherwise **shares `.app-intro`'s rule** exactly
+  as the instructions do — ranged left on the prose measure, wrapping where the width says to. Its
+  clause-per-line breaks are gone with the centering (`.headline-line`, `display: block`): at prose
+  size they put "stand," alone on a line.
   The border on a results box is still the state's **residual** gap, exactly as it is on the board, so
   the two partners in a pact usually disagree: a state the pact made whole comes to rest on the pale
   neutral while one still short keeps its blue or its red, and the link between them is half of each.
@@ -535,9 +544,15 @@ paragraph under them says it again. The absence is the design, not an oversight 
   fixing, the move is to scope the sticky to `.hero-section.compact` so the map pins only after
   Start, rather than to move the title again.
 - **Typography**: every block of running text on the page — the opening prose (`.app-intro`), the
-  match instructions and the results headline — is set **identically**: Source Sans 3 at `0.94rem`,
-  1.55 leading, `#444`. Only the alignment differs, the latter two being centered. Every sentence the
-  page speaks in its own voice looks the same; the display faces are for the title and the figures.
+  match instructions and the results headline — is set **identically**, off one shared rule rather
+  than three copies of it: Source Sans 3 at `0.94rem`, 1.55 leading, `#444`, ranged left on a 620px
+  measure, and nothing in any of the three forces a break. No two of them ever share a screen, so
+  every sentence the page speaks in its own voice looks the same; the display faces are for the
+  title and the figures.
+  The headline's **figures are bold** (`.headline-figure`) on top of the colors they already carry —
+  black for what the pacts closed, orange for the gap they were spent against. At prose size the
+  weight is what picks them out of the sentence, which the display face it used to be set in did for
+  free. The spelled count of pacts is not one of them: it is a word.
   The results panel has no prose under its headline any more — the pacts are drawn there rather than
   written out (see the roster below), so `.results-pacts` and the 660px `.results-wide` measure it
   wanted are both gone, and the panel sits in the ordinary `.visualization-wide` 520.
@@ -546,10 +561,16 @@ paragraph under them says it again. The absence is the design, not an oversight 
   measure for the one-line 2032 variant. **All of that is gone.** At prose size every line the
   headline can produce fits several times over, so the wording can change without re-measuring
   anything — which is what that arithmetic existed to protect.
-  `.match-instructions span` is still `display: block`, so the break lands after "column," at every
-  width, but it is no longer `nowrap`: at prose size the first clause measures 434px and would put a
-  phone into a horizontal scroll. It holds two lines down to 600px, three to 390px and four at 320px,
-  with no overflow at any width.
+  `.match-instructions` and `.results-headline` **share `.app-intro`'s rule** rather than restating
+  it — the same 620px measure, insets and phone cap, on the same selector list — so all three are
+  the same block of prose at every width. No two share a screen, and set even slightly apart they
+  read as the page changing its voice partway through a run. Each keeps only its own air: 12px over
+  the instructions, 0.5rem and 0.9rem around the headline. The graph's own 520 measure was tried for them, to put the ragged edge on the boxes' left
+  edge, and is wrong: the reader compares this paragraph to the one on the opening screen, not to
+  the column under it. Nothing forces a break in the sentence either; clause-per-line is gone — a
+  `span` each at `display: block`, `nowrap` besides before that — because a sentence held to a shape
+  the width didn't ask for reads as two stacked fragments rather than one instruction, and the first
+  clause measures 434px, which is a horizontal scroll on a phone.
 
 ## Commands
 

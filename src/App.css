@@ -162,8 +162,13 @@ body {
    =========================== */
 
 /* The pitch, between the title and the button — narrower than the title, so the
-   three stack as one centered column. */
-.app-intro {
+   three stack as one centered column. The match instructions and the results headline
+   take the same rule rather than copies of it: no two of the three ever share a
+   screen, and set even slightly apart they read as the page changing its voice partway
+   through a run. */
+.app-intro,
+.match-instructions,
+.results-headline {
   max-width: 620px;
   margin: 0 auto;
   padding: 0 1.5rem;
@@ -293,27 +298,34 @@ body {
 /* Centering is the only thing this box does to its text now. The headline used to
    be sized in `cqi` against it — hence a container context — but it is set in the
    page's prose instead, so there is nothing left to measure. */
+/* The headline is no longer in here — it is the page's own sentence, set in `App.tsx`
+   over the panel — so the air that used to sit above it inside this padding has gone
+   with it to `.results-headline`. What is left is the roster, the buttons, and the
+   space under them. */
 .results-panel {
   text-align: center;
-  padding: 0.5rem 0 1rem;
+  padding: 0 0 1rem;
 }
 
-/* The page's prose, centered: same family, size, leading and colour as `.app-intro`.
-   It was Playfair at `min(4.4cqi, 1.5rem)`, sized so its longest line stayed
-   unbroken, and all of that arithmetic is gone with it — at prose size every line
-   the headline can produce fits several times over, so nothing has to be re-measured
-   when the wording changes. The 2026 board's two lines are still set by hand in the
-   markup (see `.headline-line`), because that break is a rhetorical one rather than
-   anything the width forces. */
+/* Everything about how it is set comes from the prose rule above; what is left here is
+   the air around it. The 0.5rem over it used to be `.results-panel`'s top padding and
+   came out with the headline.
+   It was Playfair at `min(4.4cqi, 1.5rem)`, sized so its longest line stayed unbroken,
+   and all of that arithmetic is gone with it — at prose size every line the headline
+   can produce fits several times over, so the wording can change without re-measuring
+   anything. The clause-per-line breaks are gone too (`.headline-line`, `display:
+   block`): at prose size they put "stand," alone on a line. */
 .results-headline {
-  font-size: 0.94rem;
-  line-height: 1.55;
-  color: #444;
+  margin-top: 0.5rem;
   margin-bottom: 0.9rem;
 }
 
-.headline-line {
-  display: block;
+/* The figures the headline is about, set bold against the sentence carrying them.
+   They already have their colors — black for what the pacts closed, orange for the
+   gap they were spent against — and the weight is what lets them be picked out of a
+   line of prose at prose size, which the old display face did for free. */
+.headline-figure {
+  font-weight: 700;
 }
 
 /* The pacts, in the board's own boxes rather than a line of type each — see
@@ -333,30 +345,14 @@ body {
 /* The columns' header. It runs to the graph's own width so the two read as one
    block, and being HTML it wraps on its own — the SVG would need every line set
    by hand. */
+/* Everything about how it is set comes from the prose rule above. What is left here
+   is the air over it: half the 24px the graph keeps above its first row (TOP_PAD),
+   matched above the text so it stays centered in its own band — the viewport below
+   claws back the other half with a negative margin.
+   Nothing forces a break in it. Clause-per-line was tried — a `display: block` span
+   each — and reads as two stacked fragments rather than one instruction. */
 .match-instructions {
-  /* A line per clause, so the break lands after "column," at every width rather
-     than wherever the text happens to run out. */
-  max-width: none;
-  /* Half the 24px the graph keeps above its first row (TOP_PAD), matched above
-     the text so it stays centered in its own band — the viewport below claws
-     back the other half with a negative margin. */
-  margin: 12px auto 0;
-  padding: 0 1rem;
-  text-align: center;
-  /* The page's prose, like the headline and the intro — one voice for every
-     sentence the page speaks. */
-  font-size: 0.94rem;
-  line-height: 1.55;
-  color: #444;
-}
-
-/* Block, so the break lands after "column," at every width. It used to be `nowrap`
-   as well, which is not safe at prose size: the first clause measures 434px and would
-   push a phone into a horizontal scroll. Letting a clause wrap costs a line on a
-   narrow screen and keeps the clause break where it belongs — two lines down to
-   600px, three to 390px, four at 320px, and no overflow at any of them. */
-.match-instructions span {
-  display: block;
+  margin-top: 12px;
 }
 
 .match-columns-viewport {
@@ -636,7 +632,9 @@ body {
      directly under the title: two different insets would read as one block set
      crooked. */
   .app-title,
-  .app-intro {
+  .app-intro,
+  .match-instructions,
+  .results-headline {
     padding-left: 0.25rem;
     padding-right: 0.25rem;
   }
@@ -648,7 +646,9 @@ body {
      that same 364px plus the padding either side (border-box) puts the two text
      bands on one pair of edges at every width the title still fits on one line.
      The 620px of the base rule is the desktop measure and takes over above. */
-  .app-intro {
+  .app-intro,
+  .match-instructions,
+  .results-headline {
     max-width: 23.25rem;
   }
 
