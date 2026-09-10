@@ -279,6 +279,11 @@ function App() {
     setMatches2032([]);
     setEra('2032');
     setFinished(false);
+    // The 2026 board may have risen over its instructions after the first pact.
+    // Reset that position in the same render that opens 2032, so the new
+    // instructions can reveal to their full height instead of starting behind
+    // the still-raised columns and dropping out only on the following effect.
+    setColumnsRisen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 

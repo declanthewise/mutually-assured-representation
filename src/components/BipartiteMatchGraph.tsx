@@ -1,4 +1,4 @@
-import { CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
+import { CSSProperties, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { BranchControl, StateData, MatchPair } from '../types';
 import {
@@ -1580,6 +1580,16 @@ export function BipartiteMatchGraph({
   // same list of pacts, so nothing but the counts moves.
   const [seal, setSeal] = useState<Seal | null>(null);
 
+  // Hand the border's emphasis directly from hover to the click state. Clearing
+  // hover in the click handler briefly let the ordinary stroke through before the
+  // active (or settling) state took ownership, which made the border blink thin.
+  // A layout effect clears the spent hover before paint, after that persistent
+  // state has rendered, and also prevents touch hover from surviving a later
+  // deselection or a pact's linger.
+  useLayoutEffect(() => {
+    setHoveredStateId(null);
+  }, [activeStateId, seal]);
+
   useEffect(() => {
     if (!seal) return;
     const timeoutId = setTimeout(() => setSeal(null), PACT_LINGER_MS);
@@ -1721,11 +1731,6 @@ export function BipartiteMatchGraph({
 
   const handleStateClick = (state: StateData, e: React.MouseEvent) => {
     e.stopPropagation();
-
-    // The click is about to move this box, so whatever the pointer was over it is
-    // no longer over. The next pointer move re-establishes it; until then the
-    // border says only what the click made it.
-    setHoveredStateId(null);
 
     // Any further click ends the previous pact's linger early: the user has moved
     // on, and the board should answer this click rather than the last one.
