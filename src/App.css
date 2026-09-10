@@ -357,10 +357,7 @@ body {
    same height and the swap at Finish moves nothing. */
 .match-instructions,
 .results-headline {
-  /* The reveal below has to clear this gap as well as the paragraph's own height,
-     so the figure is written once here and read from the keyframe. */
-  --header-top-gap: 14px;
-  margin-top: var(--header-top-gap);
+  margin-top: 14px;
 }
 
 /* Start and Finish mount their respective headings inside this clipped reveal.
@@ -374,13 +371,9 @@ body {
   animation: header-from-map 650ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* Its own height *and* the gap over it: the clip box starts at the map's foot and
-   the paragraph sits `--header-top-gap` below that, so a bare -100% leaves the last
-   line's descenders standing in the band from the first frame — the copy arriving
-   already cut off along the top instead of coming out from under the map. */
 @keyframes header-from-map {
   from {
-    transform: translateY(calc(-100% - var(--header-top-gap)));
+    transform: translateY(-100%);
     opacity: 0;
   }
   to {
