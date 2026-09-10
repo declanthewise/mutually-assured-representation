@@ -21,12 +21,10 @@ src/
 ├── main.tsx                 # Entry point
 ├── components/              # All UI
 │   ├── HeroMap.tsx          # D3-based interactive US map — clouds, pact badges and arcs
-│   ├── StateTooltip.tsx     # Hover tooltip, driven by HeroMap
 │   ├── BipartiteMatchGraph.tsx  # Two re-sorting columns of state boxes; draws either era.
 │   │                            #   Also the results panel, which reports the pacts in those
 │   │                            #   same boxes — see ResultsPanel at the foot of the file
-│   ├── StatBar.tsx          # House balance + national rep. gap (sticky, above the map)
-│   └── AnimatedCount.tsx    # Count-up number, used by StatBar and the match graph
+│   └── AnimatedCount.tsx    # Count-up number, used by the match graph
 ├── data/                    # Data plus the math over it; nothing generated
 │   ├── cook2026DistrictPVI.tsv  # 2026 Cook PVI, all 435 districts
 │   ├── districtLeans.ts     # Parses that file into per-state + national seat counts
@@ -53,8 +51,8 @@ stays out of the bundle while `tsc -b` still type-checks it against the data it 
 beside `stateData.ts` rather than in a `scripts/` directory because it exists to check that file,
 and the two should move together.
 
-`HeroMap` and `StateTooltip` are the only consumers of `src/map/`, but they live with the other
-components rather than beside the geometry they draw.
+`HeroMap` is the only consumer of `src/map/`, but it lives with the other components rather than
+beside the geometry it draws.
 
 The topology is imported as `./us-states-10m.json?url` — a plain JSON import would inline all 112 KB
 into the JS bundle, which is what `?url` plus the runtime fetch exists to avoid. Keep the suffix.
@@ -164,7 +162,7 @@ paragraph under them says it again. The absence is the design, not an oversight 
   where against a fixed two-mark strip it was eleven short. Two of the four never render, ND and SD
   being single-district. South Carolina clears by 1.2, so re-measure the moment the marks, the pyramid
   or the badge changes size. The full name stays on the element's `title` and everywhere else — the
-  map, the tooltip, the results list — is untouched.
+  map, the results list — is untouched.
 - **Sealing a pact** puts both partners at the head of their columns for the length of the linger and
   closes a link between them. The state clicked first is already there — that is what clicking it did
   — and `headedBy()` pins the partner, which could have come from anywhere down the opposite column.
@@ -251,8 +249,8 @@ paragraph under them says it again. The absence is the design, not an oversight 
   Gaps and pacts are whole numbers throughout. There is no half-seat arithmetic anywhere; it was tried
   and pulled out, because it put fractions into the gap, the badges, the national total and the counts
   a pact leaves behind.
-  **The state boxes don't mention undecided districts at all.** They are a national fact and the stat
-  bar is the only place they appear. That was tried the other way — `1E 4R` beside the count, an `even`
+  **The state boxes don't mention undecided districts at all.** They are a national fact, and with the
+  stat bar retired nothing on the page shows them. That was tried the other way — `1E 4R` beside the count, an `even`
   field on `FairSplit`, and a pact that spent surplus undecided districts against each other — and
   pulled back out for being three ideas where the argument wants one. The gap absorbs them instead,
   which is what a real pact would do with them anyway.
@@ -436,31 +434,22 @@ paragraph under them says it again. The absence is the design, not an oversight 
   state owes, so it counts *up* into existence rather than down from a figure the board never showed.
   Both boards run their counts at the same pace (`SEAL_COUNT_MS`, half an ordinary count), since a
   count means the same thing on either and should take the same time to say it.
-  **The stat bar runs the opposite way on the two boards**, because the boards start from opposite
-  places. 2026 measures enacted maps, so both figures are full at the outset and the pacts work them
-  down: 104 of gap draining away, against a House already drawn and a margin of R+24 no pact may
-  move. 2032 starts from a clean sheet, so both start at **0 and fill**.
-  The margin reads **EVEN** on an empty ring of bare track. A state that signs draws its map, so every
-  district in its fair minority's share is decided by doing so: the pact hands `returned` of them to
-  the minority, and **whatever it leaves short goes to that state's own majority**, because those
-  districts don't stay blank. An evenly matched pact therefore cancels exactly and the centre holds —
-  California against Texas is 18 each, and the House stays EVEN. A mismatch does not: California
+  **There is no stat bar**, and no map tooltip: both were retired, so nothing on the page reports a
+  running House balance or a national gap any more. The boxes and the results panel are the whole
+  account. `computeStatedGap2032`, `computeDrawn2032`, `houseBalance`, `houseBalanceParty` and
+  `nationalSeatTotals` went with the bar, which was their only reader, as did `TRACK_GRAY`. The
+  columns' scroll-into-view no longer measures a sticky bar for headroom — restore that allowance
+  along with the bar if it ever comes back.
+  What the bar used to say is still true of the math, and the 2032 board still turns on it: a state
+  that signs draws its map, so every district in its fair minority's share is decided by doing so —
+  the pact hands `returned` of them to the minority, and **whatever it leaves short goes to that
+  state's own majority**, because those districts don't stay blank. An evenly matched pact cancels
+  exactly and the House holds: California against Texas is 18 each. A mismatch does not — California
   against Florida trades 14, and the 4 California still owes its Republicans get drawn Democratic
-  instead, so the ring reads 14R/18D and the margin **D+4**. Add New York against Texas and Texas's 8
-  unclosed districts go the other way, landing the board at 32R/28D and **R+4**.
-  That tilt is the honest reading of an uneven pact and the argument for pairing states of like size:
-  the residual isn't a rounding error, it is seats. The `EVEN` label is computed, not hardcoded, so
-  the bar reports what the pact math did rather than holding at zero on trust.
-  The undrawn remainder is `TRACK_GRAY` and not `EVEN_GRAY`: nobody has decided it either way, where
-  an EVEN district is one a map drew and left competitive.
-  The gap uses `computeStatedGap2032`, which counts **only the states that have signed** — it is not
-  the sum of every state's residual gap. It starts at 0 and climbs, matching the boxes, whose gap rows
-  are blank until they have a pact. A bar reading 182 over a board of blank rows would assert the very
-  number the board is refusing to. A pact that returns nothing still counts both partners in full:
-  they signed, and their map leaves them exactly as short as they started. The results panel is the
-  one place the full residual is still used, since its headline measures against the 182 baseline.
-  The hero map and the tooltip *do* follow the board. `HeroMap` takes the era and looks its gaps and
-  pact payout up in a `BOARDS` record, and the badge's gap travels on the badge datum so a badge is
+  instead, so the House tilts D+4. That tilt is the honest reading of an uneven pact and the argument
+  for pairing states of like size: the residual isn't a rounding error, it is seats.
+  The hero map follows the board. `HeroMap` takes the era and looks its gaps and pact payout up in a
+  `BOARDS` record, and the badge's gap travels on the badge datum so a badge is
   colored by the board that drew it. **Both icon scales are derived from the board's own gaps**, by
   `scaleLimits()`, rather than being constants: constants went stale the moment the 2032 board changed
   shape — its largest gap went 14 → 18 against a `MAX_REP_GAP` of 16, and the cloud scale has no
@@ -471,7 +460,7 @@ paragraph under them says it again. The absence is the design, not an oversight 
   **The 2032 results headline is one line and claims nothing about the margin**: "Your three pacts
   created 70 proportional districts." Its second line used to be the 2026 board's margin claim, which
   stopped being true there the moment an unclosed gap started going to the state's own majority — an
-  uneven pact moves the House, and the stat bar says so. Rather than qualify it on every uneven run,
+  uneven pact moves the House. Rather than qualify it on every uneven run,
   the line goes and the headline says the one thing always true of that board: how many districts the
   pacts drew proportionally that nobody would otherwise have drawn.
   There is no "After the 2030 Census" kicker over it any more, and no era label of any kind on the

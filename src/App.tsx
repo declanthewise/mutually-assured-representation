@@ -1,20 +1,14 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { HeroMap } from './components/HeroMap';
 import { BipartiteMatchGraph, ResultsPanel } from './components/BipartiteMatchGraph';
-import { StatBar } from './components/StatBar';
-import { StateTooltip } from './components/StateTooltip';
 import { useTopoData } from './map/useTopoData';
 import {
   computeResidualGaps,
   computeNationalRepresentationGap,
 } from './data/computeRepresentationGap';
-import {
-  computeDrawn2032,
-  computeResidualGaps2032,
-  computeStatedGap2032,
-} from './data/plan2032';
+import { computeResidualGaps2032 } from './data/plan2032';
 import type { EraId } from './components/BipartiteMatchGraph';
-import { HoveredState, MatchPair } from './types';
+import { MatchPair } from './types';
 
 function pairKey(a: string, b: string): string {
   return [a, b].sort().join('-');
@@ -57,14 +51,11 @@ function rideHome(then: () => void): () => void {
 }
 
 function App() {
-  const [hoveredState, setHoveredState] = useState<HoveredState | null>(null);
-
   // Which board is on screen. The two keep separate pact lists rather than sharing
   // one, because they are not the same board: the 2032 apportionment drops Rhode
   // Island and moves fourteen delegations, so a 2026 pairing need not even exist
   // there. Keeping them apart also leaves the 2026 run intact behind the 2032 board,
-  // which is what the stat bar and the map go on showing — neither answers to 2032,
-  // since both are reading enacted maps and there are none.
+  // so Retry can put the whole thing back.
   const [era, setEra] = useState<EraId>('2026');
   const [matches2026, setMatches2026] = useState<MatchPair[]>([]);
   const [matches2032, setMatches2032] = useState<MatchPair[]>([]);
@@ -75,9 +66,9 @@ function App() {
   const selectedMatches = era === '2032' ? matches2032 : matches2026;
   const setSelectedMatches = era === '2032' ? setMatches2032 : setMatches2026;
 
-  // Each board keeps its own gaps. The 2026 ones are a fact about enacted maps, so
-  // the stat bar and the hero map read them whichever board is up; the 2032 ones are
-  // what the columns and the results answer to while that board is the one on screen.
+  // Each board keeps its own gaps: the 2026 ones are a fact about enacted maps, the
+  // 2032 ones only what a pact has drawn. The map, the columns and the results all
+  // read whichever board is on screen.
   const residualGaps = useMemo(
     () => computeResidualGaps(matches2026),
     [matches2026],
@@ -96,12 +87,6 @@ function App() {
     () => computeNationalRepresentationGap(boardGaps),
     [boardGaps],
   );
-
-  // The stat bar's two 2032 readings, both of which start at zero and fill: the gap
-  // only the signed states have left behind, and the districts the pacts have drawn.
-  // The 2026 board has neither — its bar reads the enacted map and the full residual.
-  const stated2032 = useMemo(() => computeStatedGap2032(matches2032), [matches2032]);
-  const drawn2032 = useMemo(() => computeDrawn2032(matches2032), [matches2032]);
 
   const handleToggleMatch = useCallback((pair: MatchPair) => {
     const pk = pairKey(pair[0], pair[1]);
@@ -164,8 +149,8 @@ function App() {
 
   useEffect(() => () => cancelFinishRide.current(), []);
 
-  // Back to the opening screen with an empty board — the map, the stat bar and the
-  // columns all read off the match lists, so clearing them resets every one of them.
+  // Back to the opening screen with an empty board — the map and the columns both
+  // read off the match lists, so clearing them resets both.
   // Both are cleared whichever board Retry was pressed on: the opening screen is the
   // 2026 pitch, and arriving there with a 2032 run still standing behind it would put
   // pacts on a board the reader never played.
@@ -179,10 +164,9 @@ function App() {
   }, []);
 
   // Straight from the 2026 results onto the post-census board, with the 2026 run left
-  // where it is behind it — the stat bar and the map go on reporting it, and Retry
-  // can still put the whole thing back. No ride home is needed: the results panel is
-  // already at the top, and the board it makes way for is taller than what it
-  // replaces, so nothing falls out from under the reader.
+  // where it is behind it, so Retry can still put the whole thing back. No ride home
+  // is needed: the results panel is already at the top, and the board it makes way
+  // for is taller than what it replaces, so nothing falls out from under the reader.
   const handleTry2032 = useCallback(() => {
     setMatches2032([]);
     setEra('2032');
@@ -192,20 +176,10 @@ function App() {
 
   return (
     <div className="app">
-      {/* The 2032 board hands it a gap counted only over the states that have signed,
-          so the bar starts where the boxes do — at nothing — rather than asserting a
-          total the board itself leaves blank. See StatBar and computeStatedGap2032. */}
-      <StatBar
-        era={era}
-        nationalRepresentationGap={era === '2032' ? stated2032 : boardNationalGap}
-        drawn={drawn2032}
-      />
-
       {/* The map gives up some width once the columns arrive, so they sit higher. */}
       <section className={`hero-section${started ? ' compact' : ''}`}>
         <HeroMap
           topoData={topoData}
-          onHoverState={setHoveredState}
           era={era}
           selectedMatches={selectedMatches}
           residualGaps={boardGaps}
@@ -306,8 +280,6 @@ function App() {
           <a href="https://www.cookpolitical.com/cook-pvi/2026-partisan-voting-index/district-map-and-list" target="_blank" rel="noopener noreferrer">The Cook Political Report</a>.
         </p>
       </footer>
-
-      {hoveredState && <StateTooltip hoveredState={hoveredState} residualGaps={boardGaps} />}
     </div>
   );
 }

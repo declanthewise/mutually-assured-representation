@@ -1694,13 +1694,12 @@ export function BipartiteMatchGraph({
     const top = svgBox.top + rowTopY(placed.row, placed.yOffset) * scale;
     const bottom = top + BOX_H * scale;
 
-    // The stat bar is sticky at the top of the viewport and would cover the row.
-    const statBar = document.querySelector('.stat-bar-wrapper');
-    const headroom = (statBar?.getBoundingClientRect().height ?? 0) + SCROLL_MARGIN;
-    if (top >= headroom && bottom <= window.innerHeight - SCROLL_MARGIN) return;
+    // Nothing is pinned over the top of the viewport any more, so the row only
+    // needs the same air the bottom of it gets.
+    if (top >= SCROLL_MARGIN && bottom <= window.innerHeight - SCROLL_MARGIN) return;
 
     window.scrollBy({
-      top: top - headroom,
+      top: top - SCROLL_MARGIN,
       behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
     });
   }, [anchorId, rowById]);

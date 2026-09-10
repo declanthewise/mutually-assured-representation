@@ -52,10 +52,4 @@ export interface StateData {
   houseParty: BranchControl | null; // null → unicameral (Nebraska only)
 }
 
-export interface HoveredState {
-  state: StateData;
-  x: number;
-  y: number;
-}
-
 export type MatchPair = [string, string];

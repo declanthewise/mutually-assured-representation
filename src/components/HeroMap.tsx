@@ -1,7 +1,7 @@
-import { useEffect, useLayoutEffect, useRef, useMemo } from 'react';
+import { useLayoutEffect, useRef, useMemo } from 'react';
 import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
-import { HoveredState, MatchPair } from '../types';
+import { MatchPair } from '../types';
 import { EVEN_GRAY, FAIR_BLACK, LEAN_DOMAIN, LEAN_RANGE, PARTY_COLORS } from '../colors';
 import { stateDataById } from '../data/stateData';
 import { baselineGaps, pactSeatsReturned } from '../data/computeRepresentationGap';
@@ -54,7 +54,6 @@ const BOARDS = {
 
 interface HeroMapProps {
   topoData: any;
-  onHoverState: (state: HoveredState | null) => void;
   /** Which board is on screen — the clouds, badges and arcs all follow it. */
   era: EraId;
   selectedMatches: MatchPair[];
@@ -143,14 +142,12 @@ function badgeColor(d: BadgeDatum): string {
 
 export function HeroMap({
   topoData,
-  onHoverState,
   era,
   selectedMatches,
   residualGaps,
 }: HeroMapProps) {
   const board = BOARDS[era];
   const svgRef = useRef<SVGSVGElement>(null);
-  const onHoverStateRef = useRef(onHoverState);
   const pathRef = useRef<d3.GeoPath | null>(null);
   const centroidsRef = useRef(new Map<string, [number, number]>());
   const builtRef = useRef(false);
@@ -163,10 +160,6 @@ export function HeroMap({
     }
     return ids;
   }, [selectedMatches]);
-
-  useEffect(() => {
-    onHoverStateRef.current = onHoverState;
-  }, [onHoverState]);
 
   // --- Build: geometry, state shapes and the layer stack. Runs once per topology.
   useLayoutEffect(() => {
@@ -225,23 +218,7 @@ export function HeroMap({
         return data ? leanColorScale(data.partisanLean) : '#ccc';
       })
       .attr('stroke', '#fff')
-      .attr('stroke-width', 1)
-      .style('cursor', 'pointer')
-      .on('mouseenter', function (event: MouseEvent, d: any) {
-        const data = stateDataById[featureStateId(d)];
-        if (!data) return;
-        d3.select(this).attr('stroke', '#333').attr('stroke-width', 2);
-        onHoverStateRef.current({ state: data, x: event.clientX, y: event.clientY });
-      })
-      .on('mousemove', function (event: MouseEvent, d: any) {
-        const data = stateDataById[featureStateId(d)];
-        if (!data) return;
-        onHoverStateRef.current({ state: data, x: event.clientX, y: event.clientY });
-      })
-      .on('mouseleave', function () {
-        d3.select(this).attr('stroke', '#fff').attr('stroke-width', 1);
-        onHoverStateRef.current(null);
-      });
+      .attr('stroke-width', 1);
 
     // State borders
     svg.append('path')

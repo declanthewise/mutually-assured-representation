@@ -1,6 +1,6 @@
 import { MatchPair, StateData } from '../types';
 import { FairSplit, fairSplitOf } from './computeRepresentationGap';
-import { holdsDemocraticBranches, stateData, stateDataById } from './stateData';
+import { holdsDemocraticBranches, stateData } from './stateData';
 
 /**
  * The board as it stands after the 2030 census, when every state redraws at once.
@@ -137,73 +137,6 @@ export function computeResidualGaps2032(selectedMatches: MatchPair[]): Record<st
   }
 
   return residual;
-}
-
-/**
- * The gap the pacts have actually left behind — every signed state's remaining
- * shortfall, and nothing at all from a state that hasn't signed.
- *
- * This is the stat bar's figure, and it is **not** the sum of every state's residual
- * gap. It starts at **0** and grows, which is the same thing the boxes do: a state's
- * gap row is blank until it has a pact, because before one there is no map and so
- * nothing to be short of. A bar reading 182 over a board of blank rows would be
- * asserting the very number the board is refusing to assert.
- *
- * A pact that returns nothing still counts both partners in full. They signed, so
- * they have a map, and it leaves them exactly as short as they started.
- */
-export function computeStatedGap2032(selectedMatches: MatchPair[]): number {
-  let total = 0;
-  for (const [a, b] of selectedMatches) {
-    const returned = pact2032Returned(a, b);
-    for (const id of [a, b]) {
-      total += Math.abs(baselineGaps2032[id] ?? 0) - returned;
-    }
-  }
-  return total;
-}
-
-/**
- * Districts the pacts have settled so far, by party.
- *
- * A state that signs draws its map, and every district in the fair minority's share is
- * decided one way or the other by doing so. The pact hands `returned` of them to the
- * minority; **whatever it leaves short goes to the majority**, because those districts
- * do not stay blank — the state drew them, and it drew them for itself.
- *
- * So an evenly matched pact keeps the House exactly where it was: each partner gives
- * its minority the same number, the partners sit in opposite columns, and the two
- * cancel. California against Texas is 18 each and the margin holds at EVEN. A mismatch
- * doesn't cancel: California against Florida trades 14, and the 4 California still owes
- * its Republicans are drawn Democratic instead, so the House tilts D+4.
- *
- * That tilt is the honest reading of an uneven pact, and it is the argument for pairing
- * states of like size — the residual isn't a rounding error, it is seats.
- *
- * A pact that returns nothing still counts: both partners drew their maps and gave
- * their minorities none of it.
- */
-export function computeDrawn2032(selectedMatches: MatchPair[]): { rSeats: number; dSeats: number } {
-  let rSeats = 0;
-  let dSeats = 0;
-  for (const [a, b] of selectedMatches) {
-    const returned = pact2032Returned(a, b);
-    for (const id of [a, b]) {
-      const state = stateDataById[id];
-      if (!state) continue;
-      // What the pact left short, which the state's own majority draws for itself.
-      const conceded = Math.abs(baselineGaps2032[id] ?? 0) - returned;
-      // A D-leaning state's pact draws districts for its Republicans, and vice versa.
-      if (isDemocraticSide2032(state)) {
-        rSeats += returned;
-        dSeats += conceded;
-      } else {
-        dSeats += returned;
-        rSeats += conceded;
-      }
-    }
-  }
-  return { rSeats, dSeats };
 }
 
 /**

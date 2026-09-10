@@ -32,16 +32,6 @@ export const PARTY_COLORS = { R: '#c93135', D: '#2e6da4' } as const;
  */
 export const EVEN_GRAY = '#c2c0b8';
 
-/**
- * The gap donut's empty track — the arc the orange has already been pulled off.
- * Warm, to sit with the page's off-white rather than against it, and light enough
- * to read as bare ring rather than as a slice of its own. Deliberately not
- * `FAIR_BLACK`: the seats a pact returns are fair representation, but the ring is
- * counting the gap, and what is left there is the gap's absence, not a mark
- * claiming anything.
- */
-export const TRACK_GRAY = '#e8e8e4';
-
 /** Endpoints of the partisan-lean ramp: R at −20, neutral at 0, D at +20. */
 export const LEAN_RANGE = [PARTY_COLORS.R, '#f0f0f0', PARTY_COLORS.D];
 export const LEAN_DOMAIN = [-20, 0, 20];
@@ -92,8 +82,8 @@ export const UNDERREP_DOMAIN = [-0.5, 0, 0.5];
  * is party-colored since branch control is a party fact; a veto and an initiative are
  * machinery, and would be saying something untrue in red or blue. Deliberately not
  * `EVEN_GRAY`, which already means "nobody's" in two places on the same box — the
- * neutral of the border ramp and a chamber no party commands — and not `TRACK_GRAY`,
- * which means an undrawn district. This one sits with the district count's #999 a few
- * units to its left, so the header reads as one quiet strip under the state's name.
+ * neutral of the border ramp and a chamber no party commands. This one sits with the
+ * district count's #999 a few units to its left, so the header reads as one quiet
+ * strip under the state's name.
  */
 export const ROUTE_GRAY = '#8f8f88';

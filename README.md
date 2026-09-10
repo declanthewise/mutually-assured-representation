@@ -245,8 +245,7 @@ Source: [2026 Cook PVI district list](https://www.cookpolitical.com/cook-pvi/202
 
 ### How it flows into the app
 
-1. `districtLeans.ts` parses the district list into per-state `SafeSeatCounts`, plus
-   `nationalSeatTotals` for the House balance stat.
+1. `districtLeans.ts` parses the district list into per-state `SafeSeatCounts`.
 2. `computeRepresentationGap.ts` compares each state's enacted R seats against the proportional
    ideal implied by its statewide PVI. The difference is that state's representation gap.
 3. Pacts subtract the lesser of the two partners' gaps from both, via `computeResidualGaps()`.

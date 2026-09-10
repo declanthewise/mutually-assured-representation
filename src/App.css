@@ -48,8 +48,8 @@ body {
 .hero-section {
   max-width: 980px;
   margin: 0 auto;
-  /* The viewBox is cropped to the geometry, so the map's breathing room under
-     the stat bar has to come from here. */
+  /* The viewBox is cropped to the geometry, so the map's breathing room at the
+     top of the page has to come from here. */
   padding: 0.5rem 1.5rem 0;
   width: 100%;
   position: relative;
@@ -61,9 +61,9 @@ body {
   height: auto;
   display: block;
   margin: 0 auto;
-  /* The states carry a pointer cursor but nothing to click, so a press only ever
-     gets the browser's own answer: a selection flash on a desktop drag, a tinted
-     box on a phone tap. Neither means anything here. */
+  /* Nothing on the map is clickable, so a press only ever gets the browser's own
+     answer: a selection flash on a desktop drag, a tinted box on a phone tap.
+     Neither means anything here. */
   -webkit-tap-highlight-color: transparent;
   -webkit-user-select: none;
   user-select: none;
@@ -96,100 +96,6 @@ body {
   justify-content: space-between;
   font-size: 0.8rem;
   color: #666;
-}
-
-/* ===========================
-   Stat Bar (sticky, above map)
-   =========================== */
-
-.stat-bar-wrapper {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: #fafaf7;
-  /* Tight above and below: this padding is the only air around the rings, and the
-     bar rides sticky over the map, so it is charged against the map's height all
-     the way down the page. The sides keep their full measure. */
-  padding: 0.375rem 1.5rem;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.stat-bar {
-  max-width: 980px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2.5rem;
-}
-
-.stat-block {
-  text-align: center;
-  flex: 0 1 auto;
-}
-
-.stat-divider {
-  width: 1px;
-  align-self: stretch;
-  background: #e0e0e0;
-  flex: 0 0 auto;
-}
-
-.stat-label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #666;
-  line-height: 1.2;
-}
-
-.stat-number {
-  font-size: 2rem;
-  font-weight: 700;
-  line-height: 1.1;
-  color: #222;
-  white-space: nowrap;
-}
-
-.stat-sub {
-  font-size: 0.65rem;
-  color: #999;
-  letter-spacing: 0.03em;
-  line-height: 1.2;
-}
-
-/* Label beside its figure rather than stacked above it. */
-.stat-block-inline {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.6rem;
-}
-
-/* Centered on each other rather than flush to the donut: the lines are uneven
-   lengths ("REPRESENTATION" against "GAP"), and a ragged left edge read worse
-   than a little air between the label and the ring. */
-.stat-block-inline .stat-label {
-  text-align: center;
-  white-space: nowrap;
-}
-
-/* Seat split as a donut, with the headline number sitting in the hole. */
-/* The rings are the tallest thing in the bar, so their size sets its height — it
-   stays sticky over the map, and every rem here is a rem off the top of it. */
-.stat-donut {
-  display: block;
-  width: 4.25rem;
-  height: 4.25rem;
-  flex: 0 0 auto;
-}
-
-/* Keeps the returned-seats arc in step with the number counting down beside it.
-   Length is the only thing that ever moves — the arcs are stacked from 12 o'clock,
-   not butted end to end. */
-.stat-donut-arc {
-  transition: stroke-dasharray 400ms ease-out;
 }
 
 /* ===========================
@@ -639,63 +545,6 @@ body {
 }
 
 /* ===========================
-   Tooltip
-   =========================== */
-
-.tooltip {
-  position: fixed;
-  pointer-events: none;
-  background: #fff;
-  border-radius: 4px;
-  padding: 0.4rem 0.6rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
-  font-size: 0.8rem;
-  max-width: 220px;
-  white-space: normal;
-}
-
-.tooltip-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin-bottom: 0.15rem;
-}
-
-.tooltip-name {
-  font-weight: 600;
-}
-
-.tooltip-districts {
-  color: #666;
-}
-
-.tooltip-metric {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0;
-}
-
-.tooltip-metric:last-child {
-  margin-bottom: 0;
-}
-
-.tooltip-label {
-  font-size: 0.6rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #666;
-}
-
-.tooltip-value {
-  font-weight: 500;
-}
-
-/* ===========================
    Footer
    =========================== */
 
@@ -789,36 +638,5 @@ body {
   /* Matching the phone title's 0.6rem, the same way the desktop rule matches 0.7. */
   .action-row {
     padding: 0.6rem 1rem 1rem;
-  }
-
-  .stat-bar-wrapper {
-    padding: 0.25rem 0.75rem;
-  }
-
-  .stat-bar {
-    gap: 0.75rem 1.25rem;
-    flex-wrap: wrap; /* safety valve on very narrow screens */
-  }
-
-  .stat-number {
-    font-size: 1.4rem;
-  }
-
-  .stat-label {
-    font-size: 0.6rem;
-    letter-spacing: 0.05em;
-  }
-
-  .stat-sub {
-    font-size: 0.58rem;
-  }
-
-  .stat-block-inline {
-    gap: 0.4rem;
-  }
-
-  .stat-donut {
-    width: 3.15rem;
-    height: 3.15rem;
   }
 }
