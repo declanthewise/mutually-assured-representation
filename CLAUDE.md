@@ -601,8 +601,11 @@ paragraph under them says it again. The absence is the design, not an oversight 
   **The page owns its own scrolling, and the browser's anchoring is off** for the whole of it
   (`overflow-anchor: none` on `.app`). Start first uses `rideHome` while the opening screen remains
   intact, then mounts the board only after the viewport reaches the map. Both the instructions and
-  results headline are clipped by `.map-header-reveal` and descend from the map's foot; the board
-  and results roster keep their separate rise from below. Reduced-motion mode collapses the entrances
+  results headline are clipped by `.map-header-reveal` and descend from the map's foot — the whole
+  way, which means the paragraph's own height *plus* the `--header-top-gap` over it, since that gap
+  is inside the clip box too: a bare `translateY(-100%)` left the last line standing in the band from
+  the first frame, so the copy arrived already cut off along the top instead of coming out from under
+  the map. The board and results roster keep their separate rise from below. Reduced-motion mode collapses the entrances
   to a millisecond.
   **Finish does the same thing**, and for the same reason: it is pressed from the foot of the board,
   which is as far down as the page goes, and the panel it swaps in belongs at the top. Scrolling
