@@ -538,15 +538,18 @@ paragraph under them says it again. The absence is the design, not an oversight 
   There is no "After the 2030 Census" kicker over it any more, and no era label of any kind on the
   results — the board is reached by a button that says 2032, and nothing between the click and the
   results panel has claimed to be any other year.
-  **Retry names its board once there is more than one to name.** Off the 2026 results it is bare
-  "Retry", because what it puts back is the whole thing from the opening screen, which is that
-  board's own pitch and needs no year. Off 2032 it is "Retry 2032": there is no pitch to go back to
-  there, so it is the post-census board with an empty run — the same act as the Try 2032 that brought
-  the reader there, and `handleOpen2032` in `App.tsx` is the same handler for both. So the 2032
-  results carry one button where 2026 carries two, and nothing on that screen goes back to the
-  opening screen; the 2026 run is still standing behind it, untouched.
+  **Retry names its board once there is more than one to name.** Off the earlier results it is bare
+  "Retry", there being nothing else on that screen to confuse it with; off the 2032 results the same
+  act is "Retry 2028", beside that board's own "Retry 2032". `handleStartOver` in `App.tsx` is the
+  handler for the first two, `handleOpen2032` for the third and for the Try 2032 that reached it —
+  opening a board and playing it again are the same act.
+  **None of them goes back to the opening screen**: every one puts a board up with an empty run and
+  lands the reader on the columns. The pitch and Start are there to explain a game nobody has played
+  yet, and anybody pressing Retry has played it and read the results, so `started` stays true and
+  what they get is another go rather than the argument for having one.
   The two boards keep **separate pact lists** in `App.tsx`, and each has its own residual gaps. Retry
-  clears both and returns to the opening screen.
+  clears both whichever board it was pressed on — arriving at one with the other's run still standing
+  would put pacts on a board the reader never played.
 
 - **The results report the pacts in the board's own boxes**, not in a line of type each. `PactRoster`
   in `BipartiteMatchGraph.tsx` stands the parked pairs back up — the same `StateBox`, the same flat

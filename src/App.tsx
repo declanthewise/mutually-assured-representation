@@ -255,17 +255,26 @@ function App() {
     window.scrollTo(0, 0);
   }, [finished]);
 
-  // Back to the opening screen with an empty board — the map and the columns both
-  // read off the match lists, so clearing them resets both.
-  // Both are cleared whichever board Retry was pressed on: the opening screen is the
-  // 2026 pitch, and arriving there with a 2032 run still standing behind it would put
-  // pacts on a board the reader never played.
+  // Back to the earlier board with an empty run — the map and the columns both read
+  // off the match lists, so clearing them resets both.
+  // Both lists are cleared whichever board Retry was pressed on: arriving at the
+  // earlier board with a 2032 run still standing behind it would put pacts on a board
+  // the reader never played.
+  // It goes straight to that board and not to the opening screen. The pitch and Start
+  // are there to explain a game nobody has played yet, and anybody pressing Retry has
+  // played it and read its results: what they asked for is another go, so `started`
+  // stays true and the columns are what they land on. It is the same act as Retry 2032
+  // one screen over, and the same act off either results panel — the 2032 results reach
+  // it as "Retry 2028".
   const handleStartOver = useCallback(() => {
     setMatches2026([]);
     setMatches2032([]);
     setEra('2026');
-    setStarted(false);
     setFinished(false);
+    // The board being left may have risen over its instructions after its first pact.
+    // Reset that in the same render, so the fresh board's instructions stand in their
+    // own space rather than starting behind the still-raised columns.
+    setColumnsRisen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
