@@ -63,29 +63,21 @@ body {
   max-width: 980px;
   margin: 0 auto;
   /* The viewBox is cropped to the geometry, so the map's breathing room — over the
-     top of the page, and against the top of the viewport once it pins — has to come
-     from here. The bottom is the map's own ragged coastline, which is the
-     edge the columns pass behind, so there is no padding under it and no rule: a
+     top of the page — has to come from here. The bottom is the map's own ragged
+     coastline, so there is no padding under it and no rule: a
      straight line drawn across the foot of the map would be a second edge competing
      with the one the geometry already draws. */
   padding: 0.5rem 1.5rem 0;
   width: 100%;
-  /* Pinned to the top of the viewport, so the clouds stay in view while the columns
-     are scrolled past them — the map is the scoreboard the board is played against,
-     and a pact's badges and arc land on it a second after the click. It sticks
-     within `.app`, which is the whole page, so it holds all the way to the footer.
-     Opaque and above everything, because the columns ride up underneath it. */
+}
+
+/* The opening page scrolls normally. Once the columns are in play, the map becomes
+   their pinned scoreboard; results return it to the ordinary document flow. */
+.hero-section.playing {
   position: sticky;
   top: 0;
   z-index: 10;
   background: #fafaf7;
-}
-
-/* Once the board becomes its results roster, let the map leave with the rest of
-   the page. It remains sticky on the opening screen and while either board is in
-   play. */
-.hero-section.results {
-  position: static;
 }
 
 .hero-map {
@@ -235,9 +227,13 @@ body {
 /* The button used to fill green on hover. Now that fair representation *is*
    black, it is already wearing that color at rest, so the hover lifts the
    surface instead of changing what it means. */
-.start-btn:hover {
+.start-btn:hover:enabled {
   background: #333;
   transform: translateY(-1px);
+}
+
+.start-btn:disabled {
+  cursor: default;
 }
 
 /* Built like Start: solid black, white type. The two are the ends of the same
@@ -364,13 +360,34 @@ body {
   margin-top: 14px;
 }
 
+/* Start and Finish mount their respective headings inside this clipped reveal.
+   The copy descends from the map's foot instead of flashing into place. */
+.map-header-reveal {
+  overflow: hidden;
+}
+
+.map-header-reveal .match-instructions,
+.map-header-reveal .results-headline {
+  animation: header-from-map 650ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes header-from-map {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
 /* The `margin-top` is set in `App.tsx`: at rest it is the same explicit 12px used
    below the results headline. Once the first pact
    has parked it is instead the whole of the gap
    between the map and the columns, so the board climbs over the paragraph and keeps it.
    Stacked over the instructions so the climb can cover them rather than show type
-   through the boxes. The map's z-index is higher, so the columns still pass under the
-   map while passing over the paragraph.
+   through the boxes.
    The duration is the boxes' own `--row-travel-ms`, handed down from `App.tsx`: the
    states rise a row and the board rises past the paragraph on one curve, so it reads
    as one motion carrying on rather than two things happening at once. */
@@ -574,6 +591,11 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .map-header-reveal .match-instructions,
+  .map-header-reveal .results-headline {
+    animation-duration: 1ms;
+  }
+
   .match-columns {
     animation-duration: 1ms;
   }

@@ -504,8 +504,7 @@ paragraph under them says it again. The absence is the design, not an oversight 
   running House balance or a national gap any more. The boxes and the results panel are the whole
   account. `computeStatedGap2032`, `computeDrawn2032`, `houseBalance`, `houseBalanceParty` and
   `nationalSeatTotals` went with the bar, which was their only reader, as did `TRACK_GRAY`. The
-  columns' scroll-into-view still measures a headroom, but off the sticky map now rather than the
-  bar — see the page layout below.
+  columns' scroll-into-view keeps a small viewport margin — see the page layout below.
   What the bar used to say is still true of the math, and the 2032 board still turns on it: a state
   that signs draws its map, so every district in its fair minority's share is decided by doing so —
   the pact hands `returned` of them to the minority, and **whatever it leaves short goes to that
@@ -587,36 +586,24 @@ paragraph under them says it again. The absence is the design, not an oversight 
 
 - **The page layout**: map, then title, then whatever the run is up to — prose and Start before it
   begins, the columns while it runs, the results after. The map leads and the **title sits under
-  it**, which is a decision that has been made twice: the title was moved above the map when the map
-  became sticky, and moved straight back, because it simply reads better where it is. It yields its
-  space to the columns once the user starts.
-  The map is **sticky to the top of the viewport**, pinned so the clouds stay in view while the columns are scrolled — it is the scoreboard
-  the board is played against, and a pact's badges and arc land on it a beat after the click, which
-  is worth nothing if the reader is three rows down the columns when it happens. `.hero-section`
-  carries the `sticky`, an opaque `#fafaf7` and a `z-index` over the columns, which ride up
-  underneath it. It sticks within `.app`, so it holds all the way to the footer.
+  it**, where it reads best. It yields its space to the columns once the user starts.
+  The map scrolls with the opening and results pages. While the columns are in play,
+  `.hero-section.playing` pins it to the viewport as the board's scoreboard.
   **Its foot is the map's own coastline** — no padding under it and no rule. A line drawn across the
-  bottom of the map would be a second edge competing with the one the geometry already draws; what
-  the reader sees instead is the columns passing behind Florida and Hawaii.
+  bottom of the map would be a second edge competing with the one the geometry already draws.
   **The height is width-driven and the columns pay for it**: the map is 63% as tall as it is wide, so
   it stands at 606 units on the opening screen, 426 once it goes `compact` for the columns, and 241
   on a phone, where it gives up no width because there is none to give. On a 900-unit viewport that
   leaves the columns 474; on a short laptop it is nearer two rows than four. Cap it if that ever
-  bites — but cap it in `.hero-section`, since everything else measures the result.
-  **What measures it**: the columns' scroll-into-view in `BipartiteMatchGraph.tsx` reads
-  `.hero-section`'s height at the moment it scrolls, and lands the clicked row `SCROLL_MARGIN` below
-  it. Measured and not written down, because the map is a fluid width and loses a fifth of it
-  mid-run. If the map ever stops being sticky, that headroom goes back to a bare `SCROLL_MARGIN`.
+  bites — but cap it in `.hero-section` so its outer layout remains authoritative.
+  The columns' scroll-into-view in `BipartiteMatchGraph.tsx` measures the playing map and keeps that
+  height plus `SCROLL_MARGIN` above the clicked row.
   **The page owns its own scrolling, and the browser's anchoring is off** for the whole of it
-  (`overflow-anchor: none` on `.app`) — pinning the map turned that feature against the page.
-  Anchoring holds a node in view still while the document changes around it, and it passes over
-  sticky elements when it picks one, so the map stopped being the node that held the scroll and the
-  footer became it: the one block in view at the foot of the opening screen that survives Start.
-  Start pushes the footer 1699 units down to make room for the columns, and the page followed it
-  there — press Start from the button and land at the bottom of the board. `handleStart` scrolls
-  home as well, and would have to whether or not anchoring behaved: Start sits below the fold on a
-  laptop, so it is pressed from down the page, and from there the pinned map covers the instructions
-  and the first two rows of the board that is arriving under it.
+  (`overflow-anchor: none` on `.app`). Start first uses `rideHome` while the opening screen remains
+  intact, then mounts the board only after the viewport reaches the map. Both the instructions and
+  results headline are clipped by `.map-header-reveal` and descend from the map's foot; the board
+  and results roster keep their separate rise from below. Reduced-motion mode collapses the entrances
+  to a millisecond.
   **Finish does the same thing**, and for the same reason: it is pressed from the foot of the board,
   which is as far down as the page goes, and the panel it swaps in belongs at the top. Scrolling
   first and swapping in the same frame means there is no taller page left to fall out from under the
@@ -625,12 +612,6 @@ paragraph under them says it again. The absence is the design, not an oversight 
   rode through was the board the reader had just finished with. `rideHome` stays for the one case
   that isn't a swap — the page shortening on its own under a reader standing at the bottom of it,
   which is what breaking the last pact does to the Finish button.
-  **The known cost is the opening screen**, and it is the price of the title's position: the title
-  and the prose pass *behind* the pinned map on the way up, so by the time Start is on screen the
-  title is gone and the prose is entered mid-paragraph. Only that screen pays it — the title is
-  already gone once the columns are up, which is where the pinning earns its keep. If it ever wants
-  fixing, the move is to scope the sticky to `.hero-section.compact` so the map pins only after
-  Start, rather than to move the title again.
 - **Typography**: every block of running text on the page — the opening prose (`.app-intro`), the
   match instructions and the results headline — is set **identically**, off one shared rule rather
   than three copies of it: Source Sans 3 at `0.94rem`, 1.55 leading, `#444`, ranged left on a 620px
@@ -710,14 +691,13 @@ paragraph under them says it again. The absence is the design, not an oversight 
   the rest of the rule. Margin and not a transform, so the page actually gets shorter by what the
   climb takes back.
   The occlusion is the viewport's own: `position: relative`, `z-index: 1` and the page's `#fafaf7`.
-  The map's z-index is higher, so the columns still pass *under* the map at the top while passing
-  *over* the paragraph at the bottom. **The background is on `.risen` and not on the viewport
+  **The background is on `.risen` and not on the viewport
   itself**, which matters: at rest the viewport already overlaps the paragraph by the 12px it claws
   back, so painting it there cut an opaque strip through the last line of the instructions — the
   descenders sliced off under a board that hadn't moved. Transparent, that overlap is invisible, and
   the background arrives on the frame the climb starts, when those 12px are about to go anyway.
   Measured on a 1280×900 screen: the map's foot at 426, the paragraph 438–508, the viewport resting
-  at 496 and climbing to −82, which lands its top on 426 exactly.
+  at 496 and climbing until its top lands on the map's foot.
   Breaking every pact rides the whole thing back down, on the same curve: the freed states are
   travelling anyway, so the board is in motion regardless and this is that motion run backwards.
 

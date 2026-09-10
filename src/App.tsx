@@ -52,11 +52,9 @@ const HEADER_TOP_GAP = 14;
 const HEADER_BOTTOM_GAP = 12;
 
 /**
- * Ride the page to the top and run `then` once it lands — for anything that
- * would otherwise shorten the page under a reader who is scrolled down it. Go
- * home first and the swap happens at the top, where there is nothing above to
- * fall into the gap; do it the other way round and the browser clamps the
- * scroll to whatever the shorter page allows, dropping the reader mid-page.
+ * Ride the page to the top and run `then` once it lands. Swaps that change the
+ * page happen at the top, where there is nothing above to fall into the gap and
+ * an arriving view can enter from its natural starting point.
  *
  * There's no `scrollend` to lean on in every browser, so watch for the page to
  * land — on a deadline, because a reader who scrolls back down interrupts the
@@ -88,6 +86,7 @@ function App() {
   const [matches2026, setMatches2026] = useState<MatchPair[]>([]);
   const [matches2032, setMatches2032] = useState<MatchPair[]>([]);
   const [started, setStarted] = useState(false);
+  const [starting, setStarting] = useState(false);
   const [finished, setFinished] = useState(false);
   const topoData = useTopoData();
 
@@ -228,37 +227,33 @@ function App() {
     };
   }, [selectedMatches, finishRow]);
 
-  // Start swaps the pitch for the columns, and the reader is usually standing at the
-  // button when they press it — Start sits below the fold on a laptop, so reaching it
-  // means scrolling there. The board has to arrive with its head *under* the map
-  // rather than behind it: the map is pinned, so from down the page the instructions
-  // and the first row of boxes land in the band the map is covering.
-  //
-  // So the page goes home, instantly and in the same frame as the swap. Nothing on
-  // screen moves for a smooth ride to show: the map is pinned and doesn't shift, and
-  // everything below it is being replaced this frame anyway. Finish now does the same
-  // thing for the same reason. `rideHome` is left for the one case that isn't a swap:
-  // the page getting *shorter* on its own under a reader standing at the bottom of it,
-  // which is what breaking the last pact does to the Finish button.
+  // Start sits below the fold on a laptop, so ride back to the map while the opening
+  // screen is still intact. Only once the viewport lands does the board replace the
+  // pitch; its instructions then reveal downward from the map's foot in CSS.
+  const startRideRef = useRef<(() => void) | null>(null);
+
   const handleStart = useCallback(() => {
-    window.scrollTo(0, 0);
-    setStarted(true);
+    if (startRideRef.current) return;
+    setStarting(true);
+    startRideRef.current = rideHome(() => {
+      startRideRef.current = null;
+      setStarted(true);
+      setStarting(false);
+    });
   }, []);
 
-  // Finish trades the columns for the results panel, and the reader is standing at the
-  // button when they press it, that being as far down as the page goes. So the page
-  // goes home instantly and in the same frame as the swap, exactly as Start does and
-  // for the same reason: the scroll happens first, so there is no taller page left to
-  // fall out from under anybody, and the headline is already at the head of the page
-  // when the reader arrives rather than dropping in once the page has stopped moving.
-  //
-  // It used to ride home smoothly and swap on landing (`rideHome`, still used above).
-  // What that rode through was the board the reader has just finished with, and it put
-  // the panel's arrival a frame after the journey rather than at the end of it.
+  useEffect(() => () => startRideRef.current?.(), []);
+
+  // Finish trades the columns for the results panel. The layout effect returns the
+  // new results layout to the top before the browser paints it.
   const handleFinish = useCallback(() => {
-    window.scrollTo(0, 0);
     setFinished(true);
   }, []);
+
+  useLayoutEffect(() => {
+    if (!finished) return;
+    window.scrollTo(0, 0);
+  }, [finished]);
 
   // Back to the opening screen with an empty board — the map and the columns both
   // read off the match lists, so clearing them resets both.
@@ -289,11 +284,10 @@ function App() {
 
   return (
     <div className="app">
-      {/* Sticky to the top of the viewport, so the clouds stay in view while the
-          columns are scrolled — see `.hero-section` in `App.css`. The map gives up
-          some width once the columns arrive, so they sit higher. */}
+      {/* The map gives up some width once the columns arrive, and pins only while
+          that board is in play. The opening and results pages scroll normally. */}
       <section
-        className={`hero-section${started ? ' compact' : ''}${finished ? ' results' : ''}`}
+        className={`hero-section${started ? ' compact' : ''}${started && !finished ? ' playing' : ''}`}
       >
         <HeroMap
           topoData={topoData}
@@ -304,8 +298,7 @@ function App() {
       </section>
 
       {/* Under the map, which is where it reads best, and it yields the space to the
-          columns once the user starts. The map being sticky means the title passes
-          behind it on the way up — see the page layout note in `CLAUDE.md`. */}
+          columns once the user starts. */}
       {!started && (
         <header className="app-title">
           <h1>
@@ -338,7 +331,7 @@ function App() {
           </div>
 
           <div className="action-row">
-            <button className="start-btn" onClick={handleStart}>
+            <button className="start-btn" disabled={starting} onClick={handleStart}>
               Start
             </button>
           </div>
@@ -347,7 +340,7 @@ function App() {
 
       {started && !finished && (
         <>
-          {/* Outside the viewport, so it stays put while the columns rise into it —
+          {/* Outside the columns viewport, so it stays put while the columns rise into it —
               and, once a pact is signed, over it. It is there to get that first pact
               made, and after it the reader has done the thing it describes, so the
               board takes the space back by climbing over the paragraph rather than by
@@ -361,21 +354,23 @@ function App() {
               thing on a box that says a map could be redrawn over the objection of
               whoever draws it now. It is also the only place the page names the census
               the board is built on; the results panel deliberately doesn't. */}
-          <p className="match-instructions" ref={instructionsRef}>
-            {era === '2032' ? (
-              <>
-                Now try with projected delegate counts after the 2030 Census and
-                reapportionment. Look for the ballot initiative or governor veto symbols
-                to make even stronger matches!
-              </>
-            ) : (
-              <>
-                Click a state to see its best matches at the top of the opposite column, then
-                click one of those states to confirm the pact. States of similar delegate counts,
-                with equal and opposite partisanship, make the best matches.
-              </>
-            )}
-          </p>
+          <div className="map-header-reveal">
+            <p className="match-instructions" ref={instructionsRef}>
+              {era === '2032' ? (
+                <>
+                  Now try with projected delegate counts after the 2030 Census and
+                  reapportionment. Look for the ballot initiative or governor veto symbols
+                  to make even stronger matches!
+                </>
+              ) : (
+                <>
+                  Click a state to see its best matches at the top of the opposite column, then
+                  click one of those states to confirm the pact. States of similar delegate counts,
+                  with equal and opposite partisanship, make the best matches.
+                </>
+              )}
+            </p>
+          </div>
 
           {/* The climb itself: an explicit header-sized gap at rest, and the whole
               distance back to the map once the pair has parked. The distance is
@@ -438,42 +433,44 @@ function App() {
               every district its pact didn't close goes to its majority. That is why the
               second figure is `pactedResidualGap` and not the national one — the states
               nobody paired have no map here to be crooked. */}
-          {era === '2032' ? (
-            <p className="results-headline">
-              Your {spellCount(selectedMatches.length)}{' '}
-              {selectedMatches.length === 1 ? 'pact' : 'pacts'} created{' '}
-              <span className="headline-figure" style={{ color: FAIR_BLACK }}>
-                {seatsClosed}
-              </span>{' '}
-              minority party districts in those states, with{' '}
-              <span className="headline-figure" style={{ color: GAP_ORANGE }}>
-                {pactedResidualGap}
-              </span>{' '}
-              disproportionate districts leftover.
-            </p>
-          ) : seatsClosed > 0 ? (
-            <p className="results-headline">
-              Your {spellCount(selectedMatches.length)}{' '}
-              {selectedMatches.length === 1 ? 'pact' : 'pacts'} returned{' '}
-              <span className="headline-figure" style={{ color: FAIR_BLACK }}>
-                {seatsClosed}
-              </span>{' '}
-              of{' '}
-              <span className="headline-figure" style={{ color: GAP_ORANGE }}>
-                {pool}
-              </span>{' '}
-              disproportionate districts, and the U.S. House district margin is unchanged.
-            </p>
-          ) : (
-            <p className="results-headline">
-              No seats returned yet — all{' '}
-              <span className="headline-figure" style={{ color: GAP_ORANGE }}>
-                {pool}
-              </span>{' '}
-              disproportionate districts stand, and the U.S. House district margin is
-              unchanged.
-            </p>
-          )}
+          <div className="map-header-reveal">
+            {era === '2032' ? (
+              <p className="results-headline">
+                Your {spellCount(selectedMatches.length)}{' '}
+                {selectedMatches.length === 1 ? 'pact' : 'pacts'} created{' '}
+                <span className="headline-figure" style={{ color: FAIR_BLACK }}>
+                  {seatsClosed}
+                </span>{' '}
+                minority party districts in those states, with{' '}
+                <span className="headline-figure" style={{ color: GAP_ORANGE }}>
+                  {pactedResidualGap}
+                </span>{' '}
+                disproportionate districts leftover.
+              </p>
+            ) : seatsClosed > 0 ? (
+              <p className="results-headline">
+                Your {spellCount(selectedMatches.length)}{' '}
+                {selectedMatches.length === 1 ? 'pact' : 'pacts'} returned{' '}
+                <span className="headline-figure" style={{ color: FAIR_BLACK }}>
+                  {seatsClosed}
+                </span>{' '}
+                of{' '}
+                <span className="headline-figure" style={{ color: GAP_ORANGE }}>
+                  {pool}
+                </span>{' '}
+                disproportionate districts, and the U.S. House district margin is unchanged.
+              </p>
+            ) : (
+              <p className="results-headline">
+                No seats returned yet — all{' '}
+                <span className="headline-figure" style={{ color: GAP_ORANGE }}>
+                  {pool}
+                </span>{' '}
+                disproportionate districts stand, and the U.S. House district margin is
+                unchanged.
+              </p>
+            )}
+          </div>
 
           {/* Retry means "this board again". On 2026 that is the opening screen, which
               is that board's own pitch; on 2032 there is no pitch to go back to, so it
