@@ -176,17 +176,10 @@ function App() {
 
   return (
     <div className="app">
-      {/* The map gives up some width once the columns arrive, so they sit higher. */}
-      <section className={`hero-section${started ? ' compact' : ''}`}>
-        <HeroMap
-          topoData={topoData}
-          era={era}
-          selectedMatches={selectedMatches}
-          residualGaps={boardGaps}
-        />
-      </section>
-
-      {/* The title yields the space to the columns once the user starts. */}
+      {/* The title heads the page and yields the space to the columns once the user
+          starts. It sits above the map rather than under it because the map is sticky:
+          anything below the map would have to scroll out from behind it, and a title
+          that emerges from under the thing it names reads backwards. */}
       {!started && (
         <header className="app-title">
           <h1>
@@ -195,6 +188,18 @@ function App() {
           </h1>
         </header>
       )}
+
+      {/* Sticky to the top of the viewport, so the clouds stay in view while the
+          columns are scrolled — see `.hero-section` in `App.css`. The map gives up
+          some width once the columns arrive, so they sit higher. */}
+      <section className={`hero-section${started ? ' compact' : ''}`}>
+        <HeroMap
+          topoData={topoData}
+          era={era}
+          selectedMatches={selectedMatches}
+          residualGaps={boardGaps}
+        />
+      </section>
 
       {/* The pitch, then the button it argues for. Finish lives under the columns. */}
       {!started && (

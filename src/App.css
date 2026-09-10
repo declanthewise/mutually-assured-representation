@@ -48,11 +48,23 @@ body {
 .hero-section {
   max-width: 980px;
   margin: 0 auto;
-  /* The viewBox is cropped to the geometry, so the map's breathing room at the
-     top of the page has to come from here. */
+  /* The viewBox is cropped to the geometry, so the map's breathing room — under the
+     title on the opening screen, against the top of the viewport once it pins — has
+     to come from here. The bottom is the map's own ragged coastline, which is the
+     edge the columns pass behind, so there is no padding under it and no rule: a
+     straight line drawn across the foot of the map would be a second edge competing
+     with the one the geometry already draws. */
   padding: 0.5rem 1.5rem 0;
   width: 100%;
-  position: relative;
+  /* Pinned to the top of the viewport, so the clouds stay in view while the columns
+     are scrolled past them — the map is the scoreboard the board is played against,
+     and a pact's badges and arc land on it a second after the click. It sticks
+     within `.app`, which is the whole page, so it holds all the way to the footer.
+     Opaque and above everything, because the columns ride up underneath it. */
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #fafaf7;
 }
 
 .hero-map {

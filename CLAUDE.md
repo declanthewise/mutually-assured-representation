@@ -438,8 +438,8 @@ paragraph under them says it again. The absence is the design, not an oversight 
   running House balance or a national gap any more. The boxes and the results panel are the whole
   account. `computeStatedGap2032`, `computeDrawn2032`, `houseBalance`, `houseBalanceParty` and
   `nationalSeatTotals` went with the bar, which was their only reader, as did `TRACK_GRAY`. The
-  columns' scroll-into-view no longer measures a sticky bar for headroom — restore that allowance
-  along with the bar if it ever comes back.
+  columns' scroll-into-view still measures a headroom, but off the sticky map now rather than the
+  bar — see the page layout below.
   What the bar used to say is still true of the math, and the 2032 board still turns on it: a state
   that signs draws its map, so every district in its fair minority's share is decided by doing so —
   the pact hands `returned` of them to the minority, and **whatever it leaves short goes to that
@@ -496,6 +496,28 @@ paragraph under them says it again. The absence is the design, not an oversight 
   neutral while one still short keeps its blue or its red, and the link between them is half of each.
   That is the roster's whole point — it reports what each side got, not that a trade happened.
 
+- **The page layout**: title, then map, then whatever the run is up to — prose and Start before it
+  begins, the columns while it runs, the results after. The **title heads the page** rather than
+  sitting under the map, because the map is **sticky to the top of the viewport** and anything below
+  it has to scroll out from behind it: a title emerging from under the thing it names reads
+  backwards. It still yields its space to the columns once the user starts.
+  The map is pinned so the clouds stay in view while the columns are scrolled — it is the scoreboard
+  the board is played against, and a pact's badges and arc land on it a beat after the click, which
+  is worth nothing if the reader is three rows down the columns when it happens. `.hero-section`
+  carries the `sticky`, an opaque `#fafaf7` and a `z-index` over the columns, which ride up
+  underneath it. It sticks within `.app`, so it holds all the way to the footer.
+  **Its foot is the map's own coastline** — no padding under it and no rule. A line drawn across the
+  bottom of the map would be a second edge competing with the one the geometry already draws; what
+  the reader sees instead is the columns passing behind Florida and Hawaii.
+  **The height is width-driven and the columns pay for it**: the map is 63% as tall as it is wide, so
+  it stands at 606 units on the opening screen, 426 once it goes `compact` for the columns, and 241
+  on a phone, where it gives up no width because there is none to give. On a 900-unit viewport that
+  leaves the columns 474; on a short laptop it is nearer two rows than four. Cap it if that ever
+  bites — but cap it in `.hero-section`, since everything else measures the result.
+  **What measures it**: the columns' scroll-into-view in `BipartiteMatchGraph.tsx` reads
+  `.hero-section`'s height at the moment it scrolls, and lands the clicked row `SCROLL_MARGIN` below
+  it. Measured and not written down, because the map is a fluid width and loses a fifth of it
+  mid-run. If the map ever stops being sticky, that headroom goes back to a bare `SCROLL_MARGIN`.
 - **Typography**: every block of running text on the page — the opening prose (`.app-intro`), the
   match instructions and the results headline — is set **identically**: Source Sans 3 at `0.94rem`,
   1.55 leading, `#444`. Only the alignment differs, the latter two being centered. Every sentence the

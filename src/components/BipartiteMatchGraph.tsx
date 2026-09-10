@@ -1694,12 +1694,16 @@ export function BipartiteMatchGraph({
     const top = svgBox.top + rowTopY(placed.row, placed.yOffset) * scale;
     const bottom = top + BOX_H * scale;
 
-    // Nothing is pinned over the top of the viewport any more, so the row only
-    // needs the same air the bottom of it gets.
-    if (top >= SCROLL_MARGIN && bottom <= window.innerHeight - SCROLL_MARGIN) return;
+    // The map is sticky at the top of the viewport and would cover the row, so the
+    // band the row has to land in starts under it. Measured rather than written
+    // down: the map is a fluid width and gives up a fifth of it once the columns
+    // arrive, so its height is different on every screen and changes mid-run.
+    const heroMap = document.querySelector('.hero-section');
+    const headroom = (heroMap?.getBoundingClientRect().height ?? 0) + SCROLL_MARGIN;
+    if (top >= headroom && bottom <= window.innerHeight - SCROLL_MARGIN) return;
 
     window.scrollBy({
-      top: top - SCROLL_MARGIN,
+      top: top - headroom,
       behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
     });
   }, [anchorId, rowById]);
