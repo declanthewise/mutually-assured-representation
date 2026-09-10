@@ -323,7 +323,11 @@ body {
    anything. The clause-per-line breaks are gone too (`.headline-line`, `display:
    block`): at prose size they put "stand," alone on a line. */
 .results-headline {
-  margin-bottom: 0.9rem;
+  /* Enough to leave the same 28px of ink-to-box the instructions leave: its own margin,
+     plus the half-border the roster keeps above its first row, plus the line's own
+     half-leading. The two screens swap one for the other and are set alike, so the air
+     under them has to be alike too. */
+  margin-bottom: 1.4rem;
 }
 
 /* The figures the headline is about, set bold against the sentence carrying them.
@@ -352,8 +356,9 @@ body {
    block, and being HTML it wraps on its own — the SVG would need every line set
    by hand. */
 /* Everything about how it is set comes from the prose rule above. What is left here
-   is the air over it: 12px, against the 16 the viewport below leaves under it — see
-   `CLAW_BACK` in `App.tsx`, and the results headline, which leaves the same 16.
+   is the air over it: 12px of margin, which the map's ragged foot reads as nearer 25 —
+   see `CLAW_BACK` in `App.tsx` for why the viewport below leaves the graph's whole
+   `TOP_PAD` under the text rather than clawing any of it back.
    Nothing forces a break in it. Clause-per-line was tried — a `display: block` span
    each — and reads as two stacked fragments rather than one instruction. */
 /* The results headline takes the same 12px, so the two blocks start at exactly the
@@ -364,10 +369,9 @@ body {
 }
 
 /* The `margin-top` is set in `App.tsx`, because it is the one thing here that has to
-   be measured: at rest it is `CLAW_BACK`, which takes a third of the graph's own
-   TOP_PAD back so the paragraph sits 12px under the map and 16 over the first box —
-   16 being what the results headline leaves under itself, and the two screens swap one
-   for the other. Once the first pact has parked it is instead the whole of the gap
+   be measured: at rest it is `CLAW_BACK`, which is now nothing at all — the graph's own
+   TOP_PAD is the air under the paragraph, and `App.tsx` says why. Once the first pact
+   has parked it is instead the whole of the gap
    between the map and the columns, so the board climbs over the paragraph and keeps it.
    Stacked over the instructions so the climb can cover them rather than show type
    through the boxes. The map's z-index is higher, so the columns still pass under the

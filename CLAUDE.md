@@ -665,11 +665,15 @@ paragraph under them says it again. The absence is the design, not an oversight 
   so the instructions and the headline start at exactly the same height and the swap at Finish moves
   nothing: both hang off the foot of a map that is compact in either state, so the 0.5rem the
   headline used to keep there — inherited from `.results-panel`'s old top padding — was the whole of
-  a 4px jump. **And the air under them matches too**, at 16px to the first box on either screen: the
-  headline's own 0.9rem plus the half-border the roster keeps above its first row comes to 16.3, and
-  `CLAW_BACK` in `App.tsx` takes a third of the graph's 24-unit `TOP_PAD` back rather than half of it
-  to make the instructions' 16. So the paragraph's band is 12 above and 16 below, which is not even —
-  it is even with the screen that replaces it, which is the comparison the reader actually makes.
+  a 4px jump. **And the air under them matches too**, at 24px of box to the first box on either
+  screen — 28 of ink to ink, once the line's half-leading is counted: the columns leave the graph's
+  whole 24-unit `TOP_PAD` under the paragraph (`CLAW_BACK` is 0), and `.results-headline`'s own
+  1.4rem plus the half-border the roster keeps above its first row comes to the same place.
+  **The figure is 28 because the map's foot is ragged.** Over the paragraph sits 12px of margin, but
+  what the reader compares is ink, and the coastline stops well above the section's own edge — 25px
+  above the first line, measured to the lowest ink over the middle of the paragraph. Reasoning about
+  boxes gave 12 under the text and then 16, and both read as crowded under a map that looks like it
+  is standing further off than it is.
   Setting the prose on the graph's
   measure was tried the other way round, back when that measure was 520, and was wrong: the reader
   compares this paragraph to the one on the opening screen, not to the column under it. The board

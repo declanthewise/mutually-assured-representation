@@ -49,13 +49,21 @@ const SCROLL_HOME_MS = 2000;
 
 /**
  * How much of the graph's own air above its first row (`TOP_PAD`, 24px) the columns
- * claw back, so the instructions don't sit in a band twice as deep as the one over
- * them. It used to be half of it, which left 12px under the paragraph against the 12px
- * over it — even, but four short of what the results headline leaves under itself
- * before its first box. The two screens swap one for the other, so they now agree at
- * 16, and the paragraph's band is the wider below than above by exactly that.
+ * claw back. **None of it**, and that is the third answer to this question.
+ *
+ * The first was half, on the reasoning that the paragraph should sit in an even band —
+ * 12px over the text, 12 under it. The second was a third, to match the 16 the results
+ * headline leaves under itself before its first box, since the two screens swap one for
+ * the other. Both were reasoning about boxes, and what the reader compares is ink: the
+ * map's foot is a ragged coastline that stops well above the section's own edge, so the
+ * air over the paragraph *looks* like more than the 12px it is. Measured to the lowest
+ * ink over the middle of the paragraph it is 25; the whole of `TOP_PAD` under the text
+ * comes to 28, where clawing any of it back left 20 and read as crowded.
+ *
+ * `.results-headline`'s own bottom margin was raised to land in the same place, so the
+ * two screens still agree.
  */
-const CLAW_BACK = 8;
+const CLAW_BACK = 0;
 
 /**
  * Ride the page to the top and run `then` once it lands — for anything that
