@@ -136,6 +136,22 @@ function App() {
     };
   }, [selectedMatches, finishRow]);
 
+  // Start swaps the pitch for the columns, and the reader is usually standing at the
+  // button when they press it — Start sits below the fold on a laptop, so reaching it
+  // means scrolling there. The board has to arrive with its head *under* the map
+  // rather than behind it: the map is pinned, so from down the page the instructions
+  // and the first row of boxes land in the band the map is covering.
+  //
+  // So the page goes home, instantly and in the same frame as the swap. Nothing on
+  // screen moves for a smooth ride to show: the map is pinned and doesn't shift, and
+  // everything below it is being replaced this frame anyway. `rideHome` is for the
+  // opposite case — a page about to get *shorter* under a reader standing at the
+  // bottom of it, which is Finish's problem and not this one.
+  const handleStart = useCallback(() => {
+    window.scrollTo(0, 0);
+    setStarted(true);
+  }, []);
+
   // Finish trades the columns for the results panel, which is a fraction of
   // their height, so it takes the same ride home first — otherwise the page
   // shortens under a reader standing at the button, which is as far down as the
@@ -220,7 +236,7 @@ function App() {
           </div>
 
           <div className="action-row">
-            <button className="start-btn" onClick={() => setStarted(true)}>
+            <button className="start-btn" onClick={handleStart}>
               Start
             </button>
           </div>

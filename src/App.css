@@ -32,6 +32,20 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  /* The browser's scroll anchoring is off for the whole page, because it fights the
+     scrolling the page does for itself. Anchoring picks a node in view and holds it
+     still while the document changes around it, and it passes over sticky elements
+     when it chooses — so the moment the map was pinned it stopped being the node
+     that held the scroll, and the footer became it, that being the one block in
+     view at the foot of the opening screen that survives Start. Start then pushes
+     the footer 1699 units down the document to make room for the columns, and the
+     page dutifully followed it there: press Start, land at the bottom of the board.
+     `handleStart`, `rideHome` and the columns' scroll-into-view each say where the
+     page belongs at the moments it changes shape, so there is nothing left here for
+     anchoring to get right. What it did earn is the topology landing under a reader
+     who has already scrolled — a fraction of a second at first load, against a
+     wrong answer at every deliberate one. */
+  overflow-anchor: none;
 }
 
 .visualization-wide {

@@ -518,6 +518,16 @@ paragraph under them says it again. The absence is the design, not an oversight 
   `.hero-section`'s height at the moment it scrolls, and lands the clicked row `SCROLL_MARGIN` below
   it. Measured and not written down, because the map is a fluid width and loses a fifth of it
   mid-run. If the map ever stops being sticky, that headroom goes back to a bare `SCROLL_MARGIN`.
+  **The page owns its own scrolling, and the browser's anchoring is off** for the whole of it
+  (`overflow-anchor: none` on `.app`) — pinning the map turned that feature against the page.
+  Anchoring holds a node in view still while the document changes around it, and it passes over
+  sticky elements when it picks one, so the map stopped being the node that held the scroll and the
+  footer became it: the one block in view at the foot of the opening screen that survives Start.
+  Start pushes the footer 1699 units down to make room for the columns, and the page followed it
+  there — press Start from the button and land at the bottom of the board. `handleStart` scrolls
+  home as well, and would have to whether or not anchoring behaved: Start sits below the fold on a
+  laptop, so it is pressed from down the page, and from there the pinned map covers the instructions
+  and the first two rows of the board that is arriving under it.
   **The known cost is the opening screen**, and it is the price of the title's position: the title
   and the prose pass *behind* the pinned map on the way up, so by the time Start is on screen the
   title is gone and the prose is entered mid-paragraph. Only that screen pays it — the title is
