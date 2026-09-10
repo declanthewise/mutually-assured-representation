@@ -156,13 +156,57 @@ paragraph under them says it again. The absence is the design, not an oversight 
   and are wrong together, whatever they are apart: side by side they read as one question answered
   yes and no, rather than as two powers a state has or hasn't. Presence already carries the truth,
   which is why a state without one draws nothing.
+  **The box is 206 × 94 units against the board's 456.5 wide**, where it was 140 × 60 in a 332-unit
+  board. The board renders at `GRAPH_PX_W`, 572 — the prose measure less its insets — so a unit is
+  1.253px against the 1.265 it was at 332 units and 420px: the board grew by taking units, not scale,
+  and the type inside a box is set at the size it is set at rather than at whatever a scale factor
+  makes of it. Of the 124 units it gained, 66 went to each box and 12 to the gutter.
+  **The rows are `ROW_GAP` 9 units apart**, up from 6 — the same argument as the gutter, made
+  downward: air that was set when a box was 60 units tall reads as crowding at 94.
+  **The gutter is 40 units, 50px.** It sat at 28 through two rounds of the box growing — a fifth of
+  the box's width when the box was 140 wide, an eighth of it at 206 — which read as two columns
+  crowding each other. It is the one measurement on the board that isn't in a box, and widening it
+  costs the whole board a little scale, since the svg's width is fixed and everything divides it.
+  **The board's own margin is half a border**, `BOX_STROKE_EMPHASIZED / 2`, so an emphasized box's
+  stroke runs from x=0 and the *outside* of the border stands on the svg's edge — which is the prose
+  measure's edge, so the column and the instructions' first letter line up. Any more is a visible gap;
+  any less clips the stroke, an svg viewport hiding whatever leaves it. At rest the border is thinner
+  and sits a pixel inside that line, which is the price of not clipping the hover.
+  **Down, the box took the height its own type needed**, and it took it twice. A box that has grown
+  half again as wide and kept its old 9-unit rows reads as a box of small print: the rows can only be
+  as big as their pitch allows, so the pitch has to go first, and the first attempt at this raised the
+  type without raising the box enough. `HEADER_HEIGHT` is 28 and the three rows sit at 41, 61 and 83
+  — 20 and 22 apart, against 11 and 12 to begin with — which is what carries 14 and 16 on the district
+  rows and 15 and 17.5 on the gap.
+  **The border is three units, four and a half emphasized**, up from two and three. It is the box's
+  proportion and not a fixed number of pixels: two units drew the same 2.5px it always had, which on
+  a box half again as wide is a thinner line around a bigger thing, and looked it.
+  **The link and the × are set against that border.** `LINK_STROKE` *is* `BOX_STROKE`, because a
+  pact's link is the same kind of mark as the two borders it joins — one continuous line saying what
+  the trade came to — and a link left at two units read as string tying together two heavy boxes. The
+  × is `REMOVE_R` 11 with a `BOX_STROKE * 0.75` ring, a ring being a finer thing than an edge; it was
+  8 units at 1.5, drawn for a gutter of 28 and a border of 2.
+  Everything in the header grew with the rows: the name to 16, the lean badge to 20 units tall at 13.5,
+  the pyramid to 15 × 14, and the two route marks by `ROUTE_SCALE` — one `scale()` around both, so
+  the shapes keep their proportions and their stroke weights against each other rather than being
+  redrawn.
+  **The name is one run and carries its own district count**: `California-52`, at the name's size,
+  weight and color, with no space either side of the hyphen. It used to trail the name as a smaller,
+  lighter `(52)` in a `tspan` set `dx={3}` away, which is what the baseline note over `HEADER_MID_Y`
+  was written for — two runs of different sizes sharing a line is exactly the trap the box's other
+  rows keep out of, and one run closes it here by construction.
   **The name budget is per state**, running from 64.3 units for a two-mark state with a wide lean
-  badge up to 83 for a state with no marks and a narrow one, and that is why only four names are
-  shortened in `HEADER_ABBREVIATIONS`: North Carolina draws neither mark and clears by 3.5 units,
-  where against a fixed two-mark strip it was eleven short. Two of the four never render, ND and SD
-  being single-district. South Carolina clears by 1.2, so re-measure the moment the marks, the pyramid
-  or the badge changes size. The full name stays on the element's `title` and everywhere else — the
-  map, the results list — is untouched.
+  badge up to 83 for a state with no marks and a narrow one, and that is why four names are shortened
+  in `HEADER_ABBREVIATIONS`, **and the two that render are earning it again**. Measured in the app at
+  weight 600, the weight an active box wears, with the name at 16 and the badge, pyramid and marks
+  grown to match it: South Carolina clears by 5.3 units, Pennsylvania by 7.9 and North Carolina by
+  8.1, while `Massachusetts-9` written out would overflow and `New Hampshire-2` with it. The
+  other two entries never render, ND and SD being single-district. The header went slack for one
+  round — at a 12-unit name in the wider box, South Carolina had 55 units spare — and the type
+  growing into the box took it all back. Everything in that header comes out of one budget, and the
+  name is what gives first, so re-measure the moment the marks, the pyramid, the badge or the name
+  changes size. The full name stays on the element's `title` and everywhere else — the map, the
+  results list — is untouched.
 - **Sealing a pact** puts both partners at the head of their columns for the length of the linger and
   closes a link between them. The state clicked first is already there — that is what clicking it did
   — and `headedBy()` pins the partner, which could have come from anywhere down the opposite column.
@@ -337,14 +381,38 @@ paragraph under them says it again. The absence is the design, not an oversight 
   row's place in the sequence is just an offset into it (`GAP_ROW_OFFSET_MS` for the second), which is
   what lets one clock drive both. `PACT_LINGER_MS` is a lead plus two cycles, holding either board
   still for **5150ms** after each pact.
-  **The three rows are `Fair Minority Districts`, `Current Minority Districts` and
-  `Representation Gap`**, each label set at the size of the count beside it — 9 on the
-  two district rows, 9.5 on the gap, which is the half point `GAP_COUNT_SIZE` already
-  gave the figure the box concludes with. A row is one line at one size, not a small
-  caption with a large figure at the end of it. The counts also sit `COUNT_INSET`
-  short of the right padding, four units in, so the figure is nearer the words it
-  belongs to; the rule between the rows still spans the full measure, and the swell
-  puts the count back on the padding, which is the only place its budget fits.
+  **The three rows are `Fair GOP Districts`, `Current GOP Districts` and
+  `Representation Gap`** — `Dem.` for `GOP` down the other column.
+  **One label size across all three rows — 15 — and a count a step above it**: 16 on the district
+  rows, 17.5 on the gap. Label and count used to be equal, so a row read as one line rather than as a
+  caption with a figure after it, and in a 140-unit box that was right; in this one an equal count
+  reads as small print, because the figure is what the row is for and it holds the far end of a much
+  longer line. The label is still full-size type on the same baseline, not a caption. The three
+  labels match because they are one voice — `Fair`, `Current` and `Representation Gap` are the same
+  kind of thing said three times, and district rows set smaller read as a subheading under the gap
+  row. The extra half point on the gap *count* stays, which puts the weight on the row the box
+  concludes with.
+  The counts sit `COUNT_INSET` short of the right padding, four units in, so the figure is nearer the
+  words it belongs to; the rule between the rows still spans the full measure, and the swell puts the
+  count back on the padding, which is the only place its budget fits.
+  **Only the party's own name is in the party's color** — `GOP` red, `Dem.` blue — with `Fair`,
+  `Current`, `Pact` and `Districts` in `LABEL_GRAY` around it, and the count in the party color at the
+  end of the row. The whole label was colored first and it is too much red for words that aren't the
+  point: what names the party is the party's name.
+  **That is what the alphabetic baseline is for.** A colored word inside the line means a `<tspan>`
+  with glyphs in it, which is the trap three paragraphs down — `dominant-baseline="central"` gets
+  resolved a second time against the tspan's own baseline table and drops the run half a unit below
+  the words either side of it, the same fault that had the old party letter drooping off the count.
+  Stated outright with `capBaseline`, every run on the line shares one baseline and the tspan is safe.
+  All six row texts are placed that way now, so a label and a count of different sizes sit on one
+  line rather than each being centered on its own em box.
+  **The counts name their party too** — `20R`, `17D` — and that is not redundant with the label: the
+  letter is on the figure, which is what a reader takes away from the row, where the word is in the
+  sentence describing it. It is drawn as part of the count's own run and never as a tspan of its own,
+  which is what once had it visibly drooping half a device pixel below its digits.
+  The rows used to read `Minority`, which named the *role* and left the reader to work out whose it
+  was from which column they were in. Naming the party outright and coloring that word is the half of
+  this the letter never did.
   **The middle row's label changes on the way down to "Your Pacts"**, when the linger lapses and the
   pair leaves the head of the columns. On the 2026 board it reads `Current` through the whole seal —
   the rise, both counts, the fold — and becomes `Pact` as the box travels down. Nothing crosses and
@@ -362,14 +430,19 @@ paragraph under them says it again. The absence is the design, not an oversight 
   counts are what say so; a label doing something of its own over the top of them is a third thing
   going on. So the words wait for the box to be finished with. 2032 never changes at all — its middle
   row is `Pact` before anybody signs anything.
-  **No `<tspan>` on the line carries glyphs, and that is not tidiness.** A tspan with visible glyphs
-  under `dominant-baseline="central"` renders half a unit below the line its own `text` sits on — the
-  parent's `central` resolved a second time against the run's own baseline table — which at this size
-  was a parenthetical visibly sagging away from the words before it. Nothing said on the tspan
-  recovers it: `dominant-baseline: auto`, `inherit` and `alignment-baseline: baseline` all sag alike.
-  It is the same fault as the drooping party letter on the count below, and it wants the same answer —
-  keep the glyphs out of the tspan. Each reading is now one whole label in a `text` of its own, so the
-  trap is closed by construction rather than by care.
+  **A `<tspan>` with glyphs is safe on these lines now, and it wasn't.** Under
+  `dominant-baseline="central"` a tspan carrying visible glyphs renders half a unit below the line its
+  own `text` sits on — the parent's `central` resolved a second time against the run's own baseline
+  table — which at this size was a parenthetical visibly sagging away from the words before it, and
+  the same fault as the drooping party letter on the count. Nothing said on the tspan recovers it:
+  `dominant-baseline: auto`, `inherit` and `alignment-baseline: baseline` all sag alike. The answer
+  for years was to keep glyphs out of tspans entirely, which is why each reading of the middle row is
+  a whole label in a `text` of its own.
+  The real answer is the one the count row always used: **state the baseline outright**. `central` is
+  what re-resolves; an alphabetic baseline computed by `capBaseline` is inherited by every run on the
+  line as-is. So the colored party word is a tspan, and no row text on the box says
+  `dominant-baseline` any more. Two readings crossfading are still two `text` elements, because that
+  is about what changes and not about baselines.
   `PACT_COUNT_AT_MS` is where the **first** count starts within that, and it is the figure the whole
   app answers a click on. Everything the pact causes happens on it: the two borders and the link
   between them come up in their new colors, and on the map `HeroMap` imports the same constant as its
@@ -398,33 +471,26 @@ paragraph under them says it again. The absence is the design, not an oversight 
   the box says is true until the halves touch, so nothing it says begins until they do.
   Under reduced motion the lead is zero: a box reaches its row and the link closes inside a
   millisecond, so there is nothing to wait for.
-  **The pact row grows less far than the gap row at both ends, and its party letter is why.** The row
-  is 128 units, x=6 to x=134, label left and count right. Measured in the app at the weights they are
-  set in: "Pact Minority Districts" runs 9.06 units per unit of font size against "Representation
-  Gap"'s 8.26, and the widest count either row can hold is two digits and a letter — `18D`, the
-  largest trade on the 2032 board — at 1.653 per unit against a bare `18`'s 1.024. At 9 and 19 those
-  clear by 15.1, where the gap row's 11 and 28 clear by 8.4.
-  **On this row the label no longer grows at all**, its rest size having been raised to meet its own
-  count and taken the growth with it. What is left is the count — 9 to 19, better than two to one —
-  under a label that holds its size and its place. **And 9 is a ceiling now, not a leftover.** The
-  words don't change until the box leaves, so a sealing 2026 box stands at full swell reading
-  "Current Minority Districts" the whole time — 10.42 per unit, the longest label on the box, ending
-  at x=99.7 — while its count runs up to the pact's figure underneath, two digits and a letter coming
-  back to x=102.6. **2.9 units** is what this row now lives on, against the gap row's 8.4, and the
-  ceiling is 9.28.
-  **So the pact row's swell is the count's alone**, and that is geometry rather than neglect. The row
-  sits at y=40 against a swell centre of y=39.5, so unlike the gap row it has nowhere to rise to, and
-  its label is already at its count's size with no room to grow into a row this full. What magnifies
-  is the figure, 9 to 19, with the other two rows clearing out of the way. Shortening the label while
-  magnified would free it — `Minority Districts` alone is 7.05 per unit, which would carry a label at
-  11 — and was considered and turned down: a magnified row that has stopped saying which map it is
-  counting is worse than one that doesn't magnify.
-  The letter used to be **dropped** on the way up, which bought a label at 10 and a count at 21. That
-  was the wrong thing to sell: the letter names the party every figure in the box is about, and a row
-  that sheds it mid-swell is answering a question it has stopped asking. Paying for it out of both
-  sizes instead costs a point of label and two of count, and the row still magnifies by more than two
-  to one. `PARTY_FADE_SWELL` and the separate letter run are gone with it — the figure and its letter
-  are one run now, which also retires the per-run baseline problem that had the `R` visibly drooping.
+  **The pact row grows a little less far than the gap row**, and a longer label is why. The row is
+  194 units, x=6 to x=200, label left and count right. Measured in the app at the weights they are set
+  in: "Current Dem. Districts" — the longest either board can put here, since the words don't change
+  until the box leaves — runs 9.47 units per unit of font size against "Representation Gap"'s 8.50,
+  and the widest count it can hold is two digits and a party letter at 1.653 per unit against a bare
+  two digits' 1.027. That letter is expensive — three fifths again as wide as the digits alone — and
+  it is why the gap row's count reaches 36 where this one stops at 24. Vertically the swell has the
+  taller box to spend: it centres on y=61, so a count at 36 runs 43–79 with fifteen units under it.
+  **The pact row's swell is its count's alone**, 16 to 24, with the label holding the 15 it wears at
+  rest. That is the arrangement it has had for most of its life and it is back for the old reason: the
+  label is the longest on the box and the count carries a party letter, so between them they fill the
+  row at full strength. It briefly magnified both, in the round where the counts had no letters and
+  the labels were shorter, and the letter coming back paid for that again. There is no room to grow
+  the label into and no reason to want it — shortening it while magnified so it could grow buys a
+  magnified row that has stopped saying which map it is counting.
+  The letter used to be **dropped** on the way up, which bought a label at 10 and a count at 21, and
+  that was the wrong thing to sell: the letter names the party every figure in the box is about, and a
+  row that sheds it mid-swell is answering a question it has stopped asking. `PARTY_FADE_SWELL` and
+  the separate letter run are gone with that idea — the figure and its letter are one run, which is
+  what retired the per-run baseline problem that had the `R` visibly drooping.
   Blank rather than zero on both rows: zero is a measurement, and a column of `0R` down an untouched
   board would read as forty-three states looked at and found empty. **Each holds its blank until its
   own row starts to rise**, the gap row a whole cycle later than the pact row. A figure that arrives
@@ -457,15 +523,29 @@ paragraph under them says it again. The absence is the design, not an oversight 
   which made its failure quieter and worse: every 2032 pact from 10 up rendering at one radius. The
   badge domain is the largest *trade* a board can produce — the smaller of its two columns' largest
   gaps, 9 in 2026 and 18 in 2032 — since a pact is capped by its smaller partner.
-  **The 2032 results headline is one line and claims nothing about the margin**: "Your three pacts
-  created 70 proportional districts." Its second line used to be the 2026 board's margin claim, which
-  stopped being true there the moment an unclosed gap started going to the state's own majority — an
-  uneven pact moves the House. Rather than qualify it on every uneven run,
-  the line goes and the headline says the one thing always true of that board: how many districts the
-  pacts drew proportionally that nobody would otherwise have drawn.
+  **The 2032 results headline claims nothing about the margin**: "Your three pacts created 70
+  minority party districts in those states, with 4 disproportionate districts leftover" — CA↔TX,
+  NY↔FL and IL↔OH, where only Florida's 4 survive. Its second line used to be the
+  2026 board's margin claim, which stopped being true there the moment an unclosed gap started going
+  to the state's own majority — an uneven pact moves the House. Rather than qualify it on every
+  uneven run, the line goes and the headline reports what the run drew, in both directions: the
+  districts the pacts handed the minority, and the districts the same signatures left crooked.
+  **Both figures are the pacting states' own.** The second is `pactedResidualGap` in `App.tsx` — the
+  residual gaps of the states in pacts and nobody else's — and not the national residual the 2026
+  headline measures against. A signatory draws its whole map, so every district its pact didn't close
+  goes to its own majority and is a district this run created; a state nobody paired has no 2032 map
+  here at all, and counting its debt as something the pacts left behind would be charging the reader
+  for a map that was never drawn.
   There is no "After the 2030 Census" kicker over it any more, and no era label of any kind on the
   results — the board is reached by a button that says 2032, and nothing between the click and the
   results panel has claimed to be any other year.
+  **Retry names its board once there is more than one to name.** Off the 2026 results it is bare
+  "Retry", because what it puts back is the whole thing from the opening screen, which is that
+  board's own pitch and needs no year. Off 2032 it is "Retry 2032": there is no pitch to go back to
+  there, so it is the post-census board with an empty run — the same act as the Try 2032 that brought
+  the reader there, and `handleOpen2032` in `App.tsx` is the same handler for both. So the 2032
+  results carry one button where 2026 carries two, and nothing on that screen goes back to the
+  opening screen; the 2026 run is still standing behind it, untouched.
   The two boards keep **separate pact lists** in `App.tsx`, and each has its own residual gaps. Retry
   clears both and returns to the opening screen.
 
@@ -537,6 +617,14 @@ paragraph under them says it again. The absence is the design, not an oversight 
   home as well, and would have to whether or not anchoring behaved: Start sits below the fold on a
   laptop, so it is pressed from down the page, and from there the pinned map covers the instructions
   and the first two rows of the board that is arriving under it.
+  **Finish does the same thing**, and for the same reason: it is pressed from the foot of the board,
+  which is as far down as the page goes, and the panel it swaps in belongs at the top. Scrolling
+  first and swapping in the same frame means there is no taller page left to fall out from under the
+  reader, and the headline is *already* at the head of the page when they arrive rather than dropping
+  in once the page has stopped moving. It used to ride home smoothly and swap on landing; what that
+  rode through was the board the reader had just finished with. `rideHome` stays for the one case
+  that isn't a swap — the page shortening on its own under a reader standing at the bottom of it,
+  which is what breaking the last pact does to the Finish button.
   **The known cost is the opening screen**, and it is the price of the title's position: the title
   and the prose pass *behind* the pinned map on the way up, so by the time Start is on screen the
   title is gone and the prose is entered mid-paragraph. Only that screen pays it — the title is
@@ -546,16 +634,25 @@ paragraph under them says it again. The absence is the design, not an oversight 
 - **Typography**: every block of running text on the page — the opening prose (`.app-intro`), the
   match instructions and the results headline — is set **identically**, off one shared rule rather
   than three copies of it: Source Sans 3 at `0.94rem`, 1.55 leading, `#444`, ranged left on a 620px
-  measure, and nothing in any of the three forces a break. No two of them ever share a screen, so
-  every sentence the page speaks in its own voice looks the same; the display faces are for the
-  title and the figures.
+  measure, opening on a `1.5em` **indent**, and nothing in any of the three forces a break. No two
+  of them ever share a screen, so every sentence the page speaks in its own voice looks the same;
+  the display faces are for the title and the figures.
+  The indent sits on the shared rule and inherits, so `.app-intro`'s two paragraphs take it from
+  their container and the instructions and the headline open the same way — one declaration, not
+  one per block. `.app-intro p` keeps only its `margin: 0`: the paragraphs run on with no space
+  between them, and the indent is what marks the break.
   The headline's **figures are bold** (`.headline-figure`) on top of the colors they already carry —
   black for what the pacts closed, orange for the gap they were spent against. At prose size the
   weight is what picks them out of the sentence, which the display face it used to be set in did for
   free. The spelled count of pacts is not one of them: it is a word.
   The results panel has no prose under its headline any more — the pacts are drawn there rather than
   written out (see the roster below), so `.results-pacts` and the 660px `.results-wide` measure it
-  wanted are both gone, and the panel sits in the ordinary `.visualization-wide` 520.
+  wanted are both gone.
+  **The board takes the prose measure**, not `.visualization-wide`'s 520: `.match-columns` is capped
+  at 620 with the same insets, so the svg inside gets exactly the 572px the paragraph's own text gets
+  and the columns' outer edges stand on the instructions' line — and on the results headline's line,
+  since the roster draws the board's own boxes and takes the same rule. On a phone it takes the phone
+  cap too, so the two bands agree at every width.
   The headline used to be Playfair at `min(4.4cqi, 1.5rem)`, sized so its longest line stayed
   unbroken, with `.results-panel` carrying a container context to measure against and a second
   measure for the one-line 2032 variant. **All of that is gone.** At prose size every line the
@@ -564,13 +661,61 @@ paragraph under them says it again. The absence is the design, not an oversight 
   `.match-instructions` and `.results-headline` **share `.app-intro`'s rule** rather than restating
   it — the same 620px measure, insets and phone cap, on the same selector list — so all three are
   the same block of prose at every width. No two share a screen, and set even slightly apart they
-  read as the page changing its voice partway through a run. Each keeps only its own air: 12px over
-  the instructions, 0.5rem and 0.9rem around the headline. The graph's own 520 measure was tried for them, to put the ragged edge on the boxes' left
-  edge, and is wrong: the reader compares this paragraph to the one on the opening screen, not to
-  the column under it. Nothing forces a break in the sentence either; clause-per-line is gone — a
+  read as the page changing its voice partway through a run. **The 12px over them is shared too**,
+  so the instructions and the headline start at exactly the same height and the swap at Finish moves
+  nothing: both hang off the foot of a map that is compact in either state, so the 0.5rem the
+  headline used to keep there — inherited from `.results-panel`'s old top padding — was the whole of
+  a 4px jump. **And the air under them matches too**, at 16px to the first box on either screen: the
+  headline's own 0.9rem plus the half-border the roster keeps above its first row comes to 16.3, and
+  `CLAW_BACK` in `App.tsx` takes a third of the graph's 24-unit `TOP_PAD` back rather than half of it
+  to make the instructions' 16. So the paragraph's band is 12 above and 16 below, which is not even —
+  it is even with the screen that replaces it, which is the comparison the reader actually makes.
+  Setting the prose on the graph's
+  measure was tried the other way round, back when that measure was 520, and was wrong: the reader
+  compares this paragraph to the one on the opening screen, not to the column under it. The board
+  moved onto the prose's measure instead, which is the same alignment argued from the right end. Nothing forces a break in the sentence either; clause-per-line is gone — a
   `span` each at `display: block`, `nowrap` besides before that — because a sentence held to a shape
   the width didn't ask for reads as two stacked fragments rather than one instruction, and the first
   clause measures 434px, which is a horizontal scroll on a phone.
+  **Each board writes its own instructions.** 2026 teaches the game, because it is the first board
+  anybody sees: click a state, click one across the gutter, and pair like with like. Nobody reaches
+  2032 without having played 2026 and read its results, so repeating that there would only be the
+  rules read back — what that reader needs is what has changed. So 2032 names the census the
+  delegations come from and points at the two **route marks**, the one thing on a box that says a map
+  could be redrawn over the objection of whoever draws it now: "Now try with projected delegate counts
+  after the 2030 Census and reapportionment. Look for the ballot initiative or governor veto symbols
+  to make even stronger matches!" It is also the only place the page names 2030 — the results panel deliberately doesn't
+  (see the 2032 board above). The paragraph is three lines on 2026 and two on 2032, which costs
+  nothing: the climb below measures it.
+  **The columns climb over the instructions once the first pact is signed.** The paragraph exists to
+  get that pact made, and after it the reader has done the thing it describes, so the space goes to
+  the board — but it is taken rather than given: the paragraph stays in the flow and stays still,
+  and the columns rise over it. It was tried the other way, simply unmounted on the first pact, and
+  a block of type vanishing on its own is a second event on a board that already has one.
+  **It goes on the beat the pair parks**, which is what makes it one motion: when the linger lapses
+  the sealed pair drops to "Your Pacts" and the states behind it rise a row to fill the gap, and the
+  whole board rises past the paragraph on the same frame, over the same `--row-travel-ms`, on the
+  same curve — the rows keep going rather than stopping and something else starting. The wait is the
+  graph's own `PACT_LINGER_MS`, exported and imported rather than copied, and it is **not** cut under
+  reduced motion, because the linger isn't either: the board holds still for it on any setting, and a
+  column that rose while the pair still headed it would be answering nothing. (`ROW_TRAVEL_MS` is now
+  exported the same way, and `App.tsx`'s own `BOX_TRAVEL_MS` copy of 550 is gone with it.)
+  The distance is **measured** — the paragraph's height plus the 12px over it, by `ResizeObserver`,
+  since it is two lines on a desktop and four on a phone and re-wraps under the reader — and set as
+  the viewport's `margin-top` from `App.tsx`, which is why that one property isn't in `App.css` with
+  the rest of the rule. Margin and not a transform, so the page actually gets shorter by what the
+  climb takes back.
+  The occlusion is the viewport's own: `position: relative`, `z-index: 1` and the page's `#fafaf7`.
+  The map's z-index is higher, so the columns still pass *under* the map at the top while passing
+  *over* the paragraph at the bottom. **The background is on `.risen` and not on the viewport
+  itself**, which matters: at rest the viewport already overlaps the paragraph by the 12px it claws
+  back, so painting it there cut an opaque strip through the last line of the instructions — the
+  descenders sliced off under a board that hadn't moved. Transparent, that overlap is invisible, and
+  the background arrives on the frame the climb starts, when those 12px are about to go anyway.
+  Measured on a 1280×900 screen: the map's foot at 426, the paragraph 438–508, the viewport resting
+  at 496 and climbing to −82, which lands its top on 426 exactly.
+  Breaking every pact rides the whole thing back down, on the same curve: the freed states are
+  travelling anyway, so the board is in motion regardless and this is that motion run backwards.
 
 ## Commands
 

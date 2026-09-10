@@ -1,6 +1,19 @@
-import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import {
+  useState,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from 'react';
 import { HeroMap } from './components/HeroMap';
-import { BipartiteMatchGraph, ResultsPanel, baselinePool } from './components/BipartiteMatchGraph';
+import {
+  BipartiteMatchGraph,
+  ResultsPanel,
+  baselinePool,
+  PACT_LINGER_MS,
+  ROW_TRAVEL_MS,
+} from './components/BipartiteMatchGraph';
 import { useTopoData } from './map/useTopoData';
 import {
   computeResidualGaps,
@@ -35,10 +48,14 @@ const spellCount = (n: number) => SPELLED[n] ?? String(n);
 const SCROLL_HOME_MS = 2000;
 
 /**
- * How long a box takes to reach its new row: the transition on
- * `.bipartite-graph .state-box` in `App.css`. Keep the two in step.
+ * How much of the graph's own air above its first row (`TOP_PAD`, 24px) the columns
+ * claw back, so the instructions don't sit in a band twice as deep as the one over
+ * them. It used to be half of it, which left 12px under the paragraph against the 12px
+ * over it — even, but four short of what the results headline leaves under itself
+ * before its first box. The two screens swap one for the other, so they now agree at
+ * 16, and the paragraph's band is the wider below than above by exactly that.
  */
-const BOX_TRAVEL_MS = 550;
+const CLAW_BACK = 8;
 
 /**
  * Ride the page to the top and run `then` once it lands — for anything that
@@ -111,6 +128,19 @@ function App() {
   const pool = baselinePool(era);
   const seatsClosed = pool - boardNationalGap;
 
+  // What the states that signed left crooked between them — the pacted states' residual
+  // gaps and nobody else's. On the 2032 board that is the honest second half of what a
+  // run drew: a signatory draws its whole map, so every district its pact didn't hand
+  // the minority goes to its own majority. The states nobody paired are not in it,
+  // because nothing here has drawn their maps either way.
+  const pactedResidualGap = useMemo(() => {
+    let total = 0;
+    for (const pair of selectedMatches) {
+      for (const id of pair) total += Math.abs(boardGaps[id] ?? 0);
+    }
+    return total;
+  }, [selectedMatches, boardGaps]);
+
   const handleToggleMatch = useCallback((pair: MatchPair) => {
     const pk = pairKey(pair[0], pair[1]);
     setSelectedMatches(prev => {
@@ -125,6 +155,51 @@ function App() {
       return [...filtered, pair];
     });
   }, [setSelectedMatches]);
+
+  // The instructions are not taken away when the first pact is signed — the columns
+  // climb over them. When the linger lapses the sealed pair drops to "Your Pacts" and
+  // the states behind it rise a row to fill the gap; the whole board rises past the
+  // paragraph on the same beat and the same curve, so what the reader follows is one
+  // motion that carries on rather than a block of type disappearing on its own. The
+  // paragraph doesn't move or fade: it goes under the board, the way the title goes
+  // under the map.
+  //
+  // The wait is the graph's own `PACT_LINGER_MS`, imported rather than copied, so the
+  // rise starts on the frame the pair leaves. It isn't cut under reduced motion because
+  // the linger isn't either — the board holds still for it there too, and a column that
+  // rose while the pair was still standing at the head of it would be answering nothing.
+  const [columnsRisen, setColumnsRisen] = useState(false);
+
+  useEffect(() => {
+    if (selectedMatches.length === 0) {
+      // Breaking every pact puts the paragraph back, and the columns ride back down
+      // over the same 550ms — the freed states are travelling anyway, so the board is
+      // in motion regardless and this is the same motion run backwards.
+      setColumnsRisen(false);
+      return;
+    }
+    if (columnsRisen) return;
+    const timeoutId = setTimeout(() => setColumnsRisen(true), PACT_LINGER_MS);
+    return () => clearTimeout(timeoutId);
+  }, [selectedMatches, columnsRisen]);
+
+  // How far there is to climb: the paragraph's own height plus the 12px over it, which
+  // together are all the room between the map and the columns. Measured rather than
+  // written down — it is two lines on a desktop and four on a phone, and it re-wraps
+  // under the reader as the window changes. `.match-columns-viewport` already sits at
+  // -12px, so this is the whole of that gap taken back.
+  const instructionsRef = useRef<HTMLParagraphElement>(null);
+  const [instructionsH, setInstructionsH] = useState(0);
+
+  useLayoutEffect(() => {
+    const el = instructionsRef.current;
+    if (!el) return;
+    const measure = () => setInstructionsH(el.offsetHeight);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [started, finished]);
 
   // The Finish button hangs below the columns, so losing it while the page is
   // scrolled down to it takes a strip of the page away from under the reader and
@@ -150,7 +225,7 @@ function App() {
       },
       // Reduced motion has the boxes arrive at once and the page jump, so the
       // whole sequence collapses to its end state.
-      reduced ? 0 : BOX_TRAVEL_MS,
+      reduced ? 0 : ROW_TRAVEL_MS,
     );
 
     return () => {
@@ -167,26 +242,29 @@ function App() {
   //
   // So the page goes home, instantly and in the same frame as the swap. Nothing on
   // screen moves for a smooth ride to show: the map is pinned and doesn't shift, and
-  // everything below it is being replaced this frame anyway. `rideHome` is for the
-  // opposite case — a page about to get *shorter* under a reader standing at the
-  // bottom of it, which is Finish's problem and not this one.
+  // everything below it is being replaced this frame anyway. Finish now does the same
+  // thing for the same reason. `rideHome` is left for the one case that isn't a swap:
+  // the page getting *shorter* on its own under a reader standing at the bottom of it,
+  // which is what breaking the last pact does to the Finish button.
   const handleStart = useCallback(() => {
     window.scrollTo(0, 0);
     setStarted(true);
   }, []);
 
-  // Finish trades the columns for the results panel, which is a fraction of
-  // their height, so it takes the same ride home first — otherwise the page
-  // shortens under a reader standing at the button, which is as far down as the
-  // page goes. Cancelled on a second click so two rides never run at once.
-  const cancelFinishRide = useRef(() => {});
-
+  // Finish trades the columns for the results panel, and the reader is standing at the
+  // button when they press it, that being as far down as the page goes. So the page
+  // goes home instantly and in the same frame as the swap, exactly as Start does and
+  // for the same reason: the scroll happens first, so there is no taller page left to
+  // fall out from under anybody, and the headline is already at the head of the page
+  // when the reader arrives rather than dropping in once the page has stopped moving.
+  //
+  // It used to ride home smoothly and swap on landing (`rideHome`, still used above).
+  // What that rode through was the board the reader has just finished with, and it put
+  // the panel's arrival a frame after the journey rather than at the end of it.
   const handleFinish = useCallback(() => {
-    cancelFinishRide.current();
-    cancelFinishRide.current = rideHome(() => setFinished(true));
+    window.scrollTo(0, 0);
+    setFinished(true);
   }, []);
-
-  useEffect(() => () => cancelFinishRide.current(), []);
 
   // Back to the opening screen with an empty board — the map and the columns both
   // read off the match lists, so clearing them resets both.
@@ -202,11 +280,13 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  // Straight from the 2026 results onto the post-census board, with the 2026 run left
-  // where it is behind it, so Retry can still put the whole thing back. No ride home
-  // is needed: the results panel is already at the top, and the board it makes way
-  // for is taller than what it replaces, so nothing falls out from under the reader.
-  const handleTry2032 = useCallback(() => {
+  // Onto the post-census board with an empty 2032 run: from the 2026 results, where it
+  // is "Try 2032", and from the 2032 results, where the same thing is "Retry 2032" —
+  // one handler, because opening that board and playing it again are the same act. The
+  // 2026 run is left standing behind either, untouched. No ride home is needed: the
+  // results panel is already at the top, and the board it makes way for is taller than
+  // what it replaces, so nothing falls out from under the reader.
+  const handleOpen2032 = useCallback(() => {
     setMatches2032([]);
     setEra('2032');
     setFinished(false);
@@ -252,7 +332,11 @@ function App() {
             <p>
               So pair up the red states and blue states into bipartisan pacts. Each pact will give
               the minority party in each of those two states their representation back. States with
-              similar size delegations make the best pacts. Click Start below to see how many
+              similar size delegations make the best pacts. Click Start below to see how many of
+              the{' '}
+              <span className="headline-figure" style={{ color: GAP_ORANGE }}>
+                {pool}
+              </span>{' '}
               disproportionate districts you can undraw!
             </p>
           </div>
@@ -267,13 +351,48 @@ function App() {
 
       {started && !finished && (
         <>
-          {/* Outside the viewport, so it stays put while the columns rise into it. */}
-          <p className="match-instructions">
-            Click a state to see its best matches at the top of the opposite column, then
-            click one of those states to confirm the pact.
+          {/* Outside the viewport, so it stays put while the columns rise into it —
+              and, once a pact is signed, over it. It is there to get that first pact
+              made, and after it the reader has done the thing it describes, so the
+              board takes the space back by climbing over the paragraph rather than by
+              the paragraph being whisked away. It stays in the flow and stays still;
+              the viewport below is opaque and rides above it. */}
+          {/* Each board says its own thing here. The 2026 paragraph teaches the game,
+              because it is the first board anybody sees. Nobody reaches 2032 without
+              having played 2026 and read its results, so those words would only be the
+              rules read back: what that reader needs is what has changed — the
+              delegations, and a reason to look at the two route marks, which are the one
+              thing on a box that says a map could be redrawn over the objection of
+              whoever draws it now. It is also the only place the page names the census
+              the board is built on; the results panel deliberately doesn't. */}
+          <p className="match-instructions" ref={instructionsRef}>
+            {era === '2032' ? (
+              <>
+                Now try with projected delegate counts after the 2030 Census and
+                reapportionment. Look for the ballot initiative or governor veto symbols
+                to make even stronger matches!
+              </>
+            ) : (
+              <>
+                Click a state to see its best matches at the top of the opposite column, then
+                click one of those states to confirm the pact. States of similar delegate counts,
+                with equal and opposite partisanship, make the best matches.
+              </>
+            )}
           </p>
 
-          <div className="match-columns-viewport">
+          {/* The climb itself: the viewport's own -12px claw-back at rest, and the whole
+              gap between map and columns once the pair has parked. The distance is
+              measured and the duration is the boxes' own, handed over as the same
+              `--row-travel-ms` the graph sets on its svg, so the board and its rows move
+              as one thing. */}
+          <div
+            className={`match-columns-viewport${columnsRisen ? ' risen' : ''}`}
+            style={{
+              marginTop: columnsRisen ? -(12 + instructionsH) : -CLAW_BACK,
+              ['--row-travel-ms' as string]: `${ROW_TRAVEL_MS}ms`,
+            }}
+          >
             <div className="visualization-wide match-columns">
               <BipartiteMatchGraph
                 era={era}
@@ -312,12 +431,15 @@ function App() {
               which put "stand," alone on a line of its own once the type came down to
               prose size.
 
-              The 2032 board says less: its second clause used to be the margin claim
-              the 2026 board makes, and that claim stopped being true there once an
-              unclosed gap began going to the state's own majority — an uneven pact
-              moves the House. Rather than qualify it on every uneven run, it goes, and
-              the headline says the one thing always true of that board: how many
-              districts the pacts drew proportionally that nobody would have drawn. */}
+              The 2032 board makes no margin claim: that clause is the 2026 board's, and
+              it stopped being true here once an unclosed gap began going to the state's
+              own majority — an uneven pact moves the House. What this headline says
+              instead is what the run drew, both halves of it: the districts the pacts
+              handed the minority, and the districts the same signatures left crooked.
+              Both are the pacting states' own, since a signatory draws its whole map and
+              every district its pact didn't close goes to its majority. That is why the
+              second figure is `pactedResidualGap` and not the national one — the states
+              nobody paired have no map here to be crooked. */}
           {era === '2032' ? (
             <p className="results-headline">
               Your {spellCount(selectedMatches.length)}{' '}
@@ -325,7 +447,11 @@ function App() {
               <span className="headline-figure" style={{ color: FAIR_BLACK }}>
                 {seatsClosed}
               </span>{' '}
-              minority party districts.
+              minority party districts in those states, with{' '}
+              <span className="headline-figure" style={{ color: GAP_ORANGE }}>
+                {pactedResidualGap}
+              </span>{' '}
+              disproportionate districts leftover.
             </p>
           ) : seatsClosed > 0 ? (
             <p className="results-headline">
@@ -338,7 +464,7 @@ function App() {
               <span className="headline-figure" style={{ color: GAP_ORANGE }}>
                 {pool}
               </span>{' '}
-              districts, and the U.S. House district margin is unchanged.
+              disproportionate districts, and the U.S. House district margin is unchanged.
             </p>
           ) : (
             <p className="results-headline">
@@ -351,13 +477,17 @@ function App() {
             </p>
           )}
 
+          {/* Retry means "this board again". On 2026 that is the opening screen, which
+              is that board's own pitch; on 2032 there is no pitch to go back to, so it
+              is the post-census board with an empty run — the same act as Try 2032 one
+              screen earlier, and the same handler. */}
           <div className="visualization-wide match-columns">
             <ResultsPanel
               era={era}
               selectedMatches={selectedMatches}
               residualGaps={boardGaps}
-              onRetry={handleStartOver}
-              onTry2032={era === '2026' ? handleTry2032 : undefined}
+              onRetry={era === '2032' ? handleOpen2032 : handleStartOver}
+              onTry2032={era === '2026' ? handleOpen2032 : undefined}
             />
           </div>
         </>

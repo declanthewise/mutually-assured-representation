@@ -83,7 +83,18 @@ export const UNDERREP_DOMAIN = [-0.5, 0, 0.5];
  * machinery, and would be saying something untrue in red or blue. Deliberately not
  * `EVEN_GRAY`, which already means "nobody's" in two places on the same box — the
  * neutral of the border ramp and a chamber no party commands. This one sits with the
- * district count's #999 a few units to its left, so the header reads as one quiet
- * strip under the state's name.
+ * row labels' `LABEL_GRAY` below, so the quiet parts of a box read as one register.
  */
 export const ROUTE_GRAY = '#8f8f88';
+
+/**
+ * The words on a match-graph box's three rows — everything on them that isn't the
+ * party or the gap. Quiet, because the row's argument is its figure and its color:
+ * `Fair` and `Districts` are scaffolding around a party name in that party's own red
+ * or blue, and `Representation Gap` is the whole of its row's label because a gap
+ * belongs to neither side.
+ *
+ * Distinct from `ROUTE_GRAY`, which is a mark rather than type and sits a shade darker
+ * so a 9-unit glyph holds its own.
+ */
+export const LABEL_GRAY = '#888888';

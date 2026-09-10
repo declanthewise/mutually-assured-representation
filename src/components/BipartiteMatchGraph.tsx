@@ -5,6 +5,7 @@ import {
   EVEN_GRAY,
   FAIR_BLACK,
   GAP_ORANGE,
+  LABEL_GRAY,
   LEAN_DOMAIN,
   LEAN_RANGE,
   PARTY_COLORS,
@@ -144,12 +145,17 @@ function borderColorOf(era: Era, state: StateData, residualGaps: Record<string, 
   return underrepColorFor(era, state, residualGaps[state.id] ?? 0);
 }
 
-const BOX_W = 140;
-const BOX_H = 60;
+const BOX_W = 206;
+const BOX_H = 94;
 const BOX_R = 3;
-const ROW_GAP = 6;
+/**
+ * Air between one row's box and the next. Nine units, where it was six: the figure was
+ * set when a box was 60 units tall, and the same six under a box of 94 reads as
+ * crowding. The gutter between the columns went the same way for the same reason.
+ */
+const ROW_GAP = 9;
 const ROW_H = BOX_H + ROW_GAP;
-const HEADER_HEIGHT = 19;
+const HEADER_HEIGHT = 28;
 
 /** Source Sans 3 caps fill 0.66em — the figure every cap measure here is taken at. */
 const CAP_RATIO = 0.66;
@@ -164,21 +170,26 @@ function capBaseline(y: number, size: number): number {
 }
 
 /**
- * The header line: the state name, the district count trailing it, the control
- * pyramid and the lean badge, all standing on one midline.
+ * The header line: the state name with its district count on the end of it, the
+ * control pyramid and the lean badge, all standing on one midline.
  *
  * The name is placed by its alphabetic baseline rather than by
- * `dominant-baseline`, because the name and the count are two runs of different
- * sizes that have to share a baseline. `central` centers each run on its own em
- * box, which leaves the smaller count's baseline about a third of a unit above
- * the name's — it resets the baseline table's font size along with the baseline.
- * SVG 1.1 spares a `dominant-baseline: auto` tspan that, by having it keep the
- * parent's baseline table *and* font size, and Chrome obliges; WebKit resolves
- * `auto` to `alphabetic` and drops the count a whole baseline instead. So neither
- * reading of the shorthand is any use, and the baseline is stated outright.
+ * `dominant-baseline`, as every line on the box is — see `capBaseline`.
+ *
+ * It used to have to be. The count trailed the name as a smaller, lighter run in a
+ * `tspan`, and two runs of different sizes sharing a line is the trap: `central`
+ * centers each run on its own em box, which left the smaller count's baseline about
+ * a third of a unit above the name's, because it resets the baseline table's font
+ * size along with the baseline. SVG 1.1 spares a `dominant-baseline: auto` tspan
+ * that, by having it keep the parent's baseline table *and* font size, and Chrome
+ * obliged; WebKit resolved `auto` to `alphabetic` and dropped the count a whole
+ * baseline instead, so neither reading of the shorthand was any use. The count is
+ * part of the name's own run now — `California-52` — so there is one run on the
+ * line and nothing left to disagree about. The same fault, and the same answer, as
+ * the party letter on the count row below.
  */
-const HEADER_MID_Y = 10;
-const NAME_SIZE = 9.5;
+const HEADER_MID_Y = 14;
+const NAME_SIZE = 16;
 const NAME_BASELINE_Y = capBaseline(HEADER_MID_Y, NAME_SIZE);
 
 /**
@@ -194,9 +205,16 @@ const NAME_BASELINE_Y = capBaseline(HEADER_MID_Y, NAME_SIZE);
  * to spare, where against a fixed two-mark strip it would have been eleven short.
  *
  * Measured in the app at weight 600 — the weight the active box wears, so the one box
- * that could collide is the one being pointed at. South Carolina clears by 1.2 units
- * and North Carolina by 3.5, so re-measure the moment the marks, the pyramid or the
- * badge changes size.
+ * that could collide is the one being pointed at. The name is at 16 in a header whose
+ * badge, pyramid and marks have all grown with it, and it is tight again: South
+ * Carolina clears by 6.3 units, Pennsylvania by 8.9 and North Carolina by 9.1.
+ *
+ * The two entries that render are earning their place again: written out in full,
+ * `Massachusetts-9` overflows by 8.5 units and `New Hampshire-2` by 0.8, where at a
+ * 12-unit name they had 45 and 50 to spare. The other two never render, ND and SD
+ * being single-district. Re-measure the moment the marks, the
+ * pyramid, the badge or the name changes size: they all come out of this budget, and
+ * the name is what gives first.
  *
  * Only two of the four ever render: ND and SD are single-district states, which
  * neither board seats. The rule is to shorten the leading word where there is one to
@@ -213,23 +231,35 @@ const HEADER_ABBREVIATIONS: Record<string, string> = {
 const headerName = (state: StateData) => HEADER_ABBREVIATIONS[state.id] ?? state.name;
 
 /** Baselines of the three equation rows, and the rule above the total. */
-const EQ_ROW_Y = [29, 40, 52];
-const EQ_RULE_Y = 46;
+const EQ_ROW_Y = [41, 61, 83];
+const EQ_RULE_Y = 72;
 
 /**
- * Each row's label is set at its own count's size, so a row reads as one line rather
- * than as a caption with a figure after it. The top two rows carry a count of
- * districts and the gap row carries the gap, which is half a point larger — see
- * GAP_COUNT_SIZE — and their labels follow them. That is the only difference between
- * the three, and it puts the extra weight on the row the box is concluding with.
+ * **One label size across all three rows** — 15 — and a count set a step above it: 16 on
+ * the district rows, 17.5 on the gap. Label and count used to be equal, so that a row
+ * read as one line rather than as a caption with a figure after it, and at 140 units
+ * wide that was right; in a box half again as wide and half again as tall, a count
+ * matching its label reads as small print, because the figure is what the row is for
+ * and it holds the far end of a much longer line. The label is still full-size type on
+ * the same baseline, not a caption.
  *
- * Nothing is tight at these sizes: the longest label, "Current Minority Districts" at
- * 10.42 units per unit of font size, ends at x=100 against a count that starts at
- * x=115. It is the swell that is tight, and only on the middle row — see
- * PACT_SWELL_LABEL_SIZE.
+ * The three labels are one size because they are one voice: `Fair`, `Current` and
+ * `Representation Gap` are the same kind of thing said three times, and a district row
+ * set smaller than the gap row read as a subheading under it. The extra half point on
+ * the gap *count* stays, which puts the weight on the row the box concludes with.
+ *
+ * Nothing is tight across: the longest label, "Current Dem. Districts" at 9.15 units
+ * per unit of font size, ends at x=143 against the widest count either row can hold —
+ * two digits and a party letter, `17D`, which starts at x=170.
+ * What sets these is the box's height. The rows sit at 41, 61 and 83 in a box 94 tall,
+ * so they are 20 and 22 units apart, which is what carries a 16-unit count with nine
+ * units of air over it and the gap row's descenders finishing two units clear of the
+ * box's own edge. Box and type have grown together twice now: the rows were 9 in a box
+ * 60 tall, and every size between looked like small print in a box that had taken the
+ * board's whole width.
  */
-const EQ_COUNT_SIZE = 9;
-const EQ_LABEL_SIZE = EQ_COUNT_SIZE;
+const EQ_COUNT_SIZE = 16;
+const EQ_LABEL_SIZE = 15;
 
 /**
  * How far the counts sit in from the box's right padding, and the labels' answer to
@@ -238,9 +268,9 @@ const EQ_LABEL_SIZE = EQ_COUNT_SIZE;
  * without the row losing its shape.
  *
  * Only at rest. A swelling row puts its count back on the padding — see
- * PACT_SWELL_COUNT_SIZE, whose whole budget is the 128 units between the two
- * paddings, and which has none of them to give. The count's right edge therefore
- * drifts those four units outward as it grows, under a figure going from 9 to 19.
+ * PACT_SWELL_COUNT_SIZE, whose budget is the 194 units between the two paddings. The
+ * count's right edge therefore drifts those four units outward as it grows, under a
+ * figure going from 10.5 to 26.
  */
 const COUNT_INSET = 4;
 const COUNT_X = BOX_W - 6 - COUNT_INSET;
@@ -260,9 +290,9 @@ const SWELL_COUNT_X = BOX_W - 6;
  * name takes what is left. The name is what gives first — four of them are shortened
  * to fit, in HEADER_ABBREVIATIONS.
  */
-const PYRAMID_W = 11;
-const PYRAMID_H = 10;
-const PYRAMID_GAP = 3.5;
+const PYRAMID_W = 15;
+const PYRAMID_H = 14;
+const PYRAMID_GAP = 4;
 
 /**
  * The two route marks, in the strip between the district count and the pyramid: what
@@ -288,10 +318,26 @@ const PYRAMID_GAP = 3.5;
  * pair of boxes is narrow — and forcing both into one square would only pad the
  * narrower with air.
  */
-const ROUTE_H = 9;
-const ROUTE_PERSON_W = 7;
-const ROUTE_BALLOT_W = 4.2;
-const ROUTE_GAP = 2.5;
+/**
+ * The marks are drawn at the size they were designed at and scaled as a pair, rather
+ * than redrawn: every coordinate in `RouteMarks` is in the base system below, and the
+ * one `scale()` around them carries the lot. So the two shapes keep their proportions
+ * and their stroke weights against each other, and the strip's width is the same
+ * arithmetic it always was with the factor applied once at the end.
+ *
+ * The factor is the header's: the name went from 9.5 to 15 as the box grew, and marks
+ * left at their old size beside it read as a row of things too small to be meant.
+ */
+const ROUTE_SCALE = 1.4;
+const ROUTE_H_BASE = 9;
+const ROUTE_PERSON_BASE = 7;
+const ROUTE_BALLOT_BASE = 4.2;
+const ROUTE_GAP_BASE = 2.5;
+
+const ROUTE_H = ROUTE_H_BASE * ROUTE_SCALE;
+const ROUTE_PERSON_W = ROUTE_PERSON_BASE * ROUTE_SCALE;
+const ROUTE_BALLOT_W = ROUTE_BALLOT_BASE * ROUTE_SCALE;
+const ROUTE_GAP = ROUTE_GAP_BASE * ROUTE_SCALE;
 
 /** The strip's width for one state: 0, one mark, or both with a gap between them. */
 function routeBlockWidth(state: StateData): number {
@@ -306,10 +352,43 @@ function routeBlockWidth(state: StateData): number {
 /** Height of the apex course, as a fraction of the whole. */
 const PYRAMID_APEX = 0.44;
 /** Mortar between the courses, and between the two chambers. */
-const PYRAMID_MORTAR = 0.9;
+const PYRAMID_MORTAR = 1.25;
 
-const LEFT_BOX_X = 12;
-const COL_GAP = 28;
+/**
+ * The weight of a box's border: three units, four and a half where the interface has
+ * hold of it. It is the box's own proportion rather than a fixed number of pixels —
+ * two units drew the same 2.5px it always had, but on a box half again as wide that
+ * is a thinner line around a bigger thing, which is what it looked like.
+ *
+ * The stroke is centered on the box's own edge, so half of it lies outside the box —
+ * which is what `ROSTER_EDGE_PAD` exists to keep inside the picture, and what sets
+ * `LEFT_BOX_X` below.
+ */
+const BOX_STROKE = 3;
+const BOX_STROKE_EMPHASIZED = 4.5;
+
+/** Half a border, kept above the roster's first row and below its last. */
+const ROSTER_EDGE_PAD = BOX_STROKE / 2;
+
+/**
+ * The board's own margin, and it is exactly half of the widest border a box can wear:
+ * an emphasized box's stroke then runs from x=0 to x=4.5, so the *outside* of the
+ * border sits on the svg's own edge — which is the prose measure's edge, so the
+ * column's edge and the instructions' first letter stand on one line. Any more than
+ * this is a gap the reader can see; any less clips the stroke, since an svg viewport
+ * hides what leaves it.
+ */
+const LEFT_BOX_X = BOX_STROKE_EMPHASIZED / 2;
+
+/**
+ * The gutter the links cross, and the one measurement on the board that is not in the
+ * boxes: 40 units, 50px. It was 28 through two rounds of the box growing — a fifth of
+ * the box's width when the box was 140 wide, and an eighth of it at 206, which read as
+ * two columns crowding each other. Widening it costs the whole board a little scale,
+ * since the svg's width is the prose measure and everything divides that: at 456.5
+ * units across, a unit is 1.253px where it was 1.287.
+ */
+const COL_GAP = 40;
 const RIGHT_BOX_X = LEFT_BOX_X + BOX_W + COL_GAP;
 const VIEW_W = RIGHT_BOX_X + BOX_W + LEFT_BOX_X;
 
@@ -317,27 +396,37 @@ const VIEW_W = RIGHT_BOX_X + BOX_W + LEFT_BOX_X;
 const LINK_MID_X = LEFT_BOX_X + BOX_W + COL_GAP / 2;
 
 /**
- * The weight of a box's border: two units, three where the interface has hold of it.
- * The stroke is centered on the box's own edge, so half of it lies outside the row —
- * which is what `ROSTER_EDGE_PAD` exists to keep inside the picture.
+ * The link between two boxes, and the button that breaks it. Both are set against
+ * `BOX_STROKE`: the link is a border's weight because it is the same kind of mark as
+ * the borders it joins — one continuous line saying what a pact came to — and the ×
+ * is drawn in three quarters of it, a ring being a finer thing than an edge. All of it
+ * moved together when the border went from 2 units to 3.
  */
-const BOX_STROKE = 2;
-const BOX_STROKE_EMPHASIZED = 3;
-
-/** Half a border, kept above the roster's first row and below its last. */
-const ROSTER_EDGE_PAD = BOX_STROKE / 2;
-
-const REMOVE_R = 8;
-const REMOVE_TICK = 3;
+const LINK_STROKE = BOX_STROKE;
+const REMOVE_R = 11;
+const REMOVE_TICK = 4;
+const REMOVE_STROKE = BOX_STROKE * 0.75;
 
 /**
- * Air around a section heading: 24px, in a viewBox that renders at
- * `max-width: 420px`, so the px figure converts at that scale. "Your Pacts"
+ * What the viewBox renders at: `.bipartite-graph`'s `max-width` in `App.css`, which
+ * is the prose measure less its insets (620 − 48), so the board's outer edges stand
+ * on the same line as the instructions above it. Keep the two in step — everything
+ * here is in viewBox units, and this is the only figure that says how big one is.
+ *
+ * At 456.5 units across that is 1.253px to the unit, against the 1.265 it was at 332
+ * units and 420px — so a unit means very nearly what it always did, and the board grew
+ * by taking units rather than by taking scale. The 124 extra units went to the two
+ * boxes (140 → 206 each) and to the gutter between them (28 → 40).
+ */
+const GRAPH_PX_W = 572;
+
+/**
+ * Air around a section heading: 24px, converted at that scale. "Your Pacts"
  * takes two of them above it — with no rule to break the run, the gap itself is
  * what tells the parked block from the flowing rows, so it has to be plainly
  * wider than the one between two rows.
  */
-const UNITS_PER_PX = VIEW_W / 420;
+const UNITS_PER_PX = VIEW_W / GRAPH_PX_W;
 const SECTION_PAD = 24 * UNITS_PER_PX;
 
 /**
@@ -357,7 +446,7 @@ const SCROLL_MARGIN = 12;
  * wait exactly this long for the boxes to arrive. Handed over as `--row-travel-ms`
  * so there is one figure rather than a literal in each file.
  */
-const ROW_TRAVEL_MS = 550;
+export const ROW_TRAVEL_MS = 550;
 
 /**
  * How long the gap row takes to swell out over its box, and later to fold back.
@@ -459,7 +548,7 @@ export const PACT_COUNT_AT_MS = SEAL_LEAD_MS + SWELL_MS;
  * It comes to 4350ms, which is a long time to hold a board still, and it is two
  * figures' worth.
  */
-const PACT_LINGER_MS = SEAL_LEAD_MS + SWELL_CYCLE_MS * 2;
+export const PACT_LINGER_MS = SEAL_LEAD_MS + SWELL_CYCLE_MS * 2;
 
 
 /**
@@ -469,61 +558,52 @@ const PACT_LINGER_MS = SEAL_LEAD_MS + SWELL_CYCLE_MS * 2;
  * the edge it's anchored to. So it grows in place rather than rearranging itself
  * on the way out and back.
  *
- * Source Sans 3 caps fill 0.66em, so the count's ink runs 30–49 there, about
- * eleven units clear top and bottom. Width is what's tight: "Representation Gap"
- * runs ~0.41 units per character per unit of font size, reaching x≈87 at 11, and
- * a two-digit count at 28 comes back to about x=106. Whichever grows, that's the
- * gap to keep.
+ * Both directions are comfortable and neither is slack. The row centres on y=61 in a
+ * box 94 tall, so a count at 36 runs 43–79 with fifteen units under it; across, the row
+ * has the whole of a 206-unit box, and "Representation Gap" at 8.25 units per unit of
+ * font size ends at x=146 at 17 against a two-digit count coming back to x=160.
  */
-const GAP_COUNT_SIZE = 9.5;
-const GAP_LABEL_SIZE = GAP_COUNT_SIZE;
-const SWELL_LABEL_SIZE = 11;
-const SWELL_COUNT_SIZE = 28;
+const GAP_COUNT_SIZE = 17.5;
+const GAP_LABEL_SIZE = EQ_LABEL_SIZE;
+const SWELL_LABEL_SIZE = 17;
+
+const SWELL_COUNT_SIZE = 36;
 const SWELL_ROW_Y = (HEADER_HEIGHT + BOX_H) / 2;
 
 /**
- * The pact row at full swell. It grows less far than the gap row at both ends, and the
- * reason is that it carries more: a longer label, and a count that keeps its party.
+ * The pact row at full swell, and it grows less far than the gap row at both ends,
+ * because it carries more: a longer label, and a count that names its party.
  *
- * The row is 128 units wide, x=6 to x=134, label left and count right. Measured in the
- * app at the weights they are set in, "Pact Minority Districts" runs 9.06 units per
- * unit of font size against "Representation Gap"'s 8.26, and the widest count either
- * row can hold is two digits and a letter — "18D", the largest trade on the 2032 board
- * — at 1.653 per unit against a bare "18"'s 1.024. At 9 and 19 those come to 81.5 and
- * 31.4, clearing by 15.1.
+ * The row is 188 units, x=6 to x=194, label left and count right. Measured in the app
+ * at the weights they are set in: "Current Dem. Districts" — the longest either board
+ * can put here, since the words don't change until the box leaves for "Your Pacts" —
+ * runs 9.15 units per unit of font size against "Representation Gap"'s 8.25, and the
+ * widest count it can hold is two digits and a letter at 1.653 per unit against a bare
+ * two digits' 1.027. That letter is expensive: three fifths again as wide as the digits
+ * alone, and it is why the gap row's count can be at 36 where this one is at 24.
  *
- * **The label no longer grows at all**, the rest size having been raised to meet its
- * own count and taken the growth with it. What is left is the count, which is where
- * the row's magnification was anyway: 9 to 19, better than two to one, under a label
- * that holds its size and its place.
+ * **So the label holds its rest size and the swell is the count's**, 16 to 24. The
+ * label at 15 ends at x=143 and a `18D` at 24 comes back to x=160, which is seventeen
+ * units of air; there is no room to grow the label into and no reason to want it —
+ * shortening it while magnified so it could grow buys a magnified row that has stopped
+ * saying which map it is counting.
  *
- * **And 9 is a ceiling now, not a leftover.** The words do not change until the box
- * leaves for "Your Pacts", so a sealing 2026 box stands at full swell reading "Current
- * Minority Districts" the whole time — 10.42 per unit, the longest label on the box,
- * ending at x=99.7. Its count runs up to the pact's figure underneath, and two digits
- * and a letter come back to x=102.6: **2.9 units**, which is what this row now lives
- * on. That puts the ceiling at 9.28, and the row is full rather than empty — which is
- * why the swell here is the count's alone. The label holding still through it is the
- * price of a label this long, and the alternative — shortening it while magnified so
- * it could grow — buys a magnified row that has stopped saying which map it is
- * counting.
- *
- * **The party letter stays.** It used to be dropped on the way up, which bought a
- * label at 10 and a count at 21, and it was the wrong thing to sell — the letter names
- * the party every figure in the box is about, and a row that sheds it mid-swell is
- * answering a question it has stopped asking. Paying for it out of both sizes instead
- * costs a point of label and two of count, and the row still magnifies by more than
- * two to one.
+ * The letter itself was once **dropped** on the way up, which bought a label at 10 and
+ * a count at 21, and that was the wrong thing to sell: the letter names the party every
+ * figure in the box is about, and a row that sheds it mid-swell is answering a question
+ * it has stopped asking. It is drawn as part of the count's own run, never as a tspan
+ * of its own — that is what had it visibly drooping half a device pixel below its
+ * digits, `dominant-baseline` being resolved a second time per run.
  */
-const PACT_SWELL_LABEL_SIZE = 9;
-const PACT_SWELL_COUNT_SIZE = 19;
+const PACT_SWELL_LABEL_SIZE = EQ_LABEL_SIZE;
+const PACT_SWELL_COUNT_SIZE = 24;
 
 /**
  * The "Your Pacts" heading. Spacing is measured to the top of its ink, not its
  * em box — Source Sans 3 caps fill 0.66em, and the ~3.5 units of slack above
  * them would otherwise read as extra air over the heading.
  */
-const PACT_LABEL_SIZE = 9;
+const PACT_LABEL_SIZE = 13;
 const PACT_LABEL_CAP = PACT_LABEL_SIZE * CAP_RATIO;
 const PACT_LABEL_GAP = 14;
 
@@ -664,7 +744,7 @@ function RouteMarks({ state }: { state: StateData }) {
         />
       </g>,
     );
-    x += ROUTE_BALLOT_W + ROUTE_GAP;
+    x += ROUTE_BALLOT_BASE + ROUTE_GAP_BASE;
   }
 
   if (state.governorCanVeto) {
@@ -677,7 +757,9 @@ function RouteMarks({ state }: { state: StateData }) {
     );
   }
 
-  return <>{marks}</>;
+  // One scale around both, so the shapes are drawn once at the size they were drawn
+  // for — see ROUTE_SCALE. Everything inside `marks` is in the base system.
+  return <g transform={`scale(${ROUTE_SCALE})`}>{marks}</g>;
 }
 
 /** Ease-out: quick off the mark, easing into place. */
@@ -832,6 +914,15 @@ function BoxBody({
   // with, and change while it is travelling.
   const midLabel = is2032 || (isMatched && !settling) ? 'Pact' : 'Current';
 
+  // Which party every figure in the box is about, said in words and in that party's
+  // own color. It used to be said by a letter on the end of each count — `20R` — and
+  // by the word "Minority", which named the *role* and left the reader to work out
+  // whose it was from the column they were in. The party's own name says it outright,
+  // and saying it in red or blue says it a second time, which is what lets the counts
+  // drop the letter: nothing on the row is now the only thing carrying the party.
+  const partyWord = minorityParty === 'R' ? 'GOP' : 'Dem.';
+  const partyColor = PARTY_COLORS[minorityParty];
+
   // The label's size, named once so the row and anything measured in it agree. It is
   // the same at rest and at full swell — see PACT_SWELL_LABEL_SIZE.
   const midLabelSize = atMid(EQ_LABEL_SIZE, PACT_SWELL_LABEL_SIZE);
@@ -861,13 +952,23 @@ function BoxBody({
       {/* The proportional share — the one figure that is true before anybody signs
           anything, and the only row on the 2032 board that starts with a number. */}
       <g opacity={fadeFor(Math.max(midSize, gapSize))}>
-        <text x={6} y={EQ_ROW_Y[0]} dominantBaseline="central" fontSize={EQ_LABEL_SIZE} fill="#888">
-          Fair Minority Districts
+        <text
+          x={6}
+          y={capBaseline(EQ_ROW_Y[0], EQ_LABEL_SIZE)}
+          fontSize={EQ_LABEL_SIZE}
+          fill={LABEL_GRAY}
+        >
+          Fair{' '}
+          <tspan fill={partyColor}>{partyWord}</tspan>
+          {' '}Districts
         </text>
         <text
-          x={COUNT_X} y={EQ_ROW_Y[0]}
-          textAnchor="end" dominantBaseline="central"
-          fontSize={EQ_COUNT_SIZE} fontWeight={700} fill={PARTY_COLORS[minorityParty]}
+          x={COUNT_X}
+          y={capBaseline(EQ_ROW_Y[0], EQ_COUNT_SIZE)}
+          textAnchor="end"
+          fontSize={EQ_COUNT_SIZE}
+          fontWeight={700}
+          fill={partyColor}
         >
           {proportional}{minorityParty}
         </text>
@@ -875,37 +976,34 @@ function BoxBody({
 
       {/* What the map delivers: the enacted count in 2026, the pact's own in 2032. */}
       <g opacity={fadeFor(gapSize)}>
-        {/* One run in one `text`, and no `<tspan>` carrying glyphs anywhere on this
-            line: a tspan with visible glyphs under
-            `dominant-baseline="central"` is dropped half a unit off the line its own
-            text sits on — the parent's `central` resolved a second time against the
-            run's own baseline table — and nothing said on the tspan recovers it:
-            `dominant-baseline: auto`, `inherit` and `alignment-baseline: baseline` all
-            sag alike. Same trap, same answer, as the drooping party letter on the
-            count below. */}
+        {/* The party word is the only colored run on the line, and that is what the
+            alphabetic baseline is for. `dominant-baseline="central"` is resolved a
+            second time against a tspan's own baseline table, which drops the run half a
+            unit below the words either side of it — the fault that had the old party
+            letter visibly drooping off the count. Stated outright, every run on the
+            line shares the one baseline and a tspan is safe. */}
         <text
           x={6}
-          y={atMid(EQ_ROW_Y[1], SWELL_ROW_Y)}
-          dominantBaseline="central"
+          y={capBaseline(atMid(EQ_ROW_Y[1], SWELL_ROW_Y), midLabelSize)}
           fontSize={midLabelSize}
-          fill="#888"
+          fill={LABEL_GRAY}
         >
-          {midLabel} Minority Districts
+          {midLabel}{' '}
+          <tspan fill={partyColor}>{partyWord}</tspan>
+          {' '}Districts
         </text>
         <AnimatedCount value={current} delay={midDelay} duration={duration}>
           {shown => (
             <text
               x={atMid(COUNT_X, SWELL_COUNT_X)}
-              // Stated outright, as on the header line. The figure and its party
-              // letter are one run now — they were two while the letter was sized
-              // separately, and `central` resolved per run against each run's own
-              // baseline table, dropping the tspan half a device pixel below the
-              // digits it belongs to: at this size a visibly drooping R.
+              // Stated outright, as every line on the box is: the count is a step
+              // larger than its label, so the two would not share a line at all if
+              // each were centered on its own em box.
               y={capBaseline(atMid(EQ_ROW_Y[1], SWELL_ROW_Y), midCountSize)}
               textAnchor="end"
               fontSize={midCountSize}
               fontWeight={700}
-              fill={PARTY_COLORS[minorityParty]}
+              fill={partyColor}
             >
               {midBlank ? '' : `${shown}${minorityParty}`}
             </text>
@@ -926,10 +1024,9 @@ function BoxBody({
       <g opacity={fadeFor(midSize)}>
         <text
           x={6}
-          y={atGap(EQ_ROW_Y[2], SWELL_ROW_Y)}
-          dominantBaseline="central"
+          y={capBaseline(atGap(EQ_ROW_Y[2], SWELL_ROW_Y), atGap(GAP_LABEL_SIZE, SWELL_LABEL_SIZE))}
           fontSize={atGap(GAP_LABEL_SIZE, SWELL_LABEL_SIZE)}
-          fill="#888"
+          fill={LABEL_GRAY}
         >
           Representation Gap
         </text>
@@ -937,9 +1034,11 @@ function BoxBody({
           {shown => (
             <text
               x={atGap(COUNT_X, SWELL_COUNT_X)}
-              y={atGap(EQ_ROW_Y[2], SWELL_ROW_Y)}
+              y={capBaseline(
+                atGap(EQ_ROW_Y[2], SWELL_ROW_Y),
+                atGap(GAP_COUNT_SIZE, SWELL_COUNT_SIZE),
+              )}
               textAnchor="end"
-              dominantBaseline="central"
               fontSize={atGap(GAP_COUNT_SIZE, SWELL_COUNT_SIZE)}
               fontWeight={700}
               // Black belongs to the figure on screen, not the one being counted
@@ -1200,8 +1299,8 @@ function StateBox({
 
   // Both columns read name→badge, so the two sides scan the same way.
   const leanText = formatLean(state.partisanLean);
-  const badgeW = leanText.length * 5 + 8;
-  const badgeH = 13;
+  const badgeW = leanText.length * 8.1 + 9;
+  const badgeH = 20;
   const badgeX = BOX_W - 5 - badgeW;
   // Everything right of the name hangs off the badge, so the name's budget moves
   // with the width of the lean. See HEADER_ABBREVIATIONS for what doesn't fit it.
@@ -1324,12 +1423,18 @@ function StateBox({
         y={HEADER_MID_Y}
         textAnchor="middle"
         dominantBaseline="central"
-        fontSize={8.5}
+        fontSize={13.5}
         fill={leanTextColor}
         fontWeight={600}
       >
         {leanText}
       </text>
+      {/* Name and district count as one run — "California-52" — at one size, one
+          weight and one color, with no space either side of the hyphen. The count used
+          to trail the name as a smaller, lighter parenthetical in a `tspan`, which is
+          what the baseline note above HEADER_MID_Y was written for and what the name's
+          own budget was measured against. One run needs neither: the count stands on
+          the name's baseline because it *is* the name's run. */}
       <text
         x={6}
         y={NAME_BASELINE_Y}
@@ -1338,11 +1443,7 @@ function StateBox({
         fontWeight={isActive ? 600 : 500}
       >
         {headerName(state) !== state.name && <title>{state.name}</title>}
-        {headerName(state)}
-        {/* No baseline of its own: it inherits the line's, which is the point. */}
-        <tspan dx={3} fontSize={8.5} fontWeight={500} fill="#999">
-          ({era.districtsOf(state)})
-        </tspan>
+        {`${headerName(state)}-${era.districtsOf(state)}`}
       </text>
 
       <BoxBody
@@ -1431,7 +1532,7 @@ function PactRoster({ era: eraId, pacts, residualGaps }: PactRosterProps) {
               x2={LINK_MID_X}
               y2={linkY}
               stroke={borderColorOf(era, left, residualGaps)}
-              strokeWidth={2}
+              strokeWidth={LINK_STROKE}
               strokeLinecap="round"
             />
             <line
@@ -1440,7 +1541,7 @@ function PactRoster({ era: eraId, pacts, residualGaps }: PactRosterProps) {
               x2={LINK_MID_X}
               y2={linkY}
               stroke={borderColorOf(era, right, residualGaps)}
-              strokeWidth={2}
+              strokeWidth={LINK_STROKE}
               strokeLinecap="round"
             />
             {box(left, 'left')}
@@ -1844,7 +1945,7 @@ export function BipartiteMatchGraph({
                   x2={LINK_MID_X}
                   y2={0}
                   stroke={halfColorOf(a, b, 'left', false)}
-                  strokeWidth={2}
+                  strokeWidth={LINK_STROKE}
                   strokeLinecap="round"
                   pathLength={1}
                 />
@@ -1855,7 +1956,7 @@ export function BipartiteMatchGraph({
                   x2={LINK_MID_X}
                   y2={0}
                   stroke={halfColorOf(a, b, 'right', false)}
-                  strokeWidth={2}
+                  strokeWidth={LINK_STROKE}
                   strokeLinecap="round"
                   pathLength={1}
                 />
@@ -1866,7 +1967,7 @@ export function BipartiteMatchGraph({
                   x2={LINK_MID_X}
                   y2={0}
                   stroke={halfColorOf(a, b, 'left', true)}
-                  strokeWidth={2}
+                  strokeWidth={LINK_STROKE}
                   strokeLinecap="round"
                 />
                 <line
@@ -1876,7 +1977,7 @@ export function BipartiteMatchGraph({
                   x2={LINK_MID_X}
                   y2={0}
                   stroke={halfColorOf(a, b, 'right', true)}
-                  strokeWidth={2}
+                  strokeWidth={LINK_STROKE}
                   strokeLinecap="round"
                 />
 
@@ -1900,12 +2001,12 @@ export function BipartiteMatchGraph({
                     }}
                   >
                     <title>Break this pact</title>
-                    <circle r={REMOVE_R} fill="white" stroke={GAP_ORANGE} strokeWidth={1.5} />
+                    <circle r={REMOVE_R} fill="white" stroke={GAP_ORANGE} strokeWidth={REMOVE_STROKE} />
                     <path
                       d={`M${-REMOVE_TICK} ${-REMOVE_TICK}L${REMOVE_TICK} ${REMOVE_TICK}
                           M${REMOVE_TICK} ${-REMOVE_TICK}L${-REMOVE_TICK} ${REMOVE_TICK}`}
                       stroke={GAP_ORANGE}
-                      strokeWidth={1.5}
+                      strokeWidth={REMOVE_STROKE}
                       strokeLinecap="round"
                     />
                   </g>
@@ -2008,10 +2109,14 @@ export function ResultsPanel({
       {/* The orange button from under the columns, and — off the 2026 results only —
           the one that carries the same argument past the next census. Retry puts the
           board back and reads orange for it; Try 2032 goes forward and wears the
-          black Start and Finish wear. */}
+          black Start and Finish wear.
+          Retry names the board it puts back once there is more than one to name: off
+          2026 it is the whole thing from the opening screen, which needs no year, and
+          off 2032 it says which board is coming back, because the button beside it that
+          brought the reader here said the same year. */}
       <div className="finish-row">
         <button className="restart-btn" onClick={onRetry}>
-          Retry
+          {era === '2032' ? 'Retry 2032' : 'Retry'}
         </button>
         {onTry2032 && (
           <button className="try-2032-btn" onClick={onTry2032}>

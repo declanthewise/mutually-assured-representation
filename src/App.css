@@ -175,13 +175,17 @@ body {
   font-size: 0.94rem;
   line-height: 1.55;
   color: #444;
+  /* Indented like any paragraph, and on the shared rule rather than on the intro's
+     own <p> alone: the instructions and the headline are the same voice mid-run, so
+     they open the same way. It inherits, so the intro's two paragraphs take it from
+     the container. */
+  text-indent: 1.5em;
 }
 
 /* One block of prose: the paragraphs run on with no space between them, so the
-   indent is what marks the break. */
+   indent above is what marks the break. */
 .app-intro p {
   margin: 0;
-  text-indent: 1.5em;
 }
 
 /* Start now closes the opening screen, so it carries the space to the footer.
@@ -308,15 +312,17 @@ body {
 }
 
 /* Everything about how it is set comes from the prose rule above; what is left here is
-   the air around it. The 0.5rem over it used to be `.results-panel`'s top padding and
-   came out with the headline.
+   the air under it — the air over it is the 12px it shares with the instructions.
+   It used to keep 0.5rem of its own there, inherited from `.results-panel`'s top
+   padding, which put it 4px higher than the instructions it replaces. Nothing else on
+   the page moves across that swap: the map is compact in both states and both blocks
+   hang off its foot, so those 4px were the whole of the jump.
    It was Playfair at `min(4.4cqi, 1.5rem)`, sized so its longest line stayed unbroken,
    and all of that arithmetic is gone with it — at prose size every line the headline
    can produce fits several times over, so the wording can change without re-measuring
    anything. The clause-per-line breaks are gone too (`.headline-line`, `display:
    block`): at prose size they put "stand," alone on a line. */
 .results-headline {
-  margin-top: 0.5rem;
   margin-bottom: 0.9rem;
 }
 
@@ -346,23 +352,54 @@ body {
    block, and being HTML it wraps on its own — the SVG would need every line set
    by hand. */
 /* Everything about how it is set comes from the prose rule above. What is left here
-   is the air over it: half the 24px the graph keeps above its first row (TOP_PAD),
-   matched above the text so it stays centered in its own band — the viewport below
-   claws back the other half with a negative margin.
+   is the air over it: 12px, against the 16 the viewport below leaves under it — see
+   `CLAW_BACK` in `App.tsx`, and the results headline, which leaves the same 16.
    Nothing forces a break in it. Clause-per-line was tried — a `display: block` span
    each — and reads as two stacked fragments rather than one instruction. */
-.match-instructions {
+/* The results headline takes the same 12px, so the two blocks start at exactly the
+   same height and the swap at Finish moves nothing. */
+.match-instructions,
+.results-headline {
   margin-top: 12px;
 }
 
+/* The `margin-top` is set in `App.tsx`, because it is the one thing here that has to
+   be measured: at rest it is `CLAW_BACK`, which takes a third of the graph's own
+   TOP_PAD back so the paragraph sits 12px under the map and 16 over the first box —
+   16 being what the results headline leaves under itself, and the two screens swap one
+   for the other. Once the first pact has parked it is instead the whole of the gap
+   between the map and the columns, so the board climbs over the paragraph and keeps it.
+   Stacked over the instructions so the climb can cover them rather than show type
+   through the boxes. The map's z-index is higher, so the columns still pass under the
+   map while passing over the paragraph.
+   The duration is the boxes' own `--row-travel-ms`, handed down from `App.tsx`: the
+   states rise a row and the board rises past the paragraph on one curve, so it reads
+   as one motion carrying on rather than two things happening at once. */
 .match-columns-viewport {
   overflow: hidden;
-  /* The air under the instructions is the graph's own TOP_PAD, pulled up to the
-     12px above the text so the band reads even on both sides. */
-  margin-top: -12px;
+  position: relative;
+  z-index: 1;
+  transition: margin-top var(--row-travel-ms, 550ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* The page's own ground, and only while the board is climbing. At rest the viewport
+   already overlaps the paragraph by what it claws back, so painting it there put an
+   opaque strip through the last line of the instructions — the descenders cut off under
+   a board that hadn't moved yet. Transparent, that overlap is invisible; the background
+   arrives on the same frame the climb starts, when the 12px is about to be covered
+   anyway. */
+.match-columns-viewport.risen {
+  background: #fafaf7;
+}
+
+/* The board is set on the prose measure rather than `.visualization-wide`'s 520, so
+   the columns line up with the instructions above them and the results headline above
+   those. The insets are `.visualization-wide`'s own, so the svg inside gets exactly
+   the 572px the paragraph's text gets. Both the columns and the results panel take it,
+   because the roster draws the board's own boxes and they should be the same size
+   there. */
 .match-columns {
+  max-width: 620px;
   animation: rise-from-bottom 750ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -384,7 +421,12 @@ body {
 
 .bipartite-graph {
   width: 100%;
-  max-width: 420px;
+  /* The prose measure less its insets — 620 − 48 — so the board's outer edges stand on
+     the same line as the instructions over it, and the boxes take the width that used
+     to be margin. `GRAPH_PX_W` in BipartiteMatchGraph.tsx is this figure; it is what
+     converts the few px measurements in that file into viewBox units, so keep the two
+     in step. */
+  max-width: 572px;
   height: auto;
   margin: 0 auto;
   /* The viewBox scales by a fractional factor, so every row lands on a different
@@ -543,6 +585,13 @@ body {
     transition-duration: 1ms;
   }
 
+  /* The board climbs over the instructions with the boxes, so it arrives when they
+     do. The wait before it is the linger, which isn't cut here either — the board
+     holds still for it on any setting. */
+  .match-columns-viewport {
+    transition-duration: 1ms;
+  }
+
   /* Nothing to wait for: the boxes reach their rows and the link closes in that
      millisecond, so the color has nothing left to hold off for. Matched at the same
      specificity as the rule it is overriding, or it loses. */
@@ -630,11 +679,14 @@ body {
 
      The prose takes the same padding, not because it wraps but because it sits
      directly under the title: two different insets would read as one block set
-     crooked. */
+     crooked. The columns take it too, and the cap below with it, for the same reason
+     they take the prose measure on the desktop: the board's outer edges stand on the
+     instructions' own line at every width. */
   .app-title,
   .app-intro,
   .match-instructions,
-  .results-headline {
+  .results-headline,
+  .match-columns {
     padding-left: 0.25rem;
     padding-right: 0.25rem;
   }
@@ -648,7 +700,8 @@ body {
      The 620px of the base rule is the desktop measure and takes over above. */
   .app-intro,
   .match-instructions,
-  .results-headline {
+  .results-headline,
+  .match-columns {
     max-width: 23.25rem;
   }
 
