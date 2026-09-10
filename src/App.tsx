@@ -47,23 +47,9 @@ const spellCount = (n: number) => SPELLED[n] ?? String(n);
 /** How long to wait for the page to reach the top before giving up on it. */
 const SCROLL_HOME_MS = 2000;
 
-/**
- * How much of the graph's own air above its first row (`TOP_PAD`, 24px) the columns
- * claw back. **None of it**, and that is the third answer to this question.
- *
- * The first was half, on the reasoning that the paragraph should sit in an even band —
- * 12px over the text, 12 under it. The second was a third, to match the 16 the results
- * headline leaves under itself before its first box, since the two screens swap one for
- * the other. Both were reasoning about boxes, and what the reader compares is ink: the
- * map's foot is a ragged coastline that stops well above the section's own edge, so the
- * air over the paragraph *looks* like more than the 12px it is. Measured to the lowest
- * ink over the middle of the paragraph it is 25; the whole of `TOP_PAD` under the text
- * comes to 28, where clawing any of it back left 20 and read as crowded.
- *
- * `.results-headline`'s own bottom margin was raised to land in the same place, so the
- * two screens still agree.
- */
-const CLAW_BACK = 0;
+/** The shared visual spacing around the instructions and results headline. */
+const HEADER_TOP_GAP = 14;
+const HEADER_BOTTOM_GAP = 12;
 
 /**
  * Ride the page to the top and run `then` once it lands — for anything that
@@ -306,7 +292,9 @@ function App() {
       {/* Sticky to the top of the viewport, so the clouds stay in view while the
           columns are scrolled — see `.hero-section` in `App.css`. The map gives up
           some width once the columns arrive, so they sit higher. */}
-      <section className={`hero-section${started ? ' compact' : ''}`}>
+      <section
+        className={`hero-section${started ? ' compact' : ''}${finished ? ' results' : ''}`}
+      >
         <HeroMap
           topoData={topoData}
           era={era}
@@ -389,15 +377,17 @@ function App() {
             )}
           </p>
 
-          {/* The climb itself: the viewport's own -12px claw-back at rest, and the whole
-              gap between map and columns once the pair has parked. The distance is
+          {/* The climb itself: an explicit header-sized gap at rest, and the whole
+              distance back to the map once the pair has parked. The distance is
               measured and the duration is the boxes' own, handed over as the same
               `--row-travel-ms` the graph sets on its svg, so the board and its rows move
               as one thing. */}
           <div
             className={`match-columns-viewport${columnsRisen ? ' risen' : ''}`}
             style={{
-              marginTop: columnsRisen ? -(12 + instructionsH) : -CLAW_BACK,
+              marginTop: columnsRisen
+                ? -(HEADER_TOP_GAP + instructionsH)
+                : HEADER_BOTTOM_GAP,
               ['--row-travel-ms' as string]: `${ROW_TRAVEL_MS}ms`,
             }}
           >

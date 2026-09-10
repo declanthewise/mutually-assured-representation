@@ -204,9 +204,9 @@ const NAME_BASELINE_Y = capBaseline(HEADER_MID_Y, NAME_SIZE);
  * list is four names and not ten: North Carolina draws neither mark and has 3.5 units
  * to spare, where against a fixed two-mark strip it would have been eleven short.
  *
- * Measured in the app at weight 600 — the weight the active box wears, so the one box
- * that could collide is the one being pointed at. The name is at 16 in a header whose
- * badge, pyramid and marks have all grown with it, and it is tight again: South
+ * Measured in the app at weight 500 — the weight every box wears. The name is at 16
+ * in a header whose badge, pyramid and marks have all grown with it, and it is tight
+ * again: South
  * Carolina clears by 6.3 units, Pennsylvania by 8.9 and North Carolina by 9.1.
  *
  * The two entries that render are earning their place again: written out in full,
@@ -415,21 +415,13 @@ const REMOVE_STROKE = BOX_STROKE * 0.75;
  */
 const GRAPH_PX_W = 420;
 
-/**
- * Air around a section heading: 24px, converted at that scale. "Your Pacts"
- * takes two of them above it — with no rule to break the run, the gap itself is
- * what tells the parked block from the flowing rows, so it has to be plainly
- * wider than the one between two rows.
- */
+/** Air around the parked-section divider: 24px, converted at that scale. */
 const UNITS_PER_PX = VIEW_W / GRAPH_PX_W;
 const SECTION_PAD = 24 * UNITS_PER_PX;
 
-/**
- * Air above the first row. The columns are headed by the instructions in
- * `App.tsx`, which are HTML and keep their own spacing; this is only the gap
- * between them and the boxes.
- */
-const TOP_PAD = SECTION_PAD;
+/* The instructions own the space above the graph in CSS. Internally, keep only
+   enough room for the first box's border, which is centered on its top edge. */
+const TOP_PAD = ROSTER_EDGE_PAD;
 const BOTTOM_PAD = 14;
 
 /** Air kept around the active box when the view follows it, in CSS px. */
@@ -594,16 +586,12 @@ const PACT_SWELL_LABEL_SIZE = EQ_LABEL_SIZE;
 const PACT_SWELL_COUNT_SIZE = 24;
 
 /**
- * The "Your Pacts" heading. Spacing is measured to the top of its ink, not its
- * em box — Source Sans 3 caps fill 0.66em, and the ~3.5 units of slack above
- * them would otherwise read as extra air over the heading.
+ * The divider is inset by the same 24px measure used for its vertical padding.
+ * `ROW_GAP` is already present between the two adjacent row slots, so subtract it
+ * from the extra offset to leave exactly `SECTION_PAD` above and below the rule.
  */
-const PACT_LABEL_SIZE = 13;
-const PACT_LABEL_CAP = PACT_LABEL_SIZE * CAP_RATIO;
-const PACT_LABEL_GAP = 14;
-
-/** Room above the parked block: that heading and the air it stands in. */
-const PACT_HEADER_H = SECTION_PAD * 2 + PACT_LABEL_CAP + PACT_LABEL_GAP - ROW_GAP;
+const PACT_DIVIDER_INSET = SECTION_PAD;
+const PACT_HEADER_H = SECTION_PAD * 2 - ROW_GAP;
 
 type Column = 'left' | 'right';
 
@@ -1435,7 +1423,7 @@ function StateBox({
         y={NAME_BASELINE_Y}
         fontSize={NAME_SIZE}
         fill="#333"
-        fontWeight={isActive ? 600 : 500}
+        fontWeight={500}
       >
         {headerName(state) !== state.name && <title>{state.name}</title>}
         {`${headerName(state)}-${era.districtsOf(state)}`}
@@ -2013,21 +2001,18 @@ export function BipartiteMatchGraph({
 
         {/* Hung off the top of the parked block, which moves a row whenever a pact
             is broken. It's drawn relative to that top and carried there by a
-            transform, so the heading floats down with the block instead of
+            transform, so the divider floats down with the block instead of
             ratcheting to the new row ahead of it. */}
         {pactHeader && (
           <g className="pact-heading" style={{ transform: `translate(0px, ${pactTopY}px)` }}>
-            <text
-              x={VIEW_W / 2}
-              y={-PACT_LABEL_GAP}
-              textAnchor="middle"
-              fontSize={PACT_LABEL_SIZE}
-              fontWeight={700}
-              letterSpacing="0.1em"
-              fill={FAIR_BLACK}
-            >
-              YOUR PACTS
-            </text>
+            <line
+              x1={PACT_DIVIDER_INSET}
+              y1={-SECTION_PAD}
+              x2={VIEW_W - PACT_DIVIDER_INSET}
+              y2={-SECTION_PAD}
+              stroke="rgba(0,0,0,0.15)"
+              strokeWidth={0.5}
+            />
           </g>
         )}
 

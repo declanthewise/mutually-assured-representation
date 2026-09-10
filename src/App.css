@@ -81,6 +81,13 @@ body {
   background: #fafaf7;
 }
 
+/* Once the board becomes its results roster, let the map leave with the rest of
+   the page. It remains sticky on the opening screen and while either board is in
+   play. */
+.hero-section.results {
+  position: static;
+}
+
 .hero-map {
   width: 100%;
   max-width: 100%;
@@ -311,23 +318,11 @@ body {
   padding: 0 0 1rem;
 }
 
-/* Everything about how it is set comes from the prose rule above; what is left here is
-   the air under it — the air over it is the 12px it shares with the instructions.
-   It used to keep 0.5rem of its own there, inherited from `.results-panel`'s top
-   padding, which put it 4px higher than the instructions it replaces. Nothing else on
-   the page moves across that swap: the map is compact in both states and both blocks
-   hang off its foot, so those 4px were the whole of the jump.
-   It was Playfair at `min(4.4cqi, 1.5rem)`, sized so its longest line stayed unbroken,
-   and all of that arithmetic is gone with it — at prose size every line the headline
-   can produce fits several times over, so the wording can change without re-measuring
-   anything. The clause-per-line breaks are gone too (`.headline-line`, `display:
-   block`): at prose size they put "stand," alone on a line. */
+/* Everything about how it is set comes from the prose rule above. Keep the fuller
+   12px gap that originally sat below the headline; the top margin is adjusted with
+   the instructions below so that same gap reads evenly on both sides. */
 .results-headline {
-  /* Enough to leave the same 28px of ink-to-box the instructions leave: its own margin,
-     plus the half-border the roster keeps above its first row, plus the line's own
-     half-leading. The two screens swap one for the other and are set alike, so the air
-     under them has to be alike too. */
-  margin-bottom: 1.4rem;
+  margin-bottom: 12px;
 }
 
 /* The figures the headline is about, set bold against the sentence carrying them.
@@ -340,11 +335,12 @@ body {
 
 /* The pacts, in the board's own boxes rather than a line of type each — see
    PactRoster. It is the graph's svg, so it takes the graph's width and centering
-   from `.bipartite-graph` and needs nothing here but the air above it. No rule over
-   it either: two columns of boxes are their own block, where a list of sentences
-   under a sentence needed one to say it had stopped being prose. */
+   from `.bipartite-graph`. Its air comes from the headline's margin above;
+   adding another margin here would double the lower gap. No rule over it either:
+   two columns of boxes are their own block, where a list of sentences under a
+   sentence needed one to say it had stopped being prose. */
 .pact-roster {
-  margin-top: 1.25rem;
+  margin-top: 0;
 }
 
 /* ===========================
@@ -356,21 +352,20 @@ body {
    block, and being HTML it wraps on its own — the SVG would need every line set
    by hand. */
 /* Everything about how it is set comes from the prose rule above. What is left here
-   is the air over it: 12px of margin, which the map's ragged foot reads as nearer 25 —
-   see `CLAW_BACK` in `App.tsx` for why the viewport below leaves the graph's whole
-   `TOP_PAD` under the text rather than clawing any of it back.
+   is the air over it: 14px of margin, which optically matches the fuller 12px below
+   once the line box is included. The matching 12px below is an ordinary CSS gap set
+   on the columns viewport in `App.tsx`, just like the results headline's margin.
    Nothing forces a break in it. Clause-per-line was tried — a `display: block` span
    each — and reads as two stacked fragments rather than one instruction. */
 /* The results headline takes the same 12px, so the two blocks start at exactly the
    same height and the swap at Finish moves nothing. */
 .match-instructions,
 .results-headline {
-  margin-top: 12px;
+  margin-top: 14px;
 }
 
-/* The `margin-top` is set in `App.tsx`, because it is the one thing here that has to
-   be measured: at rest it is `CLAW_BACK`, which is now nothing at all — the graph's own
-   TOP_PAD is the air under the paragraph, and `App.tsx` says why. Once the first pact
+/* The `margin-top` is set in `App.tsx`: at rest it is the same explicit 12px used
+   below the results headline. Once the first pact
    has parked it is instead the whole of the gap
    between the map and the columns, so the board climbs over the paragraph and keeps it.
    Stacked over the instructions so the climb can cover them rather than show type
@@ -476,7 +471,7 @@ body {
 }
 
 /* Everything that hangs off the parked block rather than sitting in it: each
-   link with its ×, and the "Your Pacts" heading. They ride one transform on the
+   link with its ×, and the inset divider. They ride one transform on the
    same curve as the boxes, so when a broken pact moves the block a row — or when a
    sealed one leaves the top of the columns for the bottom — they travel with it
    instead of jumping to the new row and waiting for it there. */
@@ -489,7 +484,7 @@ body {
    the boxes are still sliding into, so it holds at zero opacity for their trip and
    fades in once they arrive. `backwards` is what applies that zero during the delay.
 
-   The heading and the × are the two that do appear. The link no longer does — it is
+   The divider and the × are the two that do appear. The link no longer does — it is
    born at the top of the columns as the pact is sealed and travels down — but the ×
    is withheld until then, because a pact still being made has nothing to take back. */
 .bipartite-graph .pact-heading,
