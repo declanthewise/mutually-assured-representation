@@ -176,19 +176,6 @@ function App() {
 
   return (
     <div className="app">
-      {/* The title heads the page and yields the space to the columns once the user
-          starts. It sits above the map rather than under it because the map is sticky:
-          anything below the map would have to scroll out from behind it, and a title
-          that emerges from under the thing it names reads backwards. */}
-      {!started && (
-        <header className="app-title">
-          <h1>
-            <span className="app-title-kicker">The Path to Peace, and Proportionality:</span>
-            <span className="app-title-name">Mutually Assured Representation</span>
-          </h1>
-        </header>
-      )}
-
       {/* Sticky to the top of the viewport, so the clouds stay in view while the
           columns are scrolled — see `.hero-section` in `App.css`. The map gives up
           some width once the columns arrive, so they sit higher. */}
@@ -200,6 +187,18 @@ function App() {
           residualGaps={boardGaps}
         />
       </section>
+
+      {/* Under the map, which is where it reads best, and it yields the space to the
+          columns once the user starts. The map being sticky means the title passes
+          behind it on the way up — see the page layout note in `CLAUDE.md`. */}
+      {!started && (
+        <header className="app-title">
+          <h1>
+            <span className="app-title-kicker">The Path to Peace, and Proportionality:</span>
+            <span className="app-title-name">Mutually Assured Representation</span>
+          </h1>
+        </header>
+      )}
 
       {/* The pitch, then the button it argues for. Finish lives under the columns. */}
       {!started && (

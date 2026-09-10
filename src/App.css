@@ -48,9 +48,9 @@ body {
 .hero-section {
   max-width: 980px;
   margin: 0 auto;
-  /* The viewBox is cropped to the geometry, so the map's breathing room — under the
-     title on the opening screen, against the top of the viewport once it pins — has
-     to come from here. The bottom is the map's own ragged coastline, which is the
+  /* The viewBox is cropped to the geometry, so the map's breathing room — over the
+     top of the page, and against the top of the viewport once it pins — has to come
+     from here. The bottom is the map's own ragged coastline, which is the
      edge the columns pass behind, so there is no padding under it and no rule: a
      straight line drawn across the foot of the map would be a second edge competing
      with the one the geometry already draws. */

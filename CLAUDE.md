@@ -496,12 +496,12 @@ paragraph under them says it again. The absence is the design, not an oversight 
   neutral while one still short keeps its blue or its red, and the link between them is half of each.
   That is the roster's whole point — it reports what each side got, not that a trade happened.
 
-- **The page layout**: title, then map, then whatever the run is up to — prose and Start before it
-  begins, the columns while it runs, the results after. The **title heads the page** rather than
-  sitting under the map, because the map is **sticky to the top of the viewport** and anything below
-  it has to scroll out from behind it: a title emerging from under the thing it names reads
-  backwards. It still yields its space to the columns once the user starts.
-  The map is pinned so the clouds stay in view while the columns are scrolled — it is the scoreboard
+- **The page layout**: map, then title, then whatever the run is up to — prose and Start before it
+  begins, the columns while it runs, the results after. The map leads and the **title sits under
+  it**, which is a decision that has been made twice: the title was moved above the map when the map
+  became sticky, and moved straight back, because it simply reads better where it is. It yields its
+  space to the columns once the user starts.
+  The map is **sticky to the top of the viewport**, pinned so the clouds stay in view while the columns are scrolled — it is the scoreboard
   the board is played against, and a pact's badges and arc land on it a beat after the click, which
   is worth nothing if the reader is three rows down the columns when it happens. `.hero-section`
   carries the `sticky`, an opaque `#fafaf7` and a `z-index` over the columns, which ride up
@@ -518,6 +518,12 @@ paragraph under them says it again. The absence is the design, not an oversight 
   `.hero-section`'s height at the moment it scrolls, and lands the clicked row `SCROLL_MARGIN` below
   it. Measured and not written down, because the map is a fluid width and loses a fifth of it
   mid-run. If the map ever stops being sticky, that headroom goes back to a bare `SCROLL_MARGIN`.
+  **The known cost is the opening screen**, and it is the price of the title's position: the title
+  and the prose pass *behind* the pinned map on the way up, so by the time Start is on screen the
+  title is gone and the prose is entered mid-paragraph. Only that screen pays it — the title is
+  already gone once the columns are up, which is where the pinning earns its keep. If it ever wants
+  fixing, the move is to scope the sticky to `.hero-section.compact` so the map pins only after
+  Start, rather than to move the title again.
 - **Typography**: every block of running text on the page — the opening prose (`.app-intro`), the
   match instructions and the results headline — is set **identically**: Source Sans 3 at `0.94rem`,
   1.55 leading, `#444`. Only the alignment differs, the latter two being centered. Every sentence the
