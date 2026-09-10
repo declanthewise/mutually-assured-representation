@@ -2049,12 +2049,14 @@ interface ResultsPanelProps {
   /** Per state, the residual gap — what the roster's boxes and links are colored by. */
   residualGaps: Record<string, number>;
   onRetry: () => void;
+  /** Offered from the 2032 results to return to the earlier board. */
+  onRetry2028?: () => void;
   /** Offered from the 2026 results only; the 2032 board is the end of the line. */
   onTry2032?: () => void;
 }
 
 /**
- * What Finish puts in the board's place: the pacts themselves and the way back. The
+ * What See Results puts in the board's place: the pacts themselves and the way back. The
  * sentence over them is the page's, and is set in `App.tsx` with the rest of its
  * prose — the panel begins where the argument stops being words.
  *
@@ -2069,6 +2071,7 @@ export function ResultsPanel({
   selectedMatches,
   residualGaps,
   onRetry,
+  onRetry2028,
   onTry2032,
 }: ResultsPanelProps) {
   const board = ERAS[era];
@@ -2086,18 +2089,19 @@ export function ResultsPanel({
           between them, minus the × — there is nothing left to break. It replaces a
           line of type per pairing, which said what the trade came to in words the
           boxes had already said in figures, and said nothing about the states left
-          short. Finish only appears once a pact is sealed, so there is always one. */}
+          short. See Results only appears once a pact is sealed, so there is always one. */}
       <PactRoster era={era} pacts={pacts} residualGaps={residualGaps} />
 
-      {/* The orange button from under the columns, and — off the 2026 results only —
-          the one that carries the same argument past the next census. Retry puts the
-          board back and reads orange for it; Try 2032 goes forward and wears the
-          black Start and Finish wear.
-          Retry names the board it puts back once there is more than one to name: off
-          2026 it is the whole thing from the opening screen, which needs no year, and
-          off 2032 it says which board is coming back, because the button beside it that
-          brought the reader here said the same year. */}
+      {/* Retry puts a board back and reads orange for it; off the 2032 results both
+          boards are available by year. Off the earlier results, Try 2032 carries the
+          same argument past the next census and wears the black Start and See Results
+          wear. */}
       <div className="finish-row">
+        {onRetry2028 && (
+          <button className="restart-btn" onClick={onRetry2028}>
+            Retry 2028
+          </button>
+        )}
         <button className="restart-btn" onClick={onRetry}>
           {era === '2032' ? 'Retry 2032' : 'Retry'}
         </button>

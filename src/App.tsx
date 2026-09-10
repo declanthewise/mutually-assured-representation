@@ -244,7 +244,7 @@ function App() {
 
   useEffect(() => () => startRideRef.current?.(), []);
 
-  // Finish trades the columns for the results panel. The layout effect returns the
+  // See Results trades the columns for the results panel. The layout effect returns the
   // new results layout to the top before the browser paints it.
   const handleFinish = useCallback(() => {
     setFinished(true);
@@ -313,7 +313,7 @@ function App() {
         </header>
       )}
 
-      {/* The pitch, then the button it argues for. Finish lives under the columns. */}
+      {/* The pitch, then the button it argues for. See Results lives under the columns. */}
       {!started && (
         <>
           <div className="app-intro">
@@ -401,7 +401,7 @@ function App() {
             </div>
           </div>
 
-          {/* Nothing to finish with until a pact exists, so the button waits for
+          {/* Nothing to report until a pact exists, so the button waits for
               one — and outlives the last one by the length of the ride home. */}
           {finishRow && (
             <div className="finish-row">
@@ -412,7 +412,7 @@ function App() {
                 disabled={selectedMatches.length === 0}
                 onClick={handleFinish}
               >
-                Finish
+                See Results
               </button>
             </div>
           )}
@@ -480,13 +480,15 @@ function App() {
           {/* Retry means "this board again". On 2026 that is the opening screen, which
               is that board's own pitch; on 2032 there is no pitch to go back to, so it
               is the post-census board with an empty run — the same act as Try 2032 one
-              screen earlier, and the same handler. */}
+              screen earlier, and the same handler. The 2032 results also offer the
+              earlier board again as Retry 2028. */}
           <div className="visualization-wide match-columns">
             <ResultsPanel
               era={era}
               selectedMatches={selectedMatches}
               residualGaps={boardGaps}
               onRetry={era === '2032' ? handleOpen2032 : handleStartOver}
+              onRetry2028={era === '2032' ? handleStartOver : undefined}
               onTry2032={era === '2026' ? handleOpen2032 : undefined}
             />
           </div>

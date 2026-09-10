@@ -203,7 +203,7 @@ body {
   display: flex;
   justify-content: center;
   /* Only the results row holds two buttons; under the columns there is just
-     Finish, and a gap on a single child costs nothing. */
+     See Results, and a gap on a single child costs nothing. */
   gap: 0.6rem;
   padding: 1rem 1.5rem 0.5rem;
 }
@@ -273,7 +273,7 @@ body {
   cursor: default;
 }
 
-/* Filled orange against Finish's black: pressing it puts every gap back on the
+/* Filled orange against See Results' black: pressing it puts every gap back on the
    board, so it wears the gap's own color. */
 .restart-btn {
   display: inline-block;
