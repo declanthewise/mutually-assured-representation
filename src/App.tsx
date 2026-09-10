@@ -497,7 +497,7 @@ function App() {
 
       <footer className="article-footer">
         <p>
-          By Declan Fitzsimons. Partisan leans from{' '}
+          By Declan Fitzsimons. PVI℠ scores from{' '}
           <a href="https://www.cookpolitical.com/cook-pvi/2026-partisan-voting-index/district-map-and-list" target="_blank" rel="noopener noreferrer">The Cook Political Report</a>.
         </p>
       </footer>
