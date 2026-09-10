@@ -408,17 +408,12 @@ const REMOVE_TICK = 4;
 const REMOVE_STROKE = BOX_STROKE * 0.75;
 
 /**
- * What the viewBox renders at: `.bipartite-graph`'s `max-width` in `App.css`, which
- * is the prose measure less its insets (620 − 48), so the board's outer edges stand
- * on the same line as the instructions above it. Keep the two in step — everything
- * here is in viewBox units, and this is the only figure that says how big one is.
- *
- * At 456.5 units across that is 1.253px to the unit, against the 1.265 it was at 332
- * units and 420px — so a unit means very nearly what it always did, and the board grew
- * by taking units rather than by taking scale. The 124 extra units went to the two
- * boxes (140 → 206 each) and to the gutter between them (28 → 40).
+ * What the viewBox renders at on wider screens: `.bipartite-graph`'s `max-width` in
+ * `App.css`. Keep the two in step — everything here is in viewBox units, and this is
+ * the only figure that says how big one is. Below this width the SVG remains fluid,
+ * preserving the existing mobile sizing; above it the state boxes stop growing.
  */
-const GRAPH_PX_W = 572;
+const GRAPH_PX_W = 420;
 
 /**
  * Air around a section heading: 24px, converted at that scale. "Your Pacts"

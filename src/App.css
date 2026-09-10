@@ -425,12 +425,10 @@ body {
 
 .bipartite-graph {
   width: 100%;
-  /* The prose measure less its insets — 620 − 48 — so the board's outer edges stand on
-     the same line as the instructions over it, and the boxes take the width that used
-     to be margin. `GRAPH_PX_W` in BipartiteMatchGraph.tsx is this figure; it is what
-     converts the few px measurements in that file into viewBox units, so keep the two
-     in step. */
-  max-width: 572px;
+  /* Keep the mobile scale, where the board is naturally narrower, but stop the SVG
+     from enlarging its state boxes to the full prose measure on desktop.
+     `GRAPH_PX_W` in BipartiteMatchGraph.tsx must match this figure. */
+  max-width: 420px;
   height: auto;
   margin: 0 auto;
   /* The viewBox scales by a fractional factor, so every row lands on a different
