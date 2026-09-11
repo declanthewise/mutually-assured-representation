@@ -1552,7 +1552,7 @@ export function BipartiteMatchGraph({
   // the cursor moving — and a browser leaves `:hover` where it was until the
   // pointer next moves. A deselected box would sit there still wearing the black
   // it had just given up, indistinguishable from the active box it no longer was.
-  // A tap does the same on touch, where nothing moves the pointer afterwards at all.
+  // Touch pointers are excluded below; a tap gets emphasis from selection alone.
   const [hoveredStateId, setHoveredStateId] = useState<string | null>(null);
 
   // Where the pointer last actually was, which is what tells a hover from a
@@ -1567,6 +1567,9 @@ export function BipartiteMatchGraph({
 
   /** Take the hover, but only if the pointer moved here under its own steam. */
   const takeHover = (stateId: string, e: React.PointerEvent) => {
+    // A finger enters on contact and leaves on release, before the click selects
+    // the box. Treating that as hover flashes the border bold → thin → bold.
+    if (e.pointerType === 'touch') return;
     const last = pointerAt.current;
     if (last && last.x === e.clientX && last.y === e.clientY) return;
     pointerAt.current = { x: e.clientX, y: e.clientY };
@@ -1584,7 +1587,7 @@ export function BipartiteMatchGraph({
   // hover in the click handler briefly let the ordinary stroke through before the
   // active (or settling) state took ownership, which made the border blink thin.
   // A layout effect clears the spent hover before paint, after that persistent
-  // state has rendered, and also prevents touch hover from surviving a later
+  // state has rendered, and prevents stale hover from surviving a later
   // deselection or a pact's linger.
   useLayoutEffect(() => {
     setHoveredStateId(null);
