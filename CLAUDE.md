@@ -623,13 +623,45 @@ paragraph under them says it again. The absence is the design, not an oversight 
   to that viewport sat that far down over the 2032 instructions and the results headlines, a static
   one sat that far under the bar, and the map jolted when the bar finally settled. No height
   primitive on that device reports the bar (see the memory on Chrome iOS dead space), so there is
-  nothing to compensate against — but a smooth scroll is a gesture the toolbar follows, and the
-  page lands settled. So Finish rides back up through the board the reader has just finished with,
+  nothing to compensate against — but a scroll that moves over time is one the toolbar follows,
+  and the page lands settled. So Finish rides back up through the board the reader has just finished with,
   which is the price, and the results only arrive once it lands; the map is pinned for the whole
   ride and comes unpinned at a stuck offset of zero, where letting go moves nothing. Retry and Try
   2032 ride up through the roster the same way and pin the map on landing at the same zero. One
   `ride()` guards all of them: a second press mid-ride is the same press. Under reduced motion the
   ride is an instant jump, which is what that setting asks for.
+  **The ride is scripted, a frame at a time, and its pace is set in `App.tsx`.** It began as the
+  browser's own `behavior: 'smooth'`, which takes no duration and picks a front-loaded one: measured
+  in Chrome, a 2100px ride covered more than half its distance in the first quarter second, crept
+  through the last few hundred pixels behind the pinned map, and landed about 760ms after the press
+  having looked still for most of that. Driving the scroll by hand is the only way to slow it. The
+  duration is `RIDE_HOME_MIN_MS` plus `RIDE_HOME_MS_PER_PX` of the distance, capped at
+  `RIDE_HOME_MAX_MS` — 700 + 0.2/px, cap 1400 — so a long board is not a blur and a short one is not
+  a crawl, on an even ease-in-out cubic. It moves the page the same way the native scroll did, but
+  **it has not been checked on Chrome iOS**, which is the device the ride exists for; if the
+  toolbar problem comes back there, the native smooth scroll is the thing to put back first.
+  **The swap then waits a beat after landing** — `LANDING_BEAT_MS`, 200ms. Swapping on the landing
+  frame put the roster's own entrance — 100vh on a hard ease-out — straight off the tail
+  of the scroll, and two upward motions back to back read as one rush. The beat is taken only after
+  an actual ride: a press with the page already at the top has nothing to settle from, and under
+  reduced motion the jump is instant and a wait after it would be the one slow thing left.
+  **The roster's entrance runs 1300ms** where the board's runs 750: it starts from 100vh against the
+  board's 70vh, so at the board's duration it moved a third again as fast per pixel and still read as
+  a flick after the ride had settled. The rule that sets it is more specific than `.match-columns`,
+  so the reduced-motion block names it separately.
+  **The graph svg is `overflow: visible`**, columns and roster alike. Its viewBox keeps exactly half a
+  border outside the first row and the last, so those strokes' outer edges lie on the svg's own
+  line and the default clip took the anti-aliased hair off them: off an emphasized box at the head
+  of a column — the sealed pair, through the linger — and off the roster's last row, where at the
+  fractional scale the svg's box comes out a hair short of its viewBox. The columns viewport clips
+  too (for the entrance), so it keeps `STROKE_BLEED`, 2px of padding above the svg inside its clip.
+  At rest `App.tsx` takes the same 2px off the margin so the board stands where it did under the
+  paragraph. Risen it keeps them: the *viewport's* top lands on the map's foot and the svg's top
+  sits 2px under it, because the pinned map paints over anything above its foot and a bleed under
+  the map is no bleed at all — and the coastline stops 25px above that edge, so the 2px reads as
+  nothing. The climb also measures the paragraph with `getBoundingClientRect` rather than
+  `offsetHeight`, which rounds; a paragraph of 69.94px measured as 70 sent the board that fraction
+  under the map.
 - **Typography**: every block of running text on the page — the opening prose (`.app-intro`), the
   match instructions and the results headline — is set **identically**, off one shared rule rather
   than three copies of it: Source Sans 3 at `0.94rem`, 1.55 leading, `#444`, ranged left on a 620px

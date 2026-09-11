@@ -44,12 +44,50 @@ const SPELLED = [
 
 const spellCount = (n: number) => SPELLED[n] ?? String(n);
 
-/** How long to wait for the page to reach the top before giving up on it. */
-const SCROLL_HOME_MS = 2000;
+/**
+ * How long the ride home takes: a floor, plus a share of the distance, under a cap.
+ * The browser's own smooth scroll can't be given a duration, and the one it picks
+ * is front-loaded — measured in Chrome, a 2100px ride covered more than half its
+ * distance in the first quarter second and crept through the last few hundred
+ * pixels behind the pinned map, so it read as a flick and then a wait. Driving the
+ * scroll by hand is what lets the pace be set at all. Scaled with the distance so a
+ * long board is not a blur and a short one is not a crawl: 800px rides in 860ms,
+ * 2100px in about 1.1s, and anything past 3500px in the capped 1.4s.
+ */
+const RIDE_HOME_MIN_MS = 700;
+const RIDE_HOME_MS_PER_PX = 0.2;
+const RIDE_HOME_MAX_MS = 1400;
+
+/**
+ * The pause between the page landing and the swap it rode up for. Swapping on the
+ * landing frame started the results' own entrance off the tail of a scroll the eye
+ * was still following, and two upward motions back to back read as one rush. A
+ * beat lets the page stand still first. It is only taken after an actual ride: a
+ * press at the top has nothing to settle from.
+ */
+const LANDING_BEAT_MS = 200;
 
 /** The shared visual spacing around the instructions and results headline. */
 const HEADER_TOP_GAP = 14;
 const HEADER_BOTTOM_GAP = 12;
+
+/**
+ * Room the columns viewport keeps above the svg, inside its own clip. The board's
+ * first row wears its border's outer edge exactly on the svg's top line, and the
+ * viewport clips (`overflow: hidden`, for the entrance), so an emphasized box at the
+ * head of a column — the sealed pair, through the whole linger — lost the
+ * anti-aliased hair of its top stroke to that edge. This is padding rather than
+ * margin so it lies inside the clip. At rest the margin below gives it back, so the
+ * board stands exactly where it did under the paragraph. Risen, it is kept: the
+ * viewport's top lands on the map's foot and the svg's top sits this far under it,
+ * because the pinned map paints over anything above its foot and a bleed under the
+ * map is no bleed at all. The coastline stops 25px above the section's edge, so the
+ * 2px shows as nothing.
+ */
+const STROKE_BLEED = 2;
+
+/** Even in and out, so the ride is one motion and not a lurch with a long tail. */
+const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
 /**
  * Ride the page to the top and run `then` once it lands. Swaps that change the
@@ -63,26 +101,48 @@ const HEADER_BOTTOM_GAP = 12;
  * gesture — a sticky map pinned that far down the header under it, a static one
  * that far under the bar, and a visible jolt when the bar finally settles — and
  * no height API on that device reports the bar, so it can't be compensated for.
- * A smooth scroll is a gesture the toolbar follows, and the page lands settled.
+ * A scroll that moves over time is one the toolbar follows, and the page lands
+ * settled. That was first done with the browser's `behavior: 'smooth'`; the ride
+ * is now scripted a frame at a time so its pace can be set (see `RIDE_HOME_*`),
+ * which moves the page the same way but has not been checked on that device.
  *
- * There's no `scrollend` to lean on in every browser, so watch for the page to
- * land — on a deadline, because a reader who scrolls back down interrupts the
- * ride and `then` can't wait on a trip that isn't happening. Returns a cancel.
+ * Once it has landed, `then` waits out `LANDING_BEAT_MS` so the swap starts from a
+ * still page rather than off the tail of the scroll. `then` is never called
+ * synchronously — `ride()` stores this function's cancel *after* it returns, and
+ * a synchronous `then` would clear that slot before it was filled. Returns a
+ * cancel that clears both waits.
  */
 function rideHome(then: () => void): () => void {
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
+  const from = window.scrollY;
+  // Nothing to ride: already at the top, or a reader who has asked for no motion —
+  // the jump is instant there, and a beat after it would be the one slow thing
+  // left on a page asked to hurry.
+  const jump = reduced || from === 0;
+  const duration = Math.min(RIDE_HOME_MAX_MS, RIDE_HOME_MIN_MS + from * RIDE_HOME_MS_PER_PX);
 
-  const deadline = performance.now() + SCROLL_HOME_MS;
-  let raf = requestAnimationFrame(function land(now) {
-    if (window.scrollY > 0 && now < deadline) {
-      raf = requestAnimationFrame(land);
+  let beat: ReturnType<typeof setTimeout> | undefined;
+  let start: number | null = null;
+  let raf = requestAnimationFrame(function step(now) {
+    if (jump) {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      then();
       return;
     }
-    then();
+    start ??= now;
+    const t = Math.min(1, (now - start) / duration);
+    window.scrollTo({ top: from * (1 - easeInOutCubic(t)), behavior: 'instant' });
+    if (t < 1) {
+      raf = requestAnimationFrame(step);
+      return;
+    }
+    beat = setTimeout(then, LANDING_BEAT_MS);
   });
 
-  return () => cancelAnimationFrame(raf);
+  return () => {
+    cancelAnimationFrame(raf);
+    if (beat !== undefined) clearTimeout(beat);
+  };
 }
 
 function App() {
@@ -196,7 +256,11 @@ function App() {
   useLayoutEffect(() => {
     const el = instructionsRef.current;
     if (!el) return;
-    const measure = () => setInstructionsH(el.offsetHeight);
+    // The fractional height, not `offsetHeight`: that rounds, and the climb lands
+    // the board's top on the map's foot by exactly this figure. Rounded up, the
+    // board's first row went that fraction under the pinned map, which paints over
+    // it, and lost the top of its border there.
+    const measure = () => setInstructionsH(el.getBoundingClientRect().height);
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(el);
@@ -423,9 +487,10 @@ function App() {
           <div
             className={`match-columns-viewport${columnsRisen ? ' risen' : ''}`}
             style={{
+              paddingTop: STROKE_BLEED,
               marginTop: columnsRisen
                 ? -(HEADER_TOP_GAP + instructionsH)
-                : HEADER_BOTTOM_GAP,
+                : HEADER_BOTTOM_GAP - STROKE_BLEED,
               ['--row-travel-ms' as string]: `${ROW_TRAVEL_MS}ms`,
             }}
           >

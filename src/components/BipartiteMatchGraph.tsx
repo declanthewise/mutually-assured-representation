@@ -362,7 +362,10 @@ const PYRAMID_MORTAR = 1.25;
  *
  * The stroke is centered on the box's own edge, so half of it lies outside the box —
  * which is what `ROSTER_EDGE_PAD` exists to keep inside the picture, and what sets
- * `LEFT_BOX_X` below.
+ * `LEFT_BOX_X` below. Both pads are exact, so the svg is `overflow: visible` in
+ * `App.css`: an emphasized box at the head of a column lands its outer edge on the
+ * svg's top line, and at a fractional scale the roster's box can come out a hair
+ * short of its viewBox, and the default clip spent that hair on the borders.
  */
 const BOX_STROKE = 3;
 const BOX_STROKE_EMPHASIZED = 4.5;

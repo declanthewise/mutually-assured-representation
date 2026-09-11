@@ -339,8 +339,13 @@ body {
   overflow: clip;
 }
 
+/* The roster comes up from a whole viewport below, where the board comes up from
+   70vh, so at the board's 750ms it was travelling a third again as fast per pixel
+   and read as a flick even after the ride home had settled. At 1300ms it is the
+   same entrance at a pace the eye can follow. */
 .results-viewport .match-columns {
   animation-name: results-from-bottom;
+  animation-duration: 1300ms;
 }
 
 @keyframes results-from-bottom {
@@ -432,6 +437,10 @@ body {
    below the results headline. Once the first pact
    has parked it is instead the whole of the gap
    between the map and the columns, so the board climbs over the paragraph and keeps it.
+   The `padding-top` is set there too — `STROKE_BLEED`, 2px inside this clip for the
+   head row's border to spill into. At rest it is taken off the margin so nothing
+   moves; risen it is kept, so the bleed sits just under the map's foot rather than
+   under the map, which paints over it.
    Stacked over the instructions so the climb can cover them rather than show type
    through the boxes.
    The duration is the boxes' own `--row-travel-ms`, handed down from `App.tsx`: the
@@ -493,6 +502,14 @@ body {
      subpixel offset. Without this the two font sizes sharing the header baseline
      snap independently and the delegation count drifts a pixel on some rows. */
   text-rendering: geometricPrecision;
+  /* The viewBox keeps exactly half a border outside the first and last rows, so the
+     outside of those strokes lies on the svg's own edge — and an outer svg clips
+     there by default. That took the anti-aliased hair off an emphasized box's top
+     border at the head of a column, and, the svg's box coming out a fraction short
+     of its viewBox at this scale, off the roster's last row at the bottom. Let it
+     spill: the columns viewport keeps a bleed for it (`STROKE_BLEED` in `App.tsx`),
+     and nothing around the roster clips. */
+  overflow: visible;
 }
 
 .bipartite-graph .state-box {
@@ -642,7 +659,10 @@ body {
     animation-duration: 1ms;
   }
 
-  .match-columns {
+  /* The roster's rule is more specific than the board's, so it is named too or
+     it keeps its second. */
+  .match-columns,
+  .results-viewport .match-columns {
     animation-duration: 1ms;
   }
 
