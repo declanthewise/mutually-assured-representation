@@ -639,9 +639,13 @@ paragraph under them says it again. The absence is the design, not an oversight 
   `RIDE_HOME_MAX_MS` — 0.5ms/px, floor 250, cap 1400 — on an even ease-in-out cubic. A rate and not
   a time, because the distance varies a hundredfold: a first cut had a 700ms floor, and the few
   hundred pixels from a tall screen's board foot, or from the results buttons, crawled for most of
-  a second and read as a small stall before every swap. It moves the page the same way the native scroll did, but
-  **it has not been checked on Chrome iOS**, which is the device the ride exists for; if the
-  toolbar problem comes back there, the native smooth scroll is the thing to put back first.
+  a second and read as a small stall before every swap. **It runs on desktop only.** A scripted ride
+  is a stream of instant scrolls, which is exactly what the phone's toolbar doesn't follow, and on
+  the phone it put a small shift before every swap and a delay and shift up on Retry and Try 2032. So
+  on a handheld — `(hover: none) and (pointer: coarse)` — the ride is the browser's own smooth scroll,
+  the one thing known to land the toolbar right, at the browser's pace. Desktop Chrome's device mode
+  cannot reproduce any of this: it emulates the viewport, the touch and the user agent, not the
+  browser's own chrome, so it takes the handheld path without the toolbar that path exists for.
   **The swap then waits a beat after landing** — `LANDING_BEAT_MS`, 200ms. Swapping on the landing
   frame put the roster's own entrance — 100vh on a hard ease-out — straight off the tail
   of the scroll, and two upward motions back to back read as one rush. The beat is taken only after

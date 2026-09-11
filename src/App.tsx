@@ -92,6 +92,9 @@ const STROKE_BLEED = 2;
 /** Even in and out, so the ride is one motion and not a lurch with a long tail. */
 const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
+/** How long to wait for a native smooth scroll to reach the top before giving up on it. */
+const SCROLL_HOME_MS = 2000;
+
 /**
  * Ride the page to the top and run `then` once it lands. Swaps that change the
  * page happen at the top, where there is nothing above to fall into the gap and
@@ -104,10 +107,18 @@ const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2
  * gesture — a sticky map pinned that far down the header under it, a static one
  * that far under the bar, and a visible jolt when the bar finally settles — and
  * no height API on that device reports the bar, so it can't be compensated for.
- * A scroll that moves over time is one the toolbar follows, and the page lands
- * settled. That was first done with the browser's `behavior: 'smooth'`; the ride
- * is now scripted a frame at a time so its pace can be set (see `RIDE_HOME_*`),
- * which moves the page the same way but has not been checked on that device.
+ * The browser's own smooth scroll is a gesture the toolbar follows, and the page
+ * lands settled.
+ *
+ * **Two rides, by device.** On a handheld — no hover, a coarse pointer — the ride
+ * is that native smooth scroll, because it is the one thing known to land the
+ * toolbar right, and its pace is the browser's. Everywhere else it is scripted a
+ * frame at a time on `RIDE_HOME_*`, so its pace can be set: the native scroll is
+ * front-loaded and read as a flick. A scripted ride is a stream of instant scrolls,
+ * which is exactly what the toolbar doesn't follow, and running it on the phone
+ * put a small shift before every swap. Desktop Chrome's device mode can't show any
+ * of this — it emulates the viewport, the touch and the user agent, not the
+ * browser's own chrome — so it takes the handheld path here without the toolbar.
  *
  * Once it has landed, `then` waits out `LANDING_BEAT_MS` so the swap starts from a
  * still page rather than off the tail of the scroll. `then` is never called
@@ -117,6 +128,7 @@ const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2
  */
 function rideHome(then: () => void): () => void {
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const handheld = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
   const from = window.scrollY;
   // Nothing to ride: already at the top, or a reader who has asked for no motion —
   // the jump is instant there, and a beat after it would be the one slow thing
@@ -125,22 +137,40 @@ function rideHome(then: () => void): () => void {
   const duration = Math.min(RIDE_HOME_MAX_MS, Math.max(RIDE_HOME_MIN_MS, from * RIDE_HOME_MS_PER_PX));
 
   let beat: ReturnType<typeof setTimeout> | undefined;
-  let start: number | null = null;
-  let raf = requestAnimationFrame(function step(now) {
-    if (jump) {
+  let raf: number;
+
+  if (jump) {
+    raf = requestAnimationFrame(() => {
       window.scrollTo({ top: 0, behavior: 'instant' });
       then();
-      return;
-    }
-    start ??= now;
-    const t = Math.min(1, (now - start) / duration);
-    window.scrollTo({ top: from * (1 - easeInOutCubic(t)), behavior: 'instant' });
-    if (t < 1) {
-      raf = requestAnimationFrame(step);
-      return;
-    }
-    beat = setTimeout(then, LANDING_BEAT_MS);
-  });
+    });
+  } else if (handheld) {
+    // The browser's ride. There's no `scrollend` to lean on in every browser, so
+    // watch for the page to land — on a deadline, because a reader who scrolls
+    // back down interrupts the ride and `then` can't wait on a trip that isn't
+    // happening.
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const deadline = performance.now() + SCROLL_HOME_MS;
+    raf = requestAnimationFrame(function land(now) {
+      if (window.scrollY > 0 && now < deadline) {
+        raf = requestAnimationFrame(land);
+        return;
+      }
+      beat = setTimeout(then, LANDING_BEAT_MS);
+    });
+  } else {
+    let start: number | null = null;
+    raf = requestAnimationFrame(function step(now) {
+      start ??= now;
+      const t = Math.min(1, (now - start) / duration);
+      window.scrollTo({ top: from * (1 - easeInOutCubic(t)), behavior: 'instant' });
+      if (t < 1) {
+        raf = requestAnimationFrame(step);
+        return;
+      }
+      beat = setTimeout(then, LANDING_BEAT_MS);
+    });
+  }
 
   return () => {
     cancelAnimationFrame(raf);
