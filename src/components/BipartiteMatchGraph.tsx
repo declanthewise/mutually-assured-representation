@@ -1319,10 +1319,6 @@ function StateBox({
         `state-box ${isActive ? 'active' : ''} ${isMatched ? 'matched' : ''}` +
         `${settling ? ' settling' : ''}`
       }
-      // What the board reads back off the document when it asks which box the
-      // pointer is over — see boxUnderPointer. A box drawn outside the columns is
-      // never asked about, and carries it harmlessly.
-      data-state-id={state.id}
       style={{ transform: `translate(${boxX}px, ${y}px)` }}
       // All four are the board's, and a box drawn anywhere else is given none of
       // them: a parked pact is settled, and the roster in the results panel is a
@@ -1559,18 +1555,14 @@ export function BipartiteMatchGraph({
   // A tap does the same on touch, where nothing moves the pointer afterwards at all.
   const [hoveredStateId, setHoveredStateId] = useState<string | null>(null);
 
-  // Where the pointer actually is, which is what tells a hover from a re-ranking.
-  // Moving the board under a still cursor raises the same enter and move events a
-  // real pointer would, and each box the board drags past would claim the hover and
-  // give it up a frame later — a run of emphasized borders flickering down the
-  // column behind a click, ending on whichever box the scroll happened to leave
-  // under the cursor. Those synthetic events carry the coordinates the pointer
-  // already had, so comparing against them separates the two cases: same point means
-  // the content moved and the hover isn't the pointer's to give.
-  //
-  // Kept on the wrapper as well as on the boxes, so it stays true across the gutter
-  // and goes null when the pointer leaves the board — `boxUnderPointer` reads it back
-  // as a place on the page, and a stale one would name a box the pointer has left.
+  // Where the pointer last actually was, which is what tells a hover from a
+  // re-ranking. Moving the board under a still cursor raises the same enter and
+  // move events a real pointer would, and each box the board drags past claims the
+  // hover and gives it up a frame later — a run of black borders flickering down
+  // the column behind a click, ending on whichever box the scroll happened to
+  // leave under the cursor. Those synthetic events carry the coordinates the
+  // pointer already had, so comparing against them separates the two cases: same
+  // point means the content moved and the hover isn't the pointer's to give.
   const pointerAt = useRef<{ x: number; y: number } | null>(null);
 
   /** Take the hover, but only if the pointer moved here under its own steam. */
@@ -1581,23 +1573,6 @@ export function BipartiteMatchGraph({
     setHoveredStateId(id => (id === stateId ? id : stateId));
   };
 
-  /**
-   * The box the pointer is over, asked of the document rather than waited for from
-   * an event. The board carries boxes out from under a still cursor, and the guard
-   * above means no event it raises doing so will say which box landed there — so the
-   * two moments the arrangement changes ask outright instead.
-   *
-   * Scoped to this svg, and parked boxes take no pointer events, so it names a box
-   * on the board or nothing.
-   */
-  const boxUnderPointer = () => {
-    const at = pointerAt.current;
-    if (!at || !svgRef.current) return null;
-    const box = document.elementFromPoint(at.x, at.y)?.closest('.state-box');
-    if (!box || !svgRef.current.contains(box)) return null;
-    return box.getAttribute('data-state-id');
-  };
-
   // A sealed pact turns its boxes black and starts their gap counts falling, but
   // the board holds still for a beat before the pair leaves for "Your Pacts" —
   // otherwise both boxes slide out from under the numbers they just changed.
@@ -1605,20 +1580,14 @@ export function BipartiteMatchGraph({
   // same list of pacts, so nothing but the counts moves.
   const [seal, setSeal] = useState<Seal | null>(null);
 
-  // Hand the border's emphasis directly from hover to the click state. Settling it
-  // in the click handler briefly let the ordinary stroke through before the active
-  // (or settling) state took ownership, which made the border blink thin. A layout
-  // effect runs after that persistent state has rendered and before either is
-  // painted, so the two land on one frame.
-  //
-  // It re-reads the pointer rather than clearing the hover outright. Clearing was
-  // right about the box that has just slid away and wrong about the box the pointer
-  // is still on: a state deselected under a still cursor dropped to the ordinary
-  // stroke and only came back on the next twitch of the mouse — off and then on
-  // again with nothing having moved, and the same on a lapsed linger. Asking the
-  // document leaves the emphasis where the pointer is, which is all it ever meant.
+  // Hand the border's emphasis directly from hover to the click state. Clearing
+  // hover in the click handler briefly let the ordinary stroke through before the
+  // active (or settling) state took ownership, which made the border blink thin.
+  // A layout effect clears the spent hover before paint, after that persistent
+  // state has rendered, and also prevents touch hover from surviving a later
+  // deselection or a pact's linger.
   useLayoutEffect(() => {
-    setHoveredStateId(boxUnderPointer());
+    setHoveredStateId(null);
   }, [activeStateId, seal]);
 
   useEffect(() => {
@@ -1746,23 +1715,6 @@ export function BipartiteMatchGraph({
     }
     return map;
   }, [leftPlacements, rightPlacements]);
-
-  // And again once the columns have finished travelling, which is the other half of
-  // the same point. A click re-ranks both columns, so it hands the cursor a box the
-  // pointer never moved to — and the guard on takeHover will not let that box take
-  // the hover from the board's own enter events, which is right while the rows are
-  // still sliding past and wrong the moment they stop. Without this the box under
-  // the cursor stands at the ordinary stroke until the mouse next twitches: the
-  // emphasis goes off where the reader is looking and comes back for no reason.
-  // Once, at the end, so nothing flickers on the way there. Reduced motion has the
-  // rows arrive at once, so there is nothing to wait for.
-  useEffect(() => {
-    const travel = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      ? 0
-      : ROW_TRAVEL_MS;
-    const timeoutId = setTimeout(() => setHoveredStateId(boxUnderPointer()), travel);
-    return () => clearTimeout(timeoutId);
-  }, [rowById]);
 
   // Clicking outside any box clears the active selection.
   useEffect(() => {
@@ -1898,19 +1850,7 @@ export function BipartiteMatchGraph({
   };
 
   return (
-    <div
-      className="bipartite-graph-wrapper"
-      // The pointer's own position, recorded where it is true over the gutter as
-      // well as over a box. It bubbles, so it lands after the box under the pointer
-      // has had its own move — which is what leaves takeHover comparing against
-      // where the pointer was rather than where it has just got to.
-      onPointerMove={e => {
-        pointerAt.current = { x: e.clientX, y: e.clientY };
-      }}
-      onPointerLeave={() => {
-        pointerAt.current = null;
-      }}
-    >
+    <div className="bipartite-graph-wrapper">
       <svg
         ref={svgRef}
         viewBox={`0 0 ${VIEW_W} ${totalHeight}`}
