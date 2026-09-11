@@ -596,8 +596,13 @@ paragraph under them says it again. The absence is the design, not an oversight 
   under the browser's toolbar on a phone — the toolbar comes back on the same frame the scroll
   goes home, and no height primitive on that device can see it, so the fix is to have no such
   moment. Sticky is scoped to `.app-content`, which the footer sits outside of, so the map lets go
-  for the footer. `.app-content.showing-results` is `overflow: clip`, which clips a sticky
-  descendant but doesn't unstick it.
+  for the footer. `.app-content` is `overflow: clip`, which clips a sticky descendant but
+  doesn't unstick it — and it is clipped **at all times**, not just on the results, because a
+  clip arriving over a pinned element re-resolves what that element clips against on the one
+  frame that already has the most to do. That frame is where the map flashed: the document
+  collapses from some 2600px to 740px under the pinned map while a viewport-tall roster
+  animates in over it, so the section is promoted with `transform: translateZ(0)` and
+  composited rather than redrawn through it.
   **Its foot is the map's own coastline** — no padding under it and no rule. A line drawn across the
   bottom of the map would be a second edge competing with the one the geometry already draws.
   **The height is width-driven and the columns pay for it**: the map is 63% as tall as it is wide, so
