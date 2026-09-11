@@ -460,7 +460,7 @@ function App() {
               Gerrymandering has pulled the United States into an arms race between red states and
               blue states. The only way to stop the escalation is to concurrently implement new
               Congressional district maps that are equally less disproportionate, one red state
-              and one blue state at a time, so the margin in Congress remains unchanged.
+              and one blue state at a time, leaving the margin in Congress unchanged.
             </p>
             <p>
               So pair up the red states and blue states into bipartisan pacts. Each pact will 
