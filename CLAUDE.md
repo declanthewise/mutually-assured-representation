@@ -590,14 +590,14 @@ paragraph under them says it again. The absence is the design, not an oversight 
 - **The page layout**: map, then title, then whatever the run is up to — prose and Start before it
   begins, the columns while it runs, the results after. The map leads and the **title sits under
   it**, where it reads best. It yields its space to the columns once the user starts.
-  The map scrolls with the opening screen alone. From Start onwards `.hero-section.pinned`
-  pins it to the viewport as the run's scoreboard, and it **stays pinned through the results**
-  rather than returning to the flow: unpinning it at Finish was a jump that landed the map partly
-  under the browser's toolbar on a phone — the toolbar comes back on the same frame the scroll
-  goes home, and no height primitive on that device can see it, so the fix is to have no such
-  moment. Sticky is scoped to `.app-content`, which the footer sits outside of, so the map lets go
-  for the footer. `.app-content.showing-results` is `overflow: clip`, which clips a sticky
-  descendant but doesn't unstick it.
+  The map scrolls with the opening and results pages. While the columns are in play,
+  `.hero-section.pinned` pins it to the viewport as the board's scoreboard.
+  **It is pinned or let go only ever at the top of the page**, because every swap between screens
+  rides there first — see the scrolling bullet below. Pinning it through the results instead was
+  tried, to spare the phone the unpinning moment, and made things worse: a sticky map is only as
+  right as the viewport it is pinned to, and on Chrome iOS that viewport is a toolbar's height
+  out after a jump. Sticky is scoped to `.app-content`, which the footer sits outside of, so the
+  map lets go for the footer.
   **Its foot is the map's own coastline** — no padding under it and no rule. A line drawn across the
   bottom of the map would be a second edge competing with the one the geometry already draws.
   **The height is width-driven and the columns pay for it**: the map is 63% as tall as it is wide, so
@@ -613,14 +613,23 @@ paragraph under them says it again. The absence is the design, not an oversight 
   results headline are clipped by `.map-header-reveal` and descend from the map's foot; the board
   and results roster keep their separate rise from below. Reduced-motion mode collapses the entrances
   to a millisecond.
-  **Finish does the same thing**, and for the same reason: it is pressed from the foot of the board,
-  which is as far down as the page goes, and the panel it swaps in belongs at the top. Scrolling
-  first and swapping in the same frame means there is no taller page left to fall out from under the
-  reader, and the headline is *already* at the head of the page when they arrive rather than dropping
-  in once the page has stopped moving. It used to ride home smoothly and swap on landing; what that
-  rode through was the board the reader had just finished with. `rideHome` stays for the one case
-  that isn't a swap — the page shortening on its own under a reader standing at the bottom of it,
-  which is what breaking the last pact does to the Finish button.
+  **Finish, Retry and Try 2032 do the same thing**: ride home with the old screen intact, swap on
+  landing. **None of them jumps.** Each was an instant `scrollTo(0)` followed by the swap in the
+  same frame for one round, on the argument that no taller page was then left to fall out from
+  under the reader and the headline was already at the head of the page on arrival — and on a phone
+  that jump is what broke every screen it led to. The reader has scrolled down, so the browser's
+  toolbar has collapsed; an instant jump to the top is one the toolbar re-expands *after*, and on
+  Chrome iOS the page is left a toolbar's height out of true until the next gesture. A map pinned
+  to that viewport sat that far down over the 2032 instructions and the results headlines, a static
+  one sat that far under the bar, and the map jolted when the bar finally settled. No height
+  primitive on that device reports the bar (see the memory on Chrome iOS dead space), so there is
+  nothing to compensate against — but a smooth scroll is a gesture the toolbar follows, and the
+  page lands settled. So Finish rides back up through the board the reader has just finished with,
+  which is the price, and the results only arrive once it lands; the map is pinned for the whole
+  ride and comes unpinned at a stuck offset of zero, where letting go moves nothing. Retry and Try
+  2032 ride up through the roster the same way and pin the map on landing at the same zero. One
+  `ride()` guards all of them: a second press mid-ride is the same press. Under reduced motion the
+  ride is an instant jump, which is what that setting asks for.
 - **Typography**: every block of running text on the page — the opening prose (`.app-intro`), the
   match instructions and the results headline — is set **identically**, off one shared rule rather
   than three copies of it: Source Sans 3 at `0.94rem`, 1.55 leading, `#444`, ranged left on a 620px

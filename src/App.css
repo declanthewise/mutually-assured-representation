@@ -86,12 +86,11 @@ body {
   width: 100%;
 }
 
-/* The opening page scrolls normally. From Start onwards the map is the run's pinned
-   scoreboard — over the board, and over the results roster that reports it. It does
-   not return to the flow at Finish: unpinning it there put it partly under the
-   browser's toolbar on a phone, the toolbar being re-drawn on the same frame and
-   invisible to every height API on the device. The sticky containing block is
-   `.app-content`, so the map still lets go for the footer below it. */
+/* The opening page scrolls normally. Once the columns are in play, the map becomes
+   their pinned scoreboard; results return it to the ordinary document flow. Every
+   swap between those screens rides to the top before it happens (`rideHome` in
+   `App.tsx`), so the map is pinned or let go only ever at a stuck offset of zero,
+   where the two positions are the same and nothing moves. */
 .hero-section.pinned {
   position: sticky;
   top: 0;

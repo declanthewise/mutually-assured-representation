@@ -56,6 +56,15 @@ const HEADER_BOTTOM_GAP = 12;
  * page happen at the top, where there is nothing above to fall into the gap and
  * an arriving view can enter from its natural starting point.
  *
+ * Every trip to the top is this ride, and none of them is an instant jump. On a
+ * phone the reader has scrolled down, so the browser's toolbar has collapsed, and
+ * an instant `scrollTo(0)` from there is a jump the toolbar re-expands *after*:
+ * on Chrome iOS the page is left a toolbar's height out of true until the next
+ * gesture — a sticky map pinned that far down the header under it, a static one
+ * that far under the bar, and a visible jolt when the bar finally settles — and
+ * no height API on that device reports the bar, so it can't be compensated for.
+ * A smooth scroll is a gesture the toolbar follows, and the page lands settled.
+ *
  * There's no `scrollend` to lean on in every browser, so watch for the page to
  * land — on a deadline, because a reader who scrolls back down interrupts the
  * ride and `then` can't wait on a trip that isn't happening. Returns a cancel.
@@ -227,36 +236,43 @@ function App() {
     };
   }, [selectedMatches, finishRow]);
 
-  // Start sits below the fold on a laptop, so ride back to the map while the opening
-  // screen is still intact. Only once the viewport lands does the board replace the
-  // pitch; its instructions then reveal downward from the map's foot in CSS.
-  const startRideRef = useRef<(() => void) | null>(null);
+  // Every swap between screens rides home first and swaps on landing — see
+  // `rideHome` for why none of them jumps. One ride at a time: a second press while
+  // the page is still travelling is the same press, not a second swap.
+  const rideRef = useRef<(() => void) | null>(null);
 
-  const handleStart = useCallback(() => {
-    if (startRideRef.current) return;
-    setStarting(true);
-    startRideRef.current = rideHome(() => {
-      startRideRef.current = null;
-      setStarted(true);
-      setStarting(false);
+  const ride = useCallback((then: () => void) => {
+    if (rideRef.current) return;
+    rideRef.current = rideHome(() => {
+      rideRef.current = null;
+      then();
     });
   }, []);
 
-  useEffect(() => () => startRideRef.current?.(), []);
+  useEffect(() => () => rideRef.current?.(), []);
 
-  // Reset the scroll while the tall board is still intact, so the shortened results
-  // page never clamps the old offset on its way in. The map is pinned on both sides
-  // of the swap, so it doesn't move for this at all.
+  // Start sits below the fold on a laptop, so ride back to the map while the opening
+  // screen is still intact. Only once the viewport lands does the board replace the
+  // pitch; its instructions then reveal downward from the map's foot in CSS.
+  const handleStart = useCallback(() => {
+    if (rideRef.current) return;
+    setStarting(true);
+    ride(() => {
+      setStarted(true);
+      setStarting(false);
+    });
+  }, [ride]);
+
+  // See Results is pressed from the foot of the board, so the ride is back up
+  // through the board the reader has just finished with, and the results only
+  // arrive once it lands. That is the order the phone needs: the map is pinned for
+  // the whole ride and comes unpinned at the top, where its stuck offset is zero
+  // and letting go moves nothing, and the toolbar has re-expanded under a scroll
+  // it could follow. Swapping first and jumping was tried, and on Chrome iOS it
+  // left the headline under the map and the map jolting when the bar settled.
   const handleFinish = useCallback(() => {
-    window.scrollTo({ top: 0, behavior: 'instant' });
-    setFinished(true);
-  }, []);
-
-  // A board/results swap can change the document's scroll range. Keep the new
-  // layout at the top before paint as well as resetting the outgoing layout.
-  useLayoutEffect(() => {
-    if (started) window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [started, finished, era]);
+    ride(() => setFinished(true));
+  }, [ride]);
 
   // Back to the earlier board with an empty run — the map and the columns both read
   // off the match lists, so clearing them resets both.
@@ -269,47 +285,54 @@ function App() {
   // stays true and the columns are what they land on. It is the same act as Retry 2032
   // one screen over, and the same act off either results panel — the 2032 results reach
   // it as "Retry 2028".
+  // A long roster leaves the reader scrolled down, so it rides up through the
+  // results and puts the board up on landing — the map pins at a stuck offset of
+  // zero, which is where it already stands.
   const handleStartOver = useCallback(() => {
-    window.scrollTo({ top: 0, behavior: 'instant' });
-    setMatches2026([]);
-    setMatches2032([]);
-    setEra('2026');
-    setFinished(false);
-    // The board being left may have risen over its instructions after its first pact.
-    // Reset that in the same render, so the fresh board's instructions stand in their
-    // own space rather than starting behind the still-raised columns.
-    setColumnsRisen(false);
-  }, []);
+    ride(() => {
+      setMatches2026([]);
+      setMatches2032([]);
+      setEra('2026');
+      setFinished(false);
+      // The board being left may have risen over its instructions after its first
+      // pact. Reset that in the same render, so the fresh board's instructions stand
+      // in their own space rather than starting behind the still-raised columns.
+      setColumnsRisen(false);
+    });
+  }, [ride]);
 
   // Onto the post-census board with an empty 2032 run: from the 2026 results, where it
   // is "Try 2032", and from the 2032 results, where the same thing is "Retry 2032" —
   // one handler, because opening that board and playing it again are the same act. The
-  // 2026 run is left standing behind either, untouched. Reset the scroll before
-  // opening the board, including when a long results roster was scrolled down.
+  // 2026 run is left standing behind either, untouched. It rides home before the
+  // board goes up, like Retry, for the same reason.
   const handleOpen2032 = useCallback(() => {
-    window.scrollTo({ top: 0, behavior: 'instant' });
-    setMatches2032([]);
-    setEra('2032');
-    setFinished(false);
-    // The 2026 board may have risen over its instructions after the first pact.
-    // Reset that position in the same render that opens 2032, so the new
-    // instructions can reveal to their full height instead of starting behind
-    // the still-raised columns and dropping out only on the following effect.
-    setColumnsRisen(false);
-  }, []);
+    ride(() => {
+      setMatches2032([]);
+      setEra('2032');
+      setFinished(false);
+      // The 2026 board may have risen over its instructions after the first pact.
+      // Reset that position in the same render that opens 2032, so the new
+      // instructions can reveal to their full height instead of starting behind
+      // the still-raised columns and dropping out only on the following effect.
+      setColumnsRisen(false);
+    });
+  }, [ride]);
 
   return (
     <div className="app">
       <main className={`app-content${finished ? ' showing-results' : ''}`}>
-      {/* The map gives up some width once the columns arrive, and pins from that
-          moment to the end of the run — over the board, and over the results roster
-          that reports it. Only the opening screen scrolls it away.
-          It used to come unpinned at Finish, which on a phone is a jump the page
-          can't land: the browser's own toolbar is coming back on the same frame,
-          no height API on the device can see how tall it is, and the map came to
-          rest tucked partly behind it. Staying pinned removes the moment rather
-          than trying to time it. */}
-      <section className={`hero-section${started ? ' compact pinned' : ''}`}>
+      {/* The map gives up some width once the columns arrive, and pins only while
+          that board is in play. The opening and results pages scroll normally.
+          Pinning it through the results was tried, to spare the phone the unpinning
+          moment, and made things worse: a sticky map is only as right as the
+          viewport it is pinned to, and after a jump to the top that viewport is a
+          toolbar's height out — see `rideHome`. The fix was the ride, not the pin,
+          and with every swap landing at the top before it happens, the map comes
+          unpinned at a stuck offset of zero and doesn't move. */}
+      <section
+        className={`hero-section${started ? ' compact' : ''}${started && !finished ? ' pinned' : ''}`}
+      >
         <HeroMap
           topoData={topoData}
           era={era}
