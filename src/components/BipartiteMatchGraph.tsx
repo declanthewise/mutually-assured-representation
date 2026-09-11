@@ -1786,9 +1786,9 @@ export function BipartiteMatchGraph({
     const top = svgBox.top + rowTopY(placed.row, placed.yOffset) * scale;
     const bottom = top + BOX_H * scale;
 
-    // The map pins while this board is in play, so land the followed row below it.
+    // The map pins from Start onwards, so land the followed row below it.
     // Measure rather than copy its fluid, responsive height.
-    const heroMap = document.querySelector('.hero-section.playing');
+    const heroMap = document.querySelector('.hero-section.pinned');
     const headroom = (heroMap?.getBoundingClientRect().height ?? 0) + SCROLL_MARGIN;
     if (top >= headroom && bottom <= window.innerHeight - SCROLL_MARGIN) return;
 

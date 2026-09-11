@@ -244,9 +244,9 @@ function App() {
 
   useEffect(() => () => startRideRef.current?.(), []);
 
-  // Reset the scroll while the map is still sticky and the tall board is intact.
-  // Unsticking it then leaves it at the same viewport position, without the
-  // shortened results page first clamping the old scroll offset.
+  // Reset the scroll while the tall board is still intact, so the shortened results
+  // page never clamps the old offset on its way in. The map is pinned on both sides
+  // of the swap, so it doesn't move for this at all.
   const handleFinish = useCallback(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
     setFinished(true);
@@ -301,11 +301,15 @@ function App() {
   return (
     <div className="app">
       <main className={`app-content${finished ? ' showing-results' : ''}`}>
-      {/* The map gives up some width once the columns arrive, and pins only while
-          that board is in play. The opening and results pages scroll normally. */}
-      <section
-        className={`hero-section${started ? ' compact' : ''}${started && !finished ? ' playing' : ''}`}
-      >
+      {/* The map gives up some width once the columns arrive, and pins from that
+          moment to the end of the run — over the board, and over the results roster
+          that reports it. Only the opening screen scrolls it away.
+          It used to come unpinned at Finish, which on a phone is a jump the page
+          can't land: the browser's own toolbar is coming back on the same frame,
+          no height API on the device can see how tall it is, and the map came to
+          rest tucked partly behind it. Staying pinned removes the moment rather
+          than trying to time it. */}
+      <section className={`hero-section${started ? ' compact pinned' : ''}`}>
         <HeroMap
           topoData={topoData}
           era={era}
@@ -336,10 +340,9 @@ function App() {
               and one blue state at a time, so the margin in Congress remains unchanged.
             </p>
             <p>
-              So pair up the red states and blue states into bipartisan pacts. Each pact will give
-              the minority party in each of those two states their representation back. States with
-              similar size delegations make the best pacts. Click Start below to see how many of
-              the{' '}
+              So pair up the red states and blue states into bipartisan pacts. Each pact will 
+              simultaneously give the minority party in each of those two states their representation
+              back. Click Start below to see how many of the{' '}
               <span className="headline-figure" style={{ color: GAP_ORANGE }}>
                 {pool}
               </span>{' '}
@@ -382,8 +385,8 @@ function App() {
               ) : (
                 <>
                   Click a state to see its best matches at the top of the opposite column, then
-                  click one of those states to confirm the pact. States of similar delegate counts,
-                  with equal and opposite partisanship, make the best matches.
+                  click one of those states to confirm the pact. States with equal size delegations
+                  and similar, but opposite, partisanship make the best matches.
                 </>
               )}
             </p>

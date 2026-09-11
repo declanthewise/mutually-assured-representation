@@ -590,8 +590,14 @@ paragraph under them says it again. The absence is the design, not an oversight 
 - **The page layout**: map, then title, then whatever the run is up to — prose and Start before it
   begins, the columns while it runs, the results after. The map leads and the **title sits under
   it**, where it reads best. It yields its space to the columns once the user starts.
-  The map scrolls with the opening and results pages. While the columns are in play,
-  `.hero-section.playing` pins it to the viewport as the board's scoreboard.
+  The map scrolls with the opening screen alone. From Start onwards `.hero-section.pinned`
+  pins it to the viewport as the run's scoreboard, and it **stays pinned through the results**
+  rather than returning to the flow: unpinning it at Finish was a jump that landed the map partly
+  under the browser's toolbar on a phone — the toolbar comes back on the same frame the scroll
+  goes home, and no height primitive on that device can see it, so the fix is to have no such
+  moment. Sticky is scoped to `.app-content`, which the footer sits outside of, so the map lets go
+  for the footer. `.app-content.showing-results` is `overflow: clip`, which clips a sticky
+  descendant but doesn't unstick it.
   **Its foot is the map's own coastline** — no padding under it and no rule. A line drawn across the
   bottom of the map would be a second edge competing with the one the geometry already draws.
   **The height is width-driven and the columns pay for it**: the map is 63% as tall as it is wide, so
@@ -599,7 +605,7 @@ paragraph under them says it again. The absence is the design, not an oversight 
   on a phone, where it gives up no width because there is none to give. On a 900-unit viewport that
   leaves the columns 474; on a short laptop it is nearer two rows than four. Cap it if that ever
   bites — but cap it in `.hero-section` so its outer layout remains authoritative.
-  The columns' scroll-into-view in `BipartiteMatchGraph.tsx` measures the playing map and keeps that
+  The columns' scroll-into-view in `BipartiteMatchGraph.tsx` measures the pinned map and keeps that
   height plus `SCROLL_MARGIN` above the clicked row.
   **The page owns its own scrolling, and the browser's anchoring is off** for the whole of it
   (`overflow-anchor: none` on `.app`). Start first uses `rideHome` while the opening screen remains

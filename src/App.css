@@ -32,6 +32,13 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  /* The air over the instructions and the results headline. It is here rather than
+     on the rule that spends it because the reveal's keyframe has to know it too: the
+     copy hides by translating its own height *plus* this gap, or the gap leaves that
+     much of the last line showing under the map before the roll-down starts. One
+     figure, read in both places. `HEADER_TOP_GAP` in `App.tsx` is the same 14, for
+     the climb's own arithmetic. */
+  --header-top-gap: 14px;
   /* The browser's scroll anchoring is off for the whole page, because it fights the
      scrolling the page does for itself. Anchoring picks a node in view and holds it
      still while the document changes around it, and it passes over sticky elements
@@ -79,9 +86,13 @@ body {
   width: 100%;
 }
 
-/* The opening page scrolls normally. Once the columns are in play, the map becomes
-   their pinned scoreboard; results return it to the ordinary document flow. */
-.hero-section.playing {
+/* The opening page scrolls normally. From Start onwards the map is the run's pinned
+   scoreboard — over the board, and over the results roster that reports it. It does
+   not return to the flow at Finish: unpinning it there put it partly under the
+   browser's toolbar on a phone, the toolbar being re-drawn on the same frame and
+   invisible to every height API on the device. The sticky containing block is
+   `.app-content`, so the map still lets go for the footer below it. */
+.hero-section.pinned {
   position: sticky;
   top: 0;
   z-index: 10;
@@ -378,16 +389,18 @@ body {
    block, and being HTML it wraps on its own — the SVG would need every line set
    by hand. */
 /* Everything about how it is set comes from the prose rule above. What is left here
-   is the air over it: 14px of margin, which optically matches the fuller 12px below
-   once the line box is included. The matching 12px below is an ordinary CSS gap set
-   on the columns viewport in `App.tsx`, just like the results headline's margin.
+   is the air over it: `--header-top-gap`, 14px, which optically matches the fuller
+   12px below once the line box is included. It is a variable because the reveal's
+   keyframe has to subtract it too — see `header-from-map`. The matching 12px below
+   is an ordinary CSS gap set on the columns viewport in `App.tsx`, just like the
+   results headline's margin.
    Nothing forces a break in it. Clause-per-line was tried — a `display: block` span
    each — and reads as two stacked fragments rather than one instruction. */
 /* The results headline takes the same 12px, so the two blocks start at exactly the
    same height and the swap at Finish moves nothing. */
 .match-instructions,
 .results-headline {
-  margin-top: 14px;
+  margin-top: var(--header-top-gap);
 }
 
 /* Start and Finish mount their respective headings inside this clipped reveal.
@@ -403,7 +416,11 @@ body {
 
 @keyframes header-from-map {
   from {
-    transform: translateY(-100%);
+    /* Its own height and the gap over it. `-100%` alone is the paragraph's height
+       only, and the clip runs from the map's foot — so the margin left the bottom
+       14px of the last line sitting under the coastline, in view from the first
+       frame, and the roll-down began with its ending already showing. */
+    transform: translateY(calc(-100% - var(--header-top-gap)));
     opacity: 0;
   }
   to {
