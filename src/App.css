@@ -55,6 +55,14 @@ body {
   width: 100%;
 }
 
+/* Keep the footer below the fold even when a short results roster leaves space.
+   The content can still grow naturally for longer runs and smaller screens. */
+.app-content {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
 /* ===========================
    Hero Map Section
    =========================== */
@@ -312,6 +320,28 @@ body {
 .results-panel {
   text-align: center;
   padding: 0 0 1rem;
+}
+
+/* Clip at the full page's foot, not the roster's resting bounds. This lets the
+   entrance cross the empty viewport space without affecting layout or exposing
+   the footer. `clip` does not create an internally scrollable container. */
+.app-content.showing-results {
+  overflow: clip;
+}
+
+.results-viewport .match-columns {
+  animation-name: results-from-bottom;
+}
+
+@keyframes results-from-bottom {
+  from {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 /* Everything about how it is set comes from the prose rule above. Keep the fuller
@@ -639,9 +669,7 @@ body {
    =========================== */
 
 .article-footer {
-  /* `.app` is a min-height: 100vh column, so this pins the byline to the
-     bottom of the viewport when the page is short and follows the content
-     down when it isn't. */
+  /* The content above reserves at least a viewport before this byline. */
   margin: auto auto 0;
   padding: 0.75rem 1.5rem;
   max-width: 710px;

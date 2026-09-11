@@ -244,16 +244,19 @@ function App() {
 
   useEffect(() => () => startRideRef.current?.(), []);
 
-  // See Results trades the columns for the results panel. The layout effect returns the
-  // new results layout to the top before the browser paints it.
+  // Reset the scroll while the map is still sticky and the tall board is intact.
+  // Unsticking it then leaves it at the same viewport position, without the
+  // shortened results page first clamping the old scroll offset.
   const handleFinish = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
     setFinished(true);
   }, []);
 
+  // A board/results swap can change the document's scroll range. Keep the new
+  // layout at the top before paint as well as resetting the outgoing layout.
   useLayoutEffect(() => {
-    if (!finished) return;
-    window.scrollTo(0, 0);
-  }, [finished]);
+    if (started) window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [started, finished, era]);
 
   // Back to the earlier board with an empty run — the map and the columns both read
   // off the match lists, so clearing them resets both.
@@ -267,6 +270,7 @@ function App() {
   // one screen over, and the same act off either results panel — the 2032 results reach
   // it as "Retry 2028".
   const handleStartOver = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
     setMatches2026([]);
     setMatches2032([]);
     setEra('2026');
@@ -275,16 +279,15 @@ function App() {
     // Reset that in the same render, so the fresh board's instructions stand in their
     // own space rather than starting behind the still-raised columns.
     setColumnsRisen(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   // Onto the post-census board with an empty 2032 run: from the 2026 results, where it
   // is "Try 2032", and from the 2032 results, where the same thing is "Retry 2032" —
   // one handler, because opening that board and playing it again are the same act. The
-  // 2026 run is left standing behind either, untouched. No ride home is needed: the
-  // results panel is already at the top, and the board it makes way for is taller than
-  // what it replaces, so nothing falls out from under the reader.
+  // 2026 run is left standing behind either, untouched. Reset the scroll before
+  // opening the board, including when a long results roster was scrolled down.
   const handleOpen2032 = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
     setMatches2032([]);
     setEra('2032');
     setFinished(false);
@@ -293,11 +296,11 @@ function App() {
     // instructions can reveal to their full height instead of starting behind
     // the still-raised columns and dropping out only on the following effect.
     setColumnsRisen(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   return (
     <div className="app">
+      <main className={`app-content${finished ? ' showing-results' : ''}`}>
       {/* The map gives up some width once the columns arrive, and pins only while
           that board is in play. The opening and results pages scroll normally. */}
       <section
@@ -491,18 +494,22 @@ function App() {
               is the post-census board with an empty run — the same act as Try 2032 one
               screen earlier, and the same handler. The 2032 results also offer the
               earlier board again as Retry 2028. */}
-          <div className="visualization-wide match-columns">
-            <ResultsPanel
-              era={era}
-              selectedMatches={selectedMatches}
-              residualGaps={boardGaps}
-              onRetry={era === '2032' ? handleOpen2032 : handleStartOver}
-              onRetry2028={era === '2032' ? handleStartOver : undefined}
-              onTry2032={era === '2026' ? handleOpen2032 : undefined}
-            />
+          <div className="results-viewport">
+            <div className="visualization-wide match-columns">
+              <ResultsPanel
+                era={era}
+                selectedMatches={selectedMatches}
+                residualGaps={boardGaps}
+                onRetry={era === '2032' ? handleOpen2032 : handleStartOver}
+                onRetry2028={era === '2032' ? handleStartOver : undefined}
+                onTry2032={era === '2026' ? handleOpen2032 : undefined}
+              />
+            </div>
           </div>
         </>
       )}
+
+      </main>
 
       <footer className="article-footer">
         <p>
