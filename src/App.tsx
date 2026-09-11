@@ -66,9 +66,12 @@ const RIDE_HOME_MAX_MS = 1400;
  * landing frame started the results' own entrance off the tail of a scroll the eye
  * was still following, and two upward motions back to back read as one rush. A
  * beat lets the page stand still first. It is only taken after an actual ride: a
- * press at the top has nothing to settle from.
+ * press at the top has nothing to settle from. Longer on a handheld, whose ride is
+ * the browser's and can't be slowed itself — the beat and the roster's entrance are
+ * the two things around it that can be.
  */
 const LANDING_BEAT_MS = 200;
+const LANDING_BEAT_HANDHELD_MS = 300;
 
 /** The shared visual spacing around the instructions and results headline. */
 const HEADER_TOP_GAP = 14;
@@ -156,7 +159,7 @@ function rideHome(then: () => void): () => void {
         raf = requestAnimationFrame(land);
         return;
       }
-      beat = setTimeout(then, LANDING_BEAT_MS);
+      beat = setTimeout(then, LANDING_BEAT_HANDHELD_MS);
     });
   } else {
     let start: number | null = null;

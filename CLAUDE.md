@@ -646,12 +646,14 @@ paragraph under them says it again. The absence is the design, not an oversight 
   the one thing known to land the toolbar right, at the browser's pace. Desktop Chrome's device mode
   cannot reproduce any of this: it emulates the viewport, the touch and the user agent, not the
   browser's own chrome, so it takes the handheld path without the toolbar that path exists for.
-  **The swap then waits a beat after landing** — `LANDING_BEAT_MS`, 200ms. Swapping on the landing
+  **The swap then waits a beat after landing** — `LANDING_BEAT_MS`, 200ms, and 300 on a handheld
+  (`LANDING_BEAT_HANDHELD_MS`), whose native ride can't be slowed itself so the beat and the
+  entrance are what get slowed. Swapping on the landing
   frame put the roster's own entrance — 100vh on a hard ease-out — straight off the tail
   of the scroll, and two upward motions back to back read as one rush. The beat is taken only after
   an actual ride: a press with the page already at the top has nothing to settle from, and under
   reduced motion the jump is instant and a wait after it would be the one slow thing left.
-  **The roster's entrance runs 1300ms** where the board's runs 750: it starts from 100vh against the
+  **The roster's entrance runs 1300ms, 1600 on a handheld,** where the board's runs 750: it starts from 100vh against the
   board's 70vh, so at the board's duration it moved a third again as fast per pixel and still read as
   a flick after the ride had settled. The rule that sets it is more specific than `.match-columns`,
   so the reduced-motion block names it separately.

@@ -348,6 +348,15 @@ body {
   animation-duration: 1300ms;
 }
 
+/* A handheld's ride home is the browser's own smooth scroll (see `rideHome` in
+   `App.tsx`), whose pace can't be set, so the entrance after it is what there is
+   to slow. Before the reduced-motion block, which must still win. */
+@media (hover: none) and (pointer: coarse) {
+  .results-viewport .match-columns {
+    animation-duration: 1600ms;
+  }
+}
+
 @keyframes results-from-bottom {
   from {
     transform: translateY(100vh);
