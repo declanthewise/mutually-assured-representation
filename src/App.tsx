@@ -45,17 +45,20 @@ const SPELLED = [
 const spellCount = (n: number) => SPELLED[n] ?? String(n);
 
 /**
- * How long the ride home takes: a floor, plus a share of the distance, under a cap.
- * The browser's own smooth scroll can't be given a duration, and the one it picks
- * is front-loaded — measured in Chrome, a 2100px ride covered more than half its
- * distance in the first quarter second and crept through the last few hundred
+ * How long the ride home takes: half a millisecond a pixel, between a floor and a
+ * cap. The browser's own smooth scroll can't be given a duration, and the one it
+ * picks is front-loaded — measured in Chrome, a 2100px ride covered more than half
+ * its distance in the first quarter second and crept through the last few hundred
  * pixels behind the pinned map, so it read as a flick and then a wait. Driving the
- * scroll by hand is what lets the pace be set at all. Scaled with the distance so a
- * long board is not a blur and a short one is not a crawl: 800px rides in 860ms,
- * 2100px in about 1.1s, and anything past 3500px in the capped 1.4s.
+ * scroll by hand is what lets the pace be set at all. It is a rate and not a fixed
+ * time because the distance varies a hundredfold: the foot of a long board on a
+ * phone is thousands of pixels off, where the results buttons on a tall screen are
+ * a few hundred, and a floor of 700ms had those short trips crawling for most of a
+ * second and reading as a stall before the swap. So 2100px rides in about 1.05s,
+ * 500px in a quarter second, and anything past 2800px in the capped 1.4s.
  */
-const RIDE_HOME_MIN_MS = 700;
-const RIDE_HOME_MS_PER_PX = 0.2;
+const RIDE_HOME_MS_PER_PX = 0.5;
+const RIDE_HOME_MIN_MS = 250;
 const RIDE_HOME_MAX_MS = 1400;
 
 /**
@@ -119,7 +122,7 @@ function rideHome(then: () => void): () => void {
   // the jump is instant there, and a beat after it would be the one slow thing
   // left on a page asked to hurry.
   const jump = reduced || from === 0;
-  const duration = Math.min(RIDE_HOME_MAX_MS, RIDE_HOME_MIN_MS + from * RIDE_HOME_MS_PER_PX);
+  const duration = Math.min(RIDE_HOME_MAX_MS, Math.max(RIDE_HOME_MIN_MS, from * RIDE_HOME_MS_PER_PX));
 
   let beat: ReturnType<typeof setTimeout> | undefined;
   let start: number | null = null;

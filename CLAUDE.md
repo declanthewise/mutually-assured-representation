@@ -635,9 +635,11 @@ paragraph under them says it again. The absence is the design, not an oversight 
   in Chrome, a 2100px ride covered more than half its distance in the first quarter second, crept
   through the last few hundred pixels behind the pinned map, and landed about 760ms after the press
   having looked still for most of that. Driving the scroll by hand is the only way to slow it. The
-  duration is `RIDE_HOME_MIN_MS` plus `RIDE_HOME_MS_PER_PX` of the distance, capped at
-  `RIDE_HOME_MAX_MS` — 700 + 0.2/px, cap 1400 — so a long board is not a blur and a short one is not
-  a crawl, on an even ease-in-out cubic. It moves the page the same way the native scroll did, but
+  duration is `RIDE_HOME_MS_PER_PX` of the distance between `RIDE_HOME_MIN_MS` and
+  `RIDE_HOME_MAX_MS` — 0.5ms/px, floor 250, cap 1400 — on an even ease-in-out cubic. A rate and not
+  a time, because the distance varies a hundredfold: a first cut had a 700ms floor, and the few
+  hundred pixels from a tall screen's board foot, or from the results buttons, crawled for most of
+  a second and read as a small stall before every swap. It moves the page the same way the native scroll did, but
   **it has not been checked on Chrome iOS**, which is the device the ride exists for; if the
   toolbar problem comes back there, the native smooth scroll is the thing to put back first.
   **The swap then waits a beat after landing** — `LANDING_BEAT_MS`, 200ms. Swapping on the landing
