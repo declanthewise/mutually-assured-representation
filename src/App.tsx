@@ -300,7 +300,7 @@ function App() {
 
   return (
     <div className="app">
-      <main className="app-content">
+      <main className={`app-content${finished ? ' showing-results' : ''}`}>
       {/* The map gives up some width once the columns arrive, and pins from that
           moment to the end of the run — over the board, and over the results roster
           that reports it. Only the opening screen scrolls it away.

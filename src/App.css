@@ -97,15 +97,6 @@ body {
   top: 0;
   z-index: 10;
   background: #fafaf7;
-  /* Its own layer, held for the whole run. The map flashed on the frame the board
-     was swapped for the results: the document collapses from some 2600px to 740px
-     under a pinned element while a viewport-tall roster animates in over the same
-     frame, and the map was being re-rasterized in the middle of it. Promoted, it
-     is composited rather than redrawn, so neither the resize nor the entrance
-     reaches it. Nothing about its geometry changes across that swap — measured at
-     485 × 311 at top 0 every frame — so there is nothing here for layout to get
-     wrong. */
-  transform: translateZ(0);
 }
 
 .hero-map {
@@ -344,16 +335,8 @@ body {
 
 /* Clip at the full page's foot, not the roster's resting bounds. This lets the
    entrance cross the empty viewport space without affecting layout or exposing
-   the footer. `clip` does not create an internally scrollable container.
-   It is on `.app-content` at all times rather than arriving with the results,
-   because the map is sticky inside it: a clip appearing over a pinned element
-   re-resolves what that element is clipped against, on the one frame that already
-   has the most to do. Nothing else on the page paints outside this box — the board's
-   entrance is clipped by `.match-columns-viewport` and the header's by
-   `.map-header-reveal` — so holding the clip open costs nothing on the other
-   screens. The `showing-results` class this used to select on is gone with the
-   toggle — nothing else read it. */
-.app-content {
+   the footer. `clip` does not create an internally scrollable container. */
+.app-content.showing-results {
   overflow: clip;
 }
 
